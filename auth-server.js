@@ -68,6 +68,6 @@ function createAuth(){let pool=null,ready=false,lastRetry=0,initializing=null;
  error(404,'Rota de autenticação não encontrada.');
  }catch(e){if(!e.status)console.error('Auth:',e.message);out(res,e.status||503,{error:e.status?e.message:'Serviço de contas temporariamente indisponível.'});return true;}
  }
- return {process:handle,init,current:async req=>{if(!parseCookies(req)[SESSION_COOKIE])return null;if(!(await init()))return null;return current(req);},prune:async()=>{if(await init())await query('DELETE FROM kt_sessions WHERE expires_at<now()');},status:()=>({ready,registration_enabled:ready&&process.env.ENABLE_ACCOUNT_REGISTRATION==='true'})};
+ return {process:handle,init,current:async req=>{if(!parseCookies(req)[SESSION_COOKIE])return null;if(!(await init()))return null;return current(req);},reauthenticate:async(req,password)=>{if(!isPassword(password)||!await init())return false;limit(req,'confirm-password',8,900000);const u=await current(req);if(!u)return false;const r=await query('SELECT password_hash FROM kt_users WHERE id=$1',[u.id]);return !!r.rows[0]&&await checkPass(password,r.rows[0].password_hash);},prune:async()=>{if(await init())await query('DELETE FROM kt_sessions WHERE expires_at<now()');},status:()=>({ready,registration_enabled:ready&&process.env.ENABLE_ACCOUNT_REGISTRATION==='true'})};
 }
 module.exports={createAuth};

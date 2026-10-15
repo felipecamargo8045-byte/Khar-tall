@@ -15,6 +15,7 @@ const VERSION=require('./package.json').version;
 let ready=false,ticking=false,timer,cleanupTimer;
 const {KharTall}=require('./engine.js');
 const auth=require('./auth-server.js').createAuth();
+const commerce=require('./store-server.js').createCommerce({auth});
 const ROOT=__dirname;
 const PORT=Number(process.env.PORT||8765);
 const HOST=process.env.HOST||'127.0.0.1';
@@ -73,12 +74,14 @@ async function checkExpiration(room){if(!room||room.status!=='active'||!room.dea
  return updatedRoom(room,game,{kind:'timeout',actionKind:'timeout',actorSide:before.phase==='setup'?before.setupSide:before.side,phase:game.s.phase,at:Date.now()},deadline);
 }
 const STATIC=new Map([['/audio.js','audio.js'],['/','index.html'],['/index.html','index.html'],['/online','online.html'],['/online.html','online.html'],['/online.js','online.js'],['/online.css','online.css'],['/style.css','style.css'],['/account.css','account.css'],['/engine.js','engine.js'],['/app.js','app.js'],['/account.js','account.js'],['/privacidade.html','privacidade.html'],['/conta','conta.html'],['/conta.html','conta.html'],['/auth-client.js','auth-client.js']]);
-const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.webp':'image/webp','.png':'image/png','.wav':'audio/wav','.ico':'image/x-icon'};
+for(const [route,file]of Object.entries({'/loja':'loja.html','/painel-loja':'painel-loja.html','/instalar':'instalar.html','/store.css':'store.css','/store-client.js':'store-client.js','/store-admin.js':'store-admin.js','/app-shell.css':'app-shell.css','/app-shell.js':'app-shell.js','/install.js':'install.js','/manifest.webmanifest':'manifest.webmanifest','/offline-assets.json':'offline-assets.json','/sw.js':'sw.js','/icons/icon-192.png':'icons/icon-192.png','/icons/icon-512.png':'icons/icon-512.png','/.well-known/assetlinks.json':'assetlinks.json','/baixar/khar-tall.apk':'downloads/khar-tall-3.5.0.apk','/baixar/android.json':'downloads/khar-tall-3.5.0.json'}))STATIC.set(route,file);
+const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.webp':'image/webp','.png':'image/png','.wav':'audio/wav','.ico':'image/x-icon','.json':'application/json; charset=utf-8','.webmanifest':'application/manifest+json; charset=utf-8','.apk':'application/vnd.android.package-archive'};
 function serve(req,res,pathname){let rel=STATIC.get(pathname);if(!rel&&/^\/assets\/[A-Za-z0-9_.-]+$/.test(pathname))rel=pathname.slice(1);if(!rel)fail(404,'Página não encontrada.');
  const file=path.join(ROOT,rel);if(!file.startsWith(ROOT+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile())fail(404,'Arquivo não encontrado.');
  const typ=TYPES[path.extname(file)]||'application/octet-stream';head(res);sendStatic(req,res,file,rel,typ);}
 async function handler(req,res){try{const u=new URL(req.url,'http://local'),pathname=u.pathname;
  if(await auth.process(req,res,pathname))return;
+ if(await commerce.process(req,res,pathname))return;
  if(pathname.startsWith('/api/online/'))req.ktUser=await auth.current(req);
  if(req.method==='GET'&&pathname==='/api/online/recent'){const u=req.ktUser;if(!u)return json(res,200,{authenticated:false,rooms:[]});const rooms=(await store.recent(u.id)).map(r=>({code:r.code,status:r.status,side:r.red_user_id===u.id?0:1,updatedMs:r.updated_ms,url:'/online?room='+r.code}));return json(res,200,{authenticated:true,username:u.username,rooms});}
  if((req.method==='GET'||req.method==='HEAD')&&pathname==='/api/health')return json(res,ready?200:503,{service:'khar-tall',version:VERSION,online:ready,status:ready?'ready':'starting',authentication:auth.status().ready,registration_enabled:auth.status().registration_enabled,persistent:store.persistent,room_retention_days:30});
@@ -132,6 +135,6 @@ async function start(){await auth.init();await store.init();ready=true;
  timer=setInterval(async()=>{if(ticking||listeners.size===0)return;ticking=true;try{for(const r of await store.expired(Date.now())){const room=await store.get(r.code);if(room)await checkExpiration(room);}}catch(e){if(e.status!==409)console.error('Prazo:',e.code||e.name);}finally{ticking=false;}},1000);timer.unref();
  cleanupTimer=setInterval(()=>Promise.all([store.prune(),auth.prune()]).catch(e=>console.error('Retenção:',e.code||e.name)),3600000);cleanupTimer.unref();
  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(PORT,HOST,resolve);});console.log(`Khar Tall ${VERSION}: port ${PORT}; matches ${store.persistent?'PostgreSQL':'SQLite local'}`);return server;}
-async function stop(){ready=false;clearInterval(timer);clearInterval(cleanupTimer);for(const set of listeners.values())for(const res of set)res.end();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));await store.close();await closePool();}
+async function stop(){ready=false;clearInterval(timer);clearInterval(cleanupTimer);for(const set of listeners.values())for(const res of set)res.end();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));await store.close();commerce.close();await closePool();}
 if(require.main===module){start().catch(e=>{console.error('Startup failed:',e.code||e.name);process.exitCode=1;});let stopping=false;for(const signal of ['SIGTERM','SIGINT'])process.on(signal,()=>{if(stopping)return;stopping=true;const deadline=setTimeout(()=>process.exit(1),9000);deadline.unref();stop().then(()=>process.exit(0)).catch(()=>process.exit(1));});}
 module.exports={server,store,start,stop,checkExpiration,publicRoom};

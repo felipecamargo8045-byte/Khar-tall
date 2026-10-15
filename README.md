@@ -24,7 +24,7 @@ O serviço Render existente acompanha a branch `main`. Seu comando de build `nod
 
 Variáveis: `HOST=0.0.0.0`, `NODE_ENV=production`, `TRUST_PROXY=true`, `ACCOUNTS_DATABASE_URL` como segredo e `ENABLE_ACCOUNT_REGISTRATION=true`. O código mantém a hospedagem gratuita e não exige disco persistente do Render. Configure `/api/health` como health check.
 
-O orçamento do projeto é **R$ 0**. [CUSTOS_E_LIMITES.md](CUSTOS_E_LIMITES.md) registra os planos verificados, os limites de consumo aplicados e a conferência de cobrança ainda pendente no painel do Render. Plano Free da instância não bloqueia sozinho cobranças por excedentes quando há cartão cadastrado. Os arquivos estáticos usam compressão sem perda e ETag para reduzir tráfego, mantendo os mesmos recursos e a mesma qualidade.
+O orçamento do projeto é **R$ 0**. [CUSTOS_E_LIMITES.md](CUSTOS_E_LIMITES.md) registra os planos verificados, os limites de consumo aplicados e a conferência de cobrança informada pelo criador no painel do Render. Plano Free da instância não bloqueia sozinho cobranças por excedentes quando há cartão cadastrado. Os arquivos estáticos usam compressão sem perda e ETag para reduzir tráfego, mantendo os mesmos recursos e a mesma qualidade.
 
 `migrations/001_online_rooms.sql` cria de forma aditiva a tabela de salas. Não altera nem substitui contas existentes. O servidor aplica essa migração ao iniciar, depois de preparar a autenticação. Os testes de migração e integração devem usar uma branch separada do banco. Para testar as contas: `ACCOUNTS_DATABASE_URL=... node tests/test_auth_e2e.js`.
 
@@ -55,3 +55,21 @@ Fontes dos novos efeitos:
 - **Trombeta de aviso:** [Attention](https://commons.wikimedia.org/wiki/File:Attention.mp3), do U.S. Army, domínio público (PD-USGov-Military). Toque real de aviso, com silêncio inicial e final removidos.
 
 O manifesto registra origem, licença, processamento e checksum de cada recurso substituído. Os efeitos aguardam o carregamento do arquivo real; não há imitação sintetizada de ataques durante o primeiro carregamento. Desligar o som interrompe também efeitos agendados. Um limitador controla a soma de efeitos simultâneos. Armadilhas anulam o som do ataque bloqueado e as pisadas da Investida correspondem à distância efetivamente percorrida. Vitória, perda do Rei e perda do Guardião seguem prioridade musical para evitar motivos conflitantes.
+
+## Aplicativo Android e loja (3.5.0)
+
+- [Instalar](https://khar-tall-online.onrender.com/instalar) — APK e PWA.
+- [Loja](https://khar-tall-online.onrender.com/loja) — catálogo físico/digital, pedidos e coleção por conta.
+- [Painel da loja](https://khar-tall-online.onrender.com/painel-loja) — exclusivo da conta administradora explicitamente confirmada.
+
+O APK usa uma WebView restrita à origem HTTPS do jogo; páginas, artes e sons são empacotados. APIs e sessões permanecem na origem atual, sem CORS aberto ou segredos no aplicativo. Checkout externo abre no navegador; App Links de retorno usam o certificado em `assetlinks.json`. Apenas a permissão INTERNET é solicitada. `scripts/build-android.py` produz e verifica assinaturas v2/v3 e compara os bytes de todos os recursos empacotados. A chave privada de assinatura não é versionada.
+
+Sem emulador ou aparelho Android neste ambiente: a compilação, assinatura e integridade foram verificadas, mas a instalação e reprodução de áudio no aparelho precisam de conferência real.
+
+Para reconstruir: fornecer `--tools` com Android SDK platform 36, build-tools 36.0.0 e Eclipse ECJ 3.38.0; fornecer `--signing-dir` com a chave privada preservada; executar `python scripts/build-android.py --tools CAMINHO --signing-dir CAMINHO_PRIVADO --output downloads/khar-tall-3.5.0.apk`. Dependências de compilação são gratuitas e vêm dos distribuidores oficiais. Não gere uma nova chave para uma atualização.
+
+A loja usa o PostgreSQL existente em produção e SQLite apenas no desenvolvimento. A criação das tabelas é aditiva, em `store-db.js`. Configurar `STORE_ADMIN_USERNAMES` somente com o usuário confirmado pelo criador; `STORE_SETTINGS_KEY` é um segredo aleatório de 32 bytes representado por 64 dígitos hexadecimais. Com o painel autorizado, o próprio criador conecta o Mercado Pago e sua assinatura de Webhooks. Nunca enviar credenciais no chat. `PUBLIC_BASE_URL` mantém os retornos na URL canônica.
+
+Compras são avulsas. O servidor calcula valores; notificações exigem HMAC válido e leitura autenticada do pagamento. Valor, moeda, conta recebedora, modo de teste/produção e referência do pedido são conferidos antes da liberação. Repetições não duplicam a entrega; reembolso/chargeback retiram o acesso digital. Visuais alteram somente a aparência. Vendas físicas guardam dados de entrega em pedidos privados. Nenhum cartão é armazenado. Produtos e condições comerciais ainda precisam ser cadastrados pelo proprietário; o catálogo inicial está vazio.
+
+`tests/test_store.js` usa um provedor simulado e verifica autorização, CSRF, criptografia, preço, frete, assinatura, divergências, reenvio, reembolso, entrega e reinício sem fazer transações reais.

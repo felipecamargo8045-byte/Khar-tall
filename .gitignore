@@ -7,3 +7,10 @@ data/
 *.sqlite3-*
 *.log
 .artifacts/
+android-tools/
+android-signing/
+*.p12
+*.jks
+*.keystore
+*.apk.idsig
+icons/*.png

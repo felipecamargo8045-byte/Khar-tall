@@ -11,3 +11,11 @@ O usuário exige **R$ 0 de novas cobranças**, agora e nos próximos meses. Isso
 - Não prometa gratuidade ilimitada ou permanente de serviços de terceiros. Se controles de cobrança estiverem inacessíveis, registre a pendência com clareza.
 
 Código e mídia deste projeto são preservados pelo repositório Git; não duplique o repositório na Library.
+
+## Loja opcional (autorização de 15/10/2026)
+
+O usuário autorizou vendas físicas e digitais com Mercado Pago, **sem cobrança quando não houver vendas**. São permitidas as tarifas por transação do próprio provedor; não são permitidas mensalidades, assinaturas, máquinas, antecipação contratada ou pacotes pagos. A integração usa compras avulsas, sem recorrência. Não invente taxas nem diga que Pix/cartão são isentos. Não faça compras reais para testar.
+
+A conta administradora ainda será criada e indicada pelo usuário. Até lá, não conceda administração ao primeiro cadastro, a nomes parecidos nem a contas inferidas do GitHub. Use somente a conta explicitamente confirmada em `STORE_ADMIN_USERNAMES`. Credenciais de recebimento são inseridas pelo próprio criador no painel HTTPS, criptografadas com `STORE_SETTINGS_KEY`, e nunca entram no APK, Git ou chat.
+
+A chave de assinatura Android e sua senha ficam fora do repositório; preserve o backup privado para permitir atualizações do mesmo aplicativo. Não contrate cadastro pago de desenvolvedor. Entregue a opção PWA como instalação sem cadastro pago e explique as condições atuais do Android quando forem relevantes.

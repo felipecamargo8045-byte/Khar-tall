@@ -1,6 +1,6 @@
 # Khar Tall — revisão de custos
 
-Revisão em 15/10/2026. Orçamento autorizado pelo criador: **R$ 0**. Não autoriza compras, recargas, assinaturas nem conversão para planos pagos.
+Revisão em 15/10/2026. Infraestrutura e desenvolvimento: **R$ 0**. Na loja opcional, o criador autorizou as tarifas do Mercado Pago por venda; não autorizou mensalidades, recargas, assinaturas nem conversão da hospedagem para planos pagos.
 
 ## Infraestrutura confirmada
 
@@ -22,13 +22,13 @@ O tier `starter` exibido para **compilação** do Render é o pipeline padrão; 
 - ETag e respostas `304` evitam reenviar arquivos que o navegador já tem.
 - Imagens e WAVs preservam seus checksums. Não há redução de resolução, taxa de amostragem ou qualidade.
 - APIs privadas e eventos de partida não recebem cache público.
-- Dependência do projeto: PostgreSQL (`pg`); nenhuma biblioteca ou serviço de cobrança por jogada, anúncio ou compra foi incluído.
+- Dependência do projeto: PostgreSQL (`pg`); nenhuma biblioteca ou serviço de cobrança por jogada ou anúncio foi incluído. A loja usa a API REST do Mercado Pago somente para compras e conferência de seus pagamentos.
 
-## Pendência que impede afirmar bloqueio total de cobrança
+## Conferência do painel financeiro pelo criador
 
-**O painel de cobrança do Render exige login e não pôde ser acessado nesta revisão.** O conector permite consultar recursos, mas não oferece gerenciamento de cartões, assinatura do workspace ou limite de gastos do pipeline.
+**O criador informou que verificou o painel e que estava tudo correto, em 15/10/2026.** A sessão compartilhada não funcionou, portanto não houve leitura independente de cartões/faturas por este agente. O conector permite consultar recursos, mas não oferece gerenciamento de cartões, assinatura do workspace ou limite de gastos do pipeline.
 
-É necessário conferir nesse painel:
+Os pontos enviados ao criador para essa conferência foram:
 
 1. Plano do workspace **Hobby, US$ 0**. O plano da instância e o do workspace são independentes.
 2. Limite de gastos do **Build Pipeline em US$ 0**.
@@ -59,3 +59,14 @@ A conta Fal já havia recusado geração por falta de créditos. O jogo não dep
 - [Planos Neon](https://neon.com/docs/introduction/plans)
 - [Limites de consumo Neon](https://neon.com/docs/guides/consumption-limits)
 - [Cobrança e mudança de planos Neon](https://neon.com/docs/introduction/manage-billing)
+
+## Aplicativo e loja — versão 3.5.0
+
+- APK assinado, para Android 8 ou superior, com a mídia original incluída e partidas locais/IA offline. Sem SDK de anúncios, geração paga ou serviço móvel contratado.
+- PWA instalável pelo Chrome; APIs de conta e pagamento não entram no cache offline.
+- O cadastro para distribuição ampla de APKs em aparelhos certificados e a publicação na Play Store podem exigir taxa de desenvolvedor. Não foi contratado esse cadastro. A opção PWA permanece disponível sem esse cadastro.
+- Loja física e digital usa compras únicas do Mercado Pago Checkout Pro. Não há assinatura nem cobrança recorrente implementada. As tarifas dependem da conta, do meio e do prazo; o criador deve consultá-las no Mercado Pago.
+- Vendas permanecem fechadas até o criador criar sua conta, confirmar qual usuário administrará a loja, conectar o Mercado Pago, cadastrar produtos e abrir as vendas.
+- O criador poderá conectar Access Token e assinatura de Webhooks diretamente no painel da loja, após ter acesso de administrador. Segredos ficam criptografados no servidor.
+
+Referências adicionais: [Mercado Pago Checkout Pro](https://www.mercadopago.com.br/developers/pt/docs/checkout-pro-preferences/overview), [tarifas e ausência de mensalidade do checkout](https://www.mercadopago.com.br/blog/comparando-taxas-checkout-gateways-pagamento), [distribuição Android](https://support.google.com/android-developer-console/answer/16640817?hl=en).

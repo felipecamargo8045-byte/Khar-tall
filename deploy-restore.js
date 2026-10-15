@@ -36,6 +36,7 @@ for(const [name,meta] of Object.entries(audioManifest)){
  console.log('Verified recording:',name);
 }
 
+execFileSync(process.execPath,['scripts/prepare-app.js'],options);
 execFileSync('npm',['ci','--omit=dev','--ignore-scripts','--no-audit','--no-fund'],options);
 execFileSync(process.execPath,['scripts/check.js'],options);
 

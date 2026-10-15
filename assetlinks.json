@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "br.com.khartall.jogo",
+      "sha256_cert_fingerprints": [
+        "93:CD:D4:5C:04:58:AC:C3:AC:F7:A8:15:65:EB:D0:7B:06:D5:04:8C:7D:53:FD:1E:F9:6F:60:69:67:8D:CD:A5"
+      ]
+    }
+  }
+]
