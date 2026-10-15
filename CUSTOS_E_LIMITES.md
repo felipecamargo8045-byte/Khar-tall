@@ -70,3 +70,9 @@ A conta Fal já havia recusado geração por falta de créditos. O jogo não dep
 - O criador poderá conectar Access Token e assinatura de Webhooks diretamente no painel da loja, após ter acesso de administrador. Segredos ficam criptografados no servidor.
 
 Referências adicionais: [Mercado Pago Checkout Pro](https://www.mercadopago.com.br/developers/pt/docs/checkout-pro-preferences/overview), [tarifas e ausência de mensalidade do checkout](https://www.mercadopago.com.br/blog/comparando-taxas-checkout-gateways-pagamento), [distribuição Android](https://support.google.com/android-developer-console/answer/16640817?hl=en).
+
+## Portal oficial — 15/10/2026
+
+O portal em `/portal` reutiliza o servidor Render, o banco, as contas, o APK 3.5.1 e o Mercado Pago existentes. Não foram contratados domínio, servidor, disco, assinatura ou API adicionais. A entrada do Sites encaminha ao portal canônico para manter sessões e salvamentos na mesma origem. Nenhuma camada de autenticação paralela é provisionada. Os limites e as pendências de conferência financeira descritos acima continuam aplicáveis.
+
+Nesta revisão, as APIs públicas confirmaram banco persistente e cadastro ativo; o catálogo está vazio e o checkout fechado. Vendas dependem de o criador indicar o usuário administrador e configurar recebimento, condições e produtos. Não foram feitas compras reais.

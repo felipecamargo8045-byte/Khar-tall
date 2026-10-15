@@ -2,6 +2,7 @@
 
 Jogo de estratégia do universo **Ecos da Chama: O Último Victorino**, criado por Felipe Camargo.
 
+- [Portal oficial](https://khar-tall-online.onrender.com/portal): início, modos de jogo, guia, aplicativo, loja e conta.
 - [Jogar online](https://khar-tall-online.onrender.com/online): salas privadas para duas pessoas.
 - [Jogo local e IA](https://khar-tall-online.onrender.com/): dois jogadores no mesmo dispositivo ou adversário controlado pelo jogo.
 - [Minha conta](https://khar-tall-online.onrender.com/conta): cadastro opcional, login, recuperação por código e exclusão.
@@ -77,3 +78,11 @@ Compras são avulsas. O servidor calcula valores; notificações exigem HMAC vá
 ### Atualização 3.5.1
 
 Toques discretos na escolha de modo, dificuldade, botões e peças; colocação de armadilhas com retorno sonoro. A preparação mostra o aviso breve “Coloque suas armadilhas” e uma confirmação destacada com contagem, fixa acima da navegação no celular. A tela de privacidade continua ocultando as armadilhas na troca de jogador; no online, somente o jogador que está preparando vê o aviso e a confirmação. Os novos sons respeitam a preferência de áudio.
+
+## Portal oficial
+
+`/portal` é a entrada do portal de Felipe Camargo. `/jogar` serve exatamente a mesma interface de `/`: não recria motor, contas ou banco. A raiz permanece disponível para preservar o APK 3.5.1 e os atalhos existentes. Não há iframe, proxy de login, CORS aberto ou remoção de `X-Frame-Options: DENY`. Partidas e preferências mantêm suas chaves de armazenamento na mesma origem.
+
+Os atalhos `?abrir=ia`, `tutorial`, `regras` e `compendio` abrem as telas existentes quando não há uma partida pendente; o convite para retomar uma partida salva tem prioridade. `/loja#owned` e `/loja#orders` abrem coleção e pedidos. O cadastro/login aceita retorno somente para rotas locais autorizadas, incluindo `/portal` e `/jogar`.
+
+O portal consulta catálogo, identidade e metadados do APK nas APIs atuais. O link do APK continua apontando para o binário original, com o mesmo hash e certificado. O portal não cria outra conta de administrador: somente `STORE_ADMIN_USERNAMES`, indicado pelo criador, autoriza a gestão. A publicação pelo Sites mantém uma entrada que encaminha à origem canônica; nenhuma credencial ou sessão é retransmitida entre domínios.

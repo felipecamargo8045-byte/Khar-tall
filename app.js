@@ -916,7 +916,7 @@ function setupResume(){let old=null;try{old=JSON.parse(localStorage.getItem(STOR
  if(old&&old.version===2&&old.phase!=='over')showModal({title:'Bem-vindo de volta ao Khar Tall',intro:'Encontrei uma partida V2 salva neste navegador. Deseja retomá-la?',choices:[
   {label:'Continuar partida',fn:()=>{game=KharTall.restore(old);clearSelection();inspectedId=null;dismissModal();if(game.s.mode==='local')cover(`Vamos retomar a partida. Entregue o dispositivo aos ${sideName(currentSide())}; suas armadilhas permanecerão privadas.`);else{veil=false;beginClock();render();scheduleAI();}}},
   {label:'Começar uma nova partida',fn:openStart}],footer:[{label:'✦ Criar conta',primary:true,fn:()=>el('accountButton').click()}]});
- else openStart();}
+ else {const entry=new URLSearchParams(location.search).get('abrir');if(entry==='ia')openDifficulty();else if(entry==='tutorial')showTutorial(0,true);else if(entry==='regras')showRules();else if(entry==='compendio')openCodex();else openStart();}}
 function tick(){if(veil||informationalClockPaused||modal?.title?.startsWith('Uma nova batalha')||modal?.title?.startsWith('Escolha a dificuldade')||modal?.title?.startsWith('Bem-vindo')||game.s.phase==='over'||!clockEnd)return;
  secsLeft=Math.max(0,Math.ceil((clockEnd-Date.now())/1000));paintClock();
  if(secsLeft>0)return;clockEnd=0;
