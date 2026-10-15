@@ -1,0 +1,14 @@
+'use strict';
+const fs=require('node:fs');
+const patch=(file,needle,replacement)=>{const before=fs.readFileSync(file,'utf8');if(!before.includes(needle))throw Error('Falha de atualização: '+file+' ('+needle.slice(0,50)+')');fs.writeFileSync(file,before.replace(needle,replacement),'utf8');};
+fs.writeFileSync('package.json',JSON.stringify({name:'khar-tall-online',version:'3.3.0',private:true,engines:{node:'>=22.13'},dependencies:{pg:'^8.13.3'}},null,2));
+patch('server.js',"const {KharTall}=require('./engine.js');","const {KharTall}=require('./engine.js');\nconst accountAuth=require('./auth-server.js');");
+patch('server.js',"const STATIC=new Map([['/','index.html']","const STATIC=new Map([['/conta','conta.html'],['/conta.html','conta.html'],['/auth-client.js','auth-client.js'],['/','index.html']");
+patch('server.js',"async function handler(req,res){try{const u=new URL(req.url,'http://local'),pathname=u.pathname;","async function handler(req,res){try{const u=new URL(req.url,'http://local'),pathname=u.pathname;\n if(pathname.startsWith('/api/auth/')){await accountAuth.handle(req,res,pathname);return;}");
+patch('server.js',"authentication:false,registration_enabled:REGISTRATION_ENABLED","authentication:accountAuth.enabled,registration_enabled:accountAuth.enabled&&process.env.ACCOUNT_REGISTRATION_ENABLED==='true'");
+patch('server.js',"const REGISTRATION_ENABLED=process.env.ENABLE_ACCOUNT_REGISTRATION==='true'||(LOCALHOST&&process.env.ENABLE_ACCOUNT_REGISTRATION!=='false');","const REGISTRATION_ENABLED=false; // Legacy PII collection disabled permanently.");
+fs.writeFileSync('account.js',"(()=>{'use strict';const b=document.getElementById('accountButton');if(b)b.addEventListener('click',()=>location.assign('/conta'));})();\n");
+patch('online.html','<div class="topActions">','<div class="topActions"><a class="actionBtn" href="/conta">Minha conta</a>');
+patch('index.html','<div class="topActions">','<div class="topActions"><a class="actionBtn" href="/conta">Minha conta</a>');
+fs.copyFileSync('privacy-public.html','privacidade.html');
+console.log('Cadastro: autenticação Neon instalada; legado removido.');
