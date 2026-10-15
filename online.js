@@ -14,8 +14,9 @@ const guides={
  archer:'Move 1 casa em qualquer direção. Ataca até 2 casas nas diagonais em X, sem atravessar outras peças. Evolui para Batedor no Campo de Cura inimigo ativo.'
 };
 const audioPlayer=KharTallAudio.create({enabled:soundOn});
+const gameUI=KharTallUI.create({audio:audioPlayer,onConfirm:()=>{if(actionAllowed()&&game.s.phase==='setup')submit('ready');}});
 if(soundOn)audioPlayer.preload();
-function setSound(){soundOn=!soundOn;localStorage.setItem('kt-online-sound',soundOn?'yes':'no');audioPlayer.setEnabled(soundOn);$('sound').textContent=soundOn?'♫ Som ligado':'♫ Som desligado';$('sound').setAttribute('aria-pressed',String(soundOn));if(soundOn){audioPlayer.preload();audioPlayer.utility('summon');}}
+function setSound(){soundOn=!soundOn;localStorage.setItem('kt-online-sound',soundOn?'yes':'no');audioPlayer.setEnabled(soundOn);$('sound').textContent=soundOn?'♫ Som ligado':'♫ Som desligado';$('sound').setAttribute('aria-pressed',String(soundOn));if(soundOn){audioPlayer.preload();audioPlayer.ui('confirm');}}
 $('sound').onclick=setSound;$('sound').textContent=soundOn?'♫ Som ligado':'♫ Som desligado';$('sound').setAttribute('aria-pressed',String(soundOn));
 function toast(msg){let n=$('alert');n.textContent=msg;n.classList.add('visible');clearTimeout(toastHandle);toastHandle=setTimeout(()=>n.classList.remove('visible'),4300);}
 function errMsg(e){return e.message||'Falha de conexão.';}
@@ -32,7 +33,8 @@ function myTurn(){return room&&game&&room.status==='active'&&(game.s.phase==='se
 function actionAllowed(){return myTurn()&&!loading;}
 function pickOptions(title,help,options){$('choiceTitle').textContent=title;$('choiceHelp').textContent=help||'';const root=$('choiceButtons');root.replaceChildren();for(const o of options){let b=document.createElement('button');b.type='button';b.textContent=o.label;b.onclick=()=>{closeOptions();o.choose();};root.append(b);}$('choiceOverlay').hidden=false;}
 function closeOptions(){$('choiceOverlay').hidden=true;}$('cancelChoice').onclick=closeOptions;
-async function submit(op,input={}){if(!room||loading)return;loading=true;try{await request(`/api/online/rooms/${room.code}/action`,{op,revision:lastRevision,...input});selected=null;picker=null;closeOptions();await refresh();}catch(e){toast(errMsg(e));await refresh();}finally{loading=false;}}
+async function submit(op,input={}){if(!room||loading)return;loading=true;renderPreparation();try{await request(`/api/online/rooms/${room.code}/action`,{op,revision:lastRevision,...input});if(op==='trap')audioPlayer.ui('place');selected=null;picker=null;closeOptions();await refresh();}catch(e){toast(errMsg(e));await refresh();}finally{loading=false;renderPreparation();}}
+function renderPreparation(){gameUI.preparation({active:!!game&&game.s.phase==='setup'&&!!myTurn(),key:room?.code+':'+game?.s.setupSide,count:game?.s.traps.filter(t=>t.side===room.side).length||0,side:colors[room?.side]||'',busy:loading});}
 function soundEvent(e){if(!e||!room||!soundOn)return;const result=KharTallAudio.plan(e);audioPlayer.sequence(result.cues);if(result.utility)audioPlayer.utility(result.utility);}
 async function refresh(){if(!room)return;try{const r=await fetch('/api/online/rooms/'+room.code,{credentials:'same-origin',cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Sala inacessível.');if(d.revision<lastRevision)return;connected=true;
   const old=lastEvent,priorRevision=lastRevision; if(d.revision!==lastRevision){lastRevision=d.revision;lastEvent=d.lastEvent; if(priorRevision>=0){soundEvent(d.lastEvent,old);}}clockOffset=d.serverMs-Date.now();deadline=d.deadlineMs||0;room=d;game=KharTall.restore(d.state);$('connection').textContent='Conectado · você controla os '+colors[d.side]+(d.hasOpponent?' · dois jogadores na sala':' · esperando adversário');$('roomTitle').textContent='Sala '+d.code;
@@ -57,7 +59,7 @@ function boardClick(x,y){if(!game||!room)return;const p=pieceAt(x,y);if(game.s.p
  let choices=optionsFor().filter(o=>o.x===x&&o.y===y);
  if(choices.length){if(choices.length>1)pickOptions('Qual ação usar?','Escolha a habilidade desejada para esta casa.',choices.map(o=>({label:actionLabel(o.kind),choose:()=>useAction(o)})));
   else useAction(choices[0]);return;}
- if(p){selected=p.id;paint();}else{selected=null;paint();}
+ if(p){audioPlayer.ui('tap');selected=p.id;paint();}else{selected=null;paint();}
 }
 function actionLabel(k){return ({move:'Mover',hit:'Ataque normal',charge:'Investida do Colosso',fieldCharge:'Investida ao campo',smash:'Esmagamento',rescue:'Resgate Real',wolfHit:'Salto de ataque',area:'Ataque em área',line:'Ataque em linha',mark:'Marcar e paralisar',execute:'Executar marca',copyMove:'Salto copiado',copyWolfHit:'Ataque copiado do Lobo',copyCharge:'Investida copiada',copyHit:'Ataque copiado',copyArea:'Área copiada',copyLine:'Linha copiada'})[k]||k;}
 function useAction(a){if(['area','copyArea'].includes(a.kind)){
@@ -121,7 +123,7 @@ function paint(){if(!game||!room)return;let s=game.s,$board=$('onlineBoard');$bo
  const logs=$('log');logs.replaceChildren();for(const entry of s.logs.slice(0,12)){const d=document.createElement('div');d.className='logentry';d.textContent=entry.msg;logs.append(d);}
  let p=game.piece(selected);$('selectedTitle').textContent=p?aliases[p.type]+' · '+colors[p.side]:'Nenhuma peça';$('pieceGuide').textContent=p?guides[p.type]:'Toque numa unidade para consultar suas regras.';
  $('unitDescription').textContent=p?`${aliases[p.type]} — ${guides[p.type]}`:'Toque em uma peça para ver descrição, ataque e especial.';
- paintActions();paintTime();}
+ paintActions();paintTime();renderPreparation();}
 function paintTime(){if(!deadline||room?.status==='waiting'||game?.s.phase==='over'){$('clock').textContent='--:--';return;}const ms=Math.max(0,deadline-Date.now()-clockOffset),sec=Math.max(0,Math.ceil(ms/1000));$('clock').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}
 setInterval(paintTime,250);
 async function init(){const code=new URLSearchParams(location.search).get('room')?.toUpperCase();if(!code)return;

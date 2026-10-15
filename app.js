@@ -10,6 +10,7 @@ const PREF_STORE='khar-tall-v21-pref';
 let prefs={sound:true,illustrated:true};try{prefs={...prefs,...JSON.parse(localStorage.getItem(PREF_STORE)||'{}')};}catch(e){}
 let battleFx=[],toastTimeout=null;
 const audioPlayer=KharTallAudio.create({enabled:prefs.sound});
+const gameUI=KharTallUI.create({audio:audioPlayer,onConfirm:()=>{if(!isInputBlocked()&&game.s.phase==='setup')finishSetup();}});
 function primeScoutWavs(){return audioPlayer.preload();}
 
 // Momentos dramáticos: os quatro motivos musicais são disparados apenas por
@@ -357,10 +358,12 @@ window.addEventListener('khartall-account-open',()=>{
  accountWasRunning=!!clockEnd;
  if(accountWasRunning)pauseClock();
  clearTimeout(aiTimer);
+ renderPreparation();
 });
 window.addEventListener('khartall-account-close',()=>{
  if(accountWasRunning&&game.s.phase!=='over'&&!veil&&!modal&&secsLeft>0){clockEnd=Date.now()+secsLeft*1000;paintClock();}
  accountWasRunning=false;
+ renderPreparation();
  if(isAI())scheduleAI();
 });
 function paintClock(){const total=Math.max(0,Math.min(60,secsLeft));el('timer').textContent=`${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;el('timer').classList.toggle('urgent',total<=10);el('clockFill').style.width=(total/60*100)+'%';}
@@ -383,7 +386,8 @@ function dismissModal(){
   if(isAI())scheduleAI();
  }
 }
-function paintModal(){const root=el('modalRoot');root.replaceChildren();if(!modal&&!veil)return;
+function renderPreparation(){const s=game.s;gameUI.preparation({active:s.phase==='setup'&&!isInputBlocked(),key:s.setupSide,count:s.traps.filter(t=>t.side===s.setupSide).length,side:sideName(s.setupSide)});}
+function paintModal(){const root=el('modalRoot');root.replaceChildren();renderPreparation();if(!modal&&!veil)return;
  const backdrop=one('div','', 'modalCover');let box=one('div','', 'modalPanel');
  if(modal?.visual==='start')box.classList.add('startHero');
  if(modal?.visual==='codex')box.classList.add('codexModal');
@@ -571,7 +575,7 @@ function boardClick(x,y){
  if(!isHumanTurn()||s.phase==='over'){if(p)renderBoardNotice();return;}
  if(s.phase==='setup'){
   if(p){renderBoardNotice();return;}
-  inspectedId=null;if(game.placeTrap(s.setupSide,x,y)){save();render();}return;
+  inspectedId=null;if(game.placeTrap(s.setupSide,x,y)){audioPlayer.ui('place');save();render();}return;
  }
  if(s.phase!=='play')return;
  if(picker){handlePicker(x,y);return;}
@@ -580,7 +584,7 @@ function boardClick(x,y){
   else showModal({title:'Escolha o ataque',intro:'Há mais de uma habilidade válida contra essa casa.',choices:actions.map(a=>({label:actionLabel(a),fn:()=>{dismissModal();onActionClicked(a);}})),footer:[{label:'Cancelar',fn:dismissModal}]});
   return;
  }
- if(p){if(p.side===s.side){selectedId=p.id;orientation='up';}else clearSelection();render();return;}
+ if(p){audioPlayer.ui('tap');if(p.side===s.side){selectedId=p.id;orientation='up';}else clearSelection();render();return;}
  inspectedId=null;clearSelection();render();
 }
 function actionLabel(a){return {move:'Mover',hit:'Ataque normal',charge:'Investida do Colosso',fieldCharge:'Investida para campo mágico',smash:'Esmagamento',rescue:'Resgate Real',wolfHit:'Salto de ataque',area:'Ataque em área (até 3 alvos)',line:'Ataque em linha',mark:'Marcar e paralisar',execute:'Executar marca',copyMove:'Usar salto copiado',copyWolfHit:'Ataque copiado do Lobo',copyCharge:'Investida copiada',copyHit:'Ataque copiado',copyArea:'Ataque em área copiado',copyLine:'Ataque em linha copiado'}[a.kind]||a.kind;}
@@ -749,7 +753,7 @@ function renderSelection(){const pane=el('selectionBody'),title=el('selectionTit
   let cnt=game.s.traps.filter(t=>t.side===game.s.setupSide).length;
   title.textContent=`Armadilhas dos ${sideName(game.s.setupSide)}`;
   pane.innerHTML=`<div class="chips"><span class="chip">${cnt}/2 armadilhas</span><span class="chip warn">60 segundos</span></div><p>Toque numa casa vazia que não seja mágica para colocar uma armadilha. Toque na mesma casa para retirá-la. É possível mudar as posições até confirmar.</p><p>Se não colocar ambas a tempo, as restantes serão perdidas.</p>`;
-  actions.append(makeActionButton('Confirmar preparação',()=>finishSetup(),true));return;
+  actions.append(makeActionButton(`Confirmar armadilhas (${cnt}/2)`,()=>finishSetup(),true));return;
  }
  if(picker){title.textContent={area:'Escolha até 3 alvos',summon:'Invocação',reunionAlly:'Reunião: escolha o aliado',reunionDest:'Reunião: escolha a casa'}[picker.kind]||'Escolha';
   pane.innerHTML=`<div class="editorPanel">${{area:'Marque até 3 inimigos visíveis ao Guardião (o primeiro alvo já foi escolhido).',summon:'Toque numa casa verde adjacente ao Cristal.',reunionAlly:'Toque numa peça aliada, incluindo o Rei.',reunionDest:'Toque numa casa livre do tabuleiro. Casas mágicas também são válidas.'}[picker.kind]}</div>`;
@@ -920,7 +924,7 @@ function tick(){if(veil||informationalClockPaused||modal?.title?.startsWith('Uma
  const before=game.s.turnSerial,bside=game.s.side;clearTimeout(aiTimer);game.pass('60 segundos esgotados: jogador perdeu apenas o turno.');dismissModal();postChange(bside,before);
 }
 function wire(){applyPrefs();el('codexButton').onclick=openCodex;el('tutorialButton').onclick=()=>showTutorial(0);
- el('audioToggle').onclick=()=>{prefs.sound=!prefs.sound;savePrefs();applyPrefs();if(prefs.sound)sound('summon');};
+ el('audioToggle').onclick=()=>{prefs.sound=!prefs.sound;savePrefs();applyPrefs();if(prefs.sound)audioPlayer.ui('confirm');};
  el('artToggle').onclick=()=>{prefs.illustrated=!prefs.illustrated;savePrefs();applyPrefs();};
  el('newGame').onclick=()=>showModal({title:'Recomeçar a partida?',intro:'Isso apaga a partida atual salva neste navegador.',choices:[{label:'Sim, iniciar nova batalha',fn:openStart}],footer:[{label:'Cancelar',fn:dismissModal}]});
  el('helpButton').onclick=showRules;el('passTurn').onclick=()=>passTurn();el('clearSelect').onclick=()=>{clearSelection();inspectedId=null;render();};

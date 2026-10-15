@@ -57,7 +57,7 @@ class Player{
   this.bytes=new Map();this.buffers=new Map();this.decoding=new Map();this.epoch=0;
   this.Context=options.AudioContext||root.AudioContext||root.webkitAudioContext;
   this.fetch=options.fetch||root.fetch?.bind(root);this.now=options.now||Date.now;
-  this.maxDelay=2000;this.failed=new Set();
+  this.maxDelay=2000;this.failed=new Set();this.uiBuffers=new Map();this.lastUI=-Infinity;
   if(root.document){const unlock=()=>{if(this.enabled)this.unlock().catch(()=>{});};
    root.document.addEventListener('pointerdown',unlock,{passive:true,capture:true});
    root.document.addEventListener('keydown',unlock,{passive:true,capture:true});}
@@ -123,6 +123,35 @@ class Player{
   }catch{return false;} // Never replace an unavailable recording with a harsh synthetic imitation.
  }
  play(key,delay=0,volume){return this.sequence([{key,delay,volume}]);}
+ async ui(kind='tap'){
+  if(!this.enabled||this.now()-this.lastUI<55)return false;
+  this.lastUI=this.now();const epoch=this.epoch;
+  try{
+   if(!(await this.unlock())||!this.enabled||epoch!==this.epoch)return false;
+   const ctx=this.ctx,key=kind==='confirm'?'confirm':kind==='place'?'place':'tap';
+   if(!this.uiBuffers.has(key)){
+    // Short, damped wooden taps: no ringing tail or extra audio download.
+    const rate=ctx.sampleRate,duration=key==='confirm'?.16:.075;
+    const buffer=ctx.createBuffer(1,Math.ceil(rate*duration),rate),data=buffer.getChannelData(0);
+    let seed=761;
+    for(let i=0;i<data.length;i++){
+     const t=i/rate;let value=0;
+     for(const [offset,pitch]of key==='confirm'?[[0,470],[.078,620]]:[[0,key==='place'?420:560]]){
+      const d=t-offset;if(d<0||d>.075)continue;
+      seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+      const noise=(seed/2147483648-1),attack=Math.min(1,d/.0025);
+      value+=attack*(.30*Math.sin(2*Math.PI*pitch*d)*Math.exp(-85*d)+.15*Math.sin(2*Math.PI*pitch*1.73*d)*Math.exp(-125*d)+.18*noise*Math.exp(-195*d))*Math.min(1,(.075-d)/.012);
+     }
+     data[i]=value;
+    }
+    this.uiBuffers.set(key,buffer);
+   }
+   const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=this.uiBuffers.get(key);gain.gain.value=.38;
+   source.connect(gain);gain.connect(this.output);this.active.add(source);
+   source.onended=()=>{this.active.delete(source);source.disconnect();gain.disconnect();};
+   source.start(ctx.currentTime+.003);return true;
+  }catch{return false;}
+ }
  async utility(kind){
   if(!this.enabled)return false;const epoch=this.epoch,requested=this.now();
   try{if(!(await this.unlock())||!this.enabled||epoch!==this.epoch||this.now()-requested>this.maxDelay)return false;

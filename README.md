@@ -56,7 +56,7 @@ Fontes dos novos efeitos:
 
 O manifesto registra origem, licença, processamento e checksum de cada recurso substituído. Os efeitos aguardam o carregamento do arquivo real; não há imitação sintetizada de ataques durante o primeiro carregamento. Desligar o som interrompe também efeitos agendados. Um limitador controla a soma de efeitos simultâneos. Armadilhas anulam o som do ataque bloqueado e as pisadas da Investida correspondem à distância efetivamente percorrida. Vitória, perda do Rei e perda do Guardião seguem prioridade musical para evitar motivos conflitantes.
 
-## Aplicativo Android e loja (3.5.0)
+## Aplicativo Android e loja (3.5.1)
 
 - [Instalar](https://khar-tall-online.onrender.com/instalar) — APK e PWA.
 - [Loja](https://khar-tall-online.onrender.com/loja) — catálogo físico/digital, pedidos e coleção por conta.
@@ -66,10 +66,14 @@ O APK usa uma WebView restrita à origem HTTPS do jogo; páginas, artes e sons s
 
 Sem emulador ou aparelho Android neste ambiente: a compilação, assinatura e integridade foram verificadas, mas a instalação e reprodução de áudio no aparelho precisam de conferência real.
 
-Para reconstruir: fornecer `--tools` com Android SDK platform 36, build-tools 36.0.0 e Eclipse ECJ 3.38.0; fornecer `--signing-dir` com a chave privada preservada; executar `python scripts/build-android.py --tools CAMINHO --signing-dir CAMINHO_PRIVADO --output downloads/khar-tall-3.5.0.apk`. Dependências de compilação são gratuitas e vêm dos distribuidores oficiais. Não gere uma nova chave para uma atualização.
+Para reconstruir: fornecer `--tools` com Android SDK platform 36, build-tools 36.0.0 e Eclipse ECJ 3.38.0; fornecer `--signing-dir` com a chave privada preservada; executar `python scripts/build-android.py --tools CAMINHO --signing-dir CAMINHO_PRIVADO --output downloads/khar-tall-3.5.1.apk`. Dependências de compilação são gratuitas e vêm dos distribuidores oficiais. Não gere uma nova chave para uma atualização.
 
 A loja usa o PostgreSQL existente em produção e SQLite apenas no desenvolvimento. A criação das tabelas é aditiva, em `store-db.js`. Configurar `STORE_ADMIN_USERNAMES` somente com o usuário confirmado pelo criador; `STORE_SETTINGS_KEY` é um segredo aleatório de 32 bytes representado por 64 dígitos hexadecimais. Com o painel autorizado, o próprio criador conecta o Mercado Pago e sua assinatura de Webhooks. Nunca enviar credenciais no chat. `PUBLIC_BASE_URL` mantém os retornos na URL canônica.
 
 Compras são avulsas. O servidor calcula valores; notificações exigem HMAC válido e leitura autenticada do pagamento. Valor, moeda, conta recebedora, modo de teste/produção e referência do pedido são conferidos antes da liberação. Repetições não duplicam a entrega; reembolso/chargeback retiram o acesso digital. Visuais alteram somente a aparência. Vendas físicas guardam dados de entrega em pedidos privados. Nenhum cartão é armazenado. Produtos e condições comerciais ainda precisam ser cadastrados pelo proprietário; o catálogo inicial está vazio.
 
 `tests/test_store.js` usa um provedor simulado e verifica autorização, CSRF, criptografia, preço, frete, assinatura, divergências, reenvio, reembolso, entrega e reinício sem fazer transações reais.
+
+### Atualização 3.5.1
+
+Toques discretos na escolha de modo, dificuldade, botões e peças; colocação de armadilhas com retorno sonoro. A preparação mostra o aviso breve “Coloque suas armadilhas” e uma confirmação destacada com contagem, fixa acima da navegação no celular. A tela de privacidade continua ocultando as armadilhas na troca de jogador; no online, somente o jogador que está preparando vê o aviso e a confirmação. Os novos sons respeitam a preferência de áudio.

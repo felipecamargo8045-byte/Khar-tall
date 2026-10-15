@@ -3,8 +3,11 @@
 No Gradle, cloud build, external runtime SDK or payment library is used.
 The signing directory MUST remain private and MUST be backed up for future updates.
 """
-import argparse, hashlib, json, os, pathlib, shutil, subprocess, tempfile, zipfile
+import argparse, hashlib, json, os, pathlib, shutil, subprocess, tempfile, zipfile, xml.etree.ElementTree as ET
 root=pathlib.Path(__file__).resolve().parent.parent
+manifest=ET.parse(root/'android/AndroidManifest.xml').getroot();ns='{http://schemas.android.com/apk/res/android}'
+version=manifest.attrib[ns+'versionName'];version_code=int(manifest.attrib[ns+'versionCode'])
+assert version==json.loads((root/'package.json').read_text())['version'], 'Android and server versions differ'
 p=argparse.ArgumentParser();p.add_argument('--tools',required=True);p.add_argument('--signing-dir',required=True);p.add_argument('--output',required=True);a=p.parse_args()
 tools=pathlib.Path(a.tools).resolve();signing=pathlib.Path(a.signing_dir).resolve();output=pathlib.Path(a.output).resolve()
 platform=tools/'platform/android-36/android.jar';build_tools=tools/'build-tools/android-16';ecj=tools/'ecj.jar'
@@ -22,7 +25,7 @@ if not keystore.exists():
 with tempfile.TemporaryDirectory(prefix='kt-android-') as tmp:
  work=pathlib.Path(tmp);assets=work/'assets';web=assets/'web';res=work/'res/drawable';classes=work/'classes';dex=work/'dex'
  for directory in [web,res,classes,dex]:directory.mkdir(parents=True,exist_ok=True)
- files=['index.html','online.html','conta.html','privacidade.html','loja.html','painel-loja.html','instalar.html','style.css','online.css','account.css','store.css','app-shell.css','audio.js','engine.js','app.js','online.js','auth-client.js','account.js','app-shell.js','store-client.js','store-admin.js','install.js','manifest.webmanifest']
+ files=['index.html','online.html','conta.html','privacidade.html','loja.html','painel-loja.html','instalar.html','style.css','online.css','account.css','store.css','app-shell.css','audio.js','game-ui.js','engine.js','app.js','online.js','auth-client.js','account.js','app-shell.js','store-client.js','store-admin.js','install.js','manifest.webmanifest']
  routes={}
  for file in files:shutil.copyfile(root/file,web/file);routes['/'+file]=file
  for url,file in {'/':'index.html','/online':'online.html','/conta':'conta.html','/loja':'loja.html','/painel-loja':'painel-loja.html','/instalar':'instalar.html'}.items():routes[url]=file
@@ -35,7 +38,7 @@ with tempfile.TemporaryDirectory(prefix='kt-android-') as tmp:
  shutil.copyfile(root/'icons/icon-512.png',res/'icon.png')
  resources=work/'resources.zip';unsigned=work/'unsigned.apk';aligned=work/'aligned.apk'
  run([build_tools/'aapt2','compile','--dir',work/'res','-o',resources])
- run([build_tools/'aapt2','link','-o',unsigned,'-I',platform,'--manifest',root/'android/AndroidManifest.xml','-A',assets,'-R',resources,'--min-sdk-version','26','--target-sdk-version','36','--version-code','350','--version-name','3.5.0'])
+ run([build_tools/'aapt2','link','-o',unsigned,'-I',platform,'--manifest',root/'android/AndroidManifest.xml','-A',assets,'-R',resources,'--min-sdk-version','26','--target-sdk-version','36','--version-code',version_code,'--version-name',version])
  sources=sorted((root/'android/src').rglob('*.java'))
  run(['java','-jar',ecj,'-8','-encoding','UTF-8','-bootclasspath',str(platform)+os.pathsep+str(build_tools/'core-lambda-stubs.jar'),'-d',classes,*sources])
  jar=work/'classes.jar'
@@ -52,5 +55,5 @@ with tempfile.TemporaryDirectory(prefix='kt-android-') as tmp:
  fingerprint=subprocess.check_output(['keytool','-exportcert','-keystore',keystore,'-storepass:file',password_file,'-alias','khar-tall'])
  sha=hashlib.sha256(fingerprint).hexdigest().upper();certificate=':'.join(sha[i:i+2]for i in range(0,len(sha),2))
  (root/'assetlinks.json').write_text(json.dumps([{'relation':['delegate_permission/common.handle_all_urls'],'target':{'namespace':'android_app','package_name':'br.com.khartall.jogo','sha256_cert_fingerprints':[certificate]}}],indent=2)+'\n')
- metadata={'file':output.name,'version':'3.5.0','version_code':350,'min_android':'8.0','size':output.stat().st_size,'sha256':hashlib.sha256(output.read_bytes()).hexdigest(),'certificate_sha256':certificate,'media_verified':True}
+ metadata={'file':output.name,'version':version,'version_code':version_code,'min_android':'8.0','size':output.stat().st_size,'sha256':hashlib.sha256(output.read_bytes()).hexdigest(),'certificate_sha256':certificate,'media_verified':True}
  output.with_suffix('.json').write_text(json.dumps(metadata,indent=2)+'\n');print(json.dumps(metadata))
