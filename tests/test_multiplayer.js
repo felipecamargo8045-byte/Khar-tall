@@ -44,6 +44,8 @@ async function req(path,method='GET',data=null,cookie=''){
  sseController.abort();
  const afterMove=(await req(`/api/online/rooms/${code}`,'GET',null,auth)).data;
  assert.equal(afterMove.state.turnSerial,initTurn+1);
+ assert.ok(Number.isFinite(afterMove.lastEvent.impactDelay));
+ assert.equal(typeof afterMove.lastEvent.attackBlocked,'boolean');
  assert.notDeepEqual(afterMove.state.pieces.find(p=>p.id===legal.p),beforeMove.state.pieces.find(p=>p.id===legal.p));
  // Agora é o turno do adversário, cujo 'pass' deve avançar normalmente.
  r=await req(`/api/online/rooms/${code}/action`,'POST',{op:'pass'},wrong);assert.equal(r.status,200);

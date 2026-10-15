@@ -39,8 +39,27 @@ async function body(req){if(!String(req.headers['content-type']||'').startsWith(
 function broadcast(code,revision){for(const res of listeners.get(code)||[])try{res.write(`event: update\ndata: ${JSON.stringify({revision})}\n\n`);}catch{listeners.get(code)?.delete(res);}}
 function sanitize(s,side){const x=structuredClone(s);x.traps=x.traps.filter(t=>t.side===side);return x;}
 function publicRoom(room,side){return {code:room.code,side,hasOpponent:!!room.blue_hash,status:room.status,revision:room.revision,deadlineMs:room.deadline_ms,serverMs:Date.now(),persistent:store.persistent,state:sanitize(JSON.parse(room.state_json),side),lastEvent:room.last_event?JSON.parse(room.last_event):null};}
-function snapshotAfter(game,before,action,side){const next=game.s;let lost=before.pieces.filter(p=>!next.pieces.some(q=>q.id===p.id));let wounded=before.pieces.filter(p=>p.type==='king').filter(p=>{const q=next.pieces.find(q=>q.id===p.id);return q&&q.hp<p.hp;}).map(p=>p.side);
- return {kind:action.op,actionKind:action.input?.kind||null,actorSide:side,pieceType:before.pieces.find(p=>p.id===action.input?.p)?.type||null,tech:action.input?.tech||null,target:{x:action.input?.x,y:action.input?.y},lost:lost.map(p=>({type:p.type,side:p.side,original:p.original})),wounded,winner:next.phase==='over'?next.winner:null,phase:next.phase,at:Date.now()};}
+function snapshotAfter(game,before,action,side){const next=game.s;
+ const lost=before.pieces.filter(p=>!next.pieces.some(q=>q.id===p.id));
+ const wounded=before.pieces.filter(p=>p.type==='king').filter(p=>{const q=next.pieces.find(q=>q.id===p.id);return q&&q.hp<p.hp;}).map(p=>p.side);
+ const actor=before.pieces.find(p=>p.id===action.input?.p),after=next.pieces.find(p=>p.id===actor?.id),kind=action.input?.kind||null;
+ const tech=actor?.type==='king'&&kind?.startsWith('copy')?actor.copy?.type||null:actor?.type==='king'&&['mark','execute'].includes(kind)?'scout':actor?.type||null;
+ const length=actor?Math.max(Math.abs(actor.x-action.input.x),Math.abs(actor.y-action.input.y)):0;
+ let impactDelay=150;
+ if(['mark','execute'].includes(kind))impactDelay=Math.max(420,length*120);
+ else if(['wolfHit','copyWolfHit'].includes(kind))impactDelay=310;
+ else if(['charge','copyCharge','fieldCharge'].includes(kind))impactDelay=360;
+ else if(kind==='smash')impactDelay=340;
+ else if(['hit','copyHit'].includes(kind)){
+  if(actor?.type==='archer'||tech==='archer')impactDelay=Math.max(400,length*245);
+  else if(actor?.type==='soldier'||tech==='soldier')impactDelay=250;
+ }
+ const trapTriggered=before.traps.some(t=>!next.traps.some(q=>q.side===t.side&&q.x===t.x&&q.y===t.y));
+ const attackBlocked=['wolfHit','copyWolfHit'].includes(kind)&&trapTriggered&&before.traps.some(t=>t.side!==side&&t.x===action.input.x&&t.y===action.input.y);
+ return {kind:action.op,actionKind:kind,actorSide:side,pieceType:actor?.type||null,tech,target:{x:action.input?.x,y:action.input?.y},
+  lost:lost.map(p=>({type:p.type,side:p.side,original:p.original})),wounded,winner:next.phase==='over'?next.winner:null,phase:next.phase,at:Date.now(),
+  impactDelay,trapTriggered,attackBlocked,chargeSteps:actor&&after?Math.max(Math.abs(after.x-actor.x),Math.abs(after.y-actor.y)):0};
+}
 async function updatedRoom(room,game,event,deadlineOverride){const n=Date.now();let deadline=deadlineOverride===undefined?(game.s.phase==='over'?null:(room.deadline_ms||n+TIME)):deadlineOverride;
  const result=await store.mutate(room.code,current=>{if(current.revision!==room.revision)fail(409,'A partida mudou. Atualize e tente novamente.');current.state_json=JSON.stringify(game.snapshot());current.deadline_ms=deadline;current.status=game.s.phase==='over'?'over':'active';current.last_event=event?JSON.stringify(event):null;return true;});
  const next=result.room;broadcast(room.code,next.revision);return next;}
@@ -52,7 +71,7 @@ async function checkExpiration(room){if(!room||room.status!=='active'||!room.dea
  const deadline=game.s.phase==='over'?null:Date.now()+TIME+(game.s.phase==='play'&&before.phase==='setup'?GRACE:0);
  return updatedRoom(room,game,{kind:'timeout',actionKind:'timeout',actorSide:before.phase==='setup'?before.setupSide:before.side,phase:game.s.phase,at:Date.now()},deadline);
 }
-const STATIC=new Map([['/','index.html'],['/index.html','index.html'],['/online','online.html'],['/online.html','online.html'],['/online.js','online.js'],['/online.css','online.css'],['/style.css','style.css'],['/account.css','account.css'],['/engine.js','engine.js'],['/app.js','app.js'],['/account.js','account.js'],['/privacidade.html','privacidade.html'],['/conta','conta.html'],['/conta.html','conta.html'],['/auth-client.js','auth-client.js']]);
+const STATIC=new Map([['/audio.js','audio.js'],['/','index.html'],['/index.html','index.html'],['/online','online.html'],['/online.html','online.html'],['/online.js','online.js'],['/online.css','online.css'],['/style.css','style.css'],['/account.css','account.css'],['/engine.js','engine.js'],['/app.js','app.js'],['/account.js','account.js'],['/privacidade.html','privacidade.html'],['/conta','conta.html'],['/conta.html','conta.html'],['/auth-client.js','auth-client.js']]);
 const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.webp':'image/webp','.png':'image/png','.wav':'audio/wav','.ico':'image/x-icon'};
 function serve(req,res,pathname){let rel=STATIC.get(pathname);if(!rel&&/^\/assets\/[A-Za-z0-9_.-]+$/.test(pathname))rel=pathname.slice(1);if(!rel)fail(404,'Página não encontrada.');
  const file=path.join(ROOT,rel);if(!file.startsWith(ROOT+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile())fail(404,'Arquivo não encontrado.');

@@ -37,3 +37,9 @@ O rito de início foi removido. O uivo individual original do Lobo foi preservad
 ## Verificação
 
 `npm test` valida regras canônicas, multiplayer, sigilo de armadilhas, autorização, revisões concorrentes, persistência e reinício. Com `ACCOUNTS_DATABASE_URL` de uma branch de testes, também valida cadastro, login, recuperação, exclusão e retomada da sala por conta. `npm run build` verifica a sintaxe, os arquivos e todos os recursos referenciados.
+
+## Áudio revisado
+
+Os 20 WAVs da primeira edição de áudio aprovada (V2.11) são preservados byte por byte. `audio.js` fornece o mesmo carregamento, volume relativo e agendamento nos modos local/IA e online. O ataque do Lobo usa o rosnado original e a mordida original com intervalo de 310 ms; a cópia do Rei usa a mesma sequência. O uivo solo continua exclusivo da morte por combate.
+
+Os efeitos aguardam o carregamento do arquivo real; não há imitação sintetizada de ataques durante o primeiro carregamento. Desligar o som interrompe também efeitos agendados. Um limitador controla a soma de efeitos simultâneos. Armadilhas anulam o som de mordida e as pisadas da Investida correspondem à distância efetivamente percorrida. Vitória, perda do Rei e perda do Guardião seguem prioridade musical para evitar motivos conflitantes.

@@ -8,74 +8,13 @@ const STORE='khar-tall-v2-save';
 const TOKEN_ART={king:'assets/token_king.webp',guardian:'assets/token_guardian.webp',colossus:'assets/token_colossus.webp',wolf:'assets/token_wolf.webp',scout:'assets/token_scout.webp',soldier:'assets/token_soldier.webp',archer:'assets/token_archer.webp'};
 const PREF_STORE='khar-tall-v21-pref';
 let prefs={sound:true,illustrated:true};try{prefs={...prefs,...JSON.parse(localStorage.getItem(PREF_STORE)||'{}')};}catch(e){}
-let soundCtx=null,scoutNoiseCache=null,battleFx=[],toastTimeout=null;
-// Efeitos reais (WAV) incorporados na versão HTML independente.
-const SCOUT_SFX={
- blueLaunch:'assets/batedor_azul_lancamento.wav',
- blueImpact:'assets/batedor_azul_impacto.wav',
- redLaunch:'assets/batedor_vermelho_lancamento.wav',
- redImpact:'assets/batedor_vermelho_explosao.wav',
- arrowLaunch:'assets/arqueiro_disparo.wav',
- arrowImpact:'assets/arqueiro_impacto.wav',
- swordSwing:'assets/soldado_espada_corte.wav',
- swordImpact:'assets/soldado_espada_impacto.wav',
- giantStep:'assets/colosso_passo_estrondoso.wav',
- groundSmash:'assets/colosso_esmagamento_rachadura.wav',
- royalWound:'assets/rei_primeira_vida_tam_tam_taam.wav',
- royalSuspense:'assets/rei_morto_guardiao_vivo_suspense.wav',
- royalGuardian:'assets/guardiao_original_trompeta.wav',
- royalVictory:'assets/vitoria_trompetas_marcha.wav',
- wolfGrowl:'assets/lobo_matilha_rosnado.wav',
- wolfBite:'assets/lobo_mordida_impacto.wav',
- wolfHowl:'assets/lobo_uivo_morte.wav',
- kingBlast:'assets/rei_ataque_explosao.wav',
- guardianArea:'assets/guardiao_ataque_area_ancestral.wav',
- guardianLine:'assets/guardiao_ataque_linha_ancestral.wav'
-};
-const scoutWavBuffers=new Map(),scoutWavPending=new Map();
-function getScoutWavData(url){
- if(url.startsWith('data:')){
-  const base64=url.slice(url.indexOf(',')+1),binary=atob(base64),bytes=new Uint8Array(binary.length);
-  for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
-  return Promise.resolve(bytes.buffer);
- }
- return fetch(url).then(r=>{if(!r.ok)throw Error('Áudio indisponível');return r.arrayBuffer();});
-}
-function primeScoutWavs(){
- try{
-  const C=window.AudioContext||window.webkitAudioContext;
-  if(!C)return;
-  soundCtx=soundCtx||new C();
-  Object.entries(SCOUT_SFX).forEach(([key,url])=>{
-   if(scoutWavBuffers.has(key)||scoutWavPending.has(key))return;
-   scoutWavPending.set(key,getScoutWavData(url)
-    .then(data=>soundCtx.decodeAudioData(data))
-    .then(buffer=>scoutWavBuffers.set(key,buffer))
-    .catch(()=>null));
-  });
- }catch(_){/* O sintetizador antigo continuará disponível. */}
-}
-function launchWav(ctx,key,at,volume){
- const b=scoutWavBuffers.get(key);if(!b)return false;
- const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=b;gain.gain.value=volume;
- source.connect(gain);gain.connect(ctx.destination);source.start(at);return true;
-}
+let battleFx=[],toastTimeout=null;
+const audioPlayer=KharTallAudio.create({enabled:prefs.sound});
+function primeScoutWavs(){return audioPlayer.preload();}
 
 // Momentos dramáticos: os quatro motivos musicais são disparados apenas por
 // transições reais do estado (vidas, morte do Guardião original e vitória).
-function playRoyalMoment(kind,delayMs=0){
- try{
-  const ctx=scoutAudioContext();if(!ctx)return;
-  const at=ctx.currentTime+Math.max(.015,delayMs/1000),key={wound:'royalWound',suspense:'royalSuspense',guardian:'royalGuardian',victory:'royalVictory'}[kind];
-  const volumes={wound:.73,suspense:.60,guardian:.66,victory:.76};
-  if(key&&scoutWavBuffers.has(key)){launchWav(ctx,key,at,volumes[kind]);return;}
-  // Compatibilidade para a primeira jogada, enquanto o WAV está decodificando.
-  primeScoutWavs();
-  const pitches={wound:[147,138,104],suspense:[62,61,58],guardian:[294,349,440],victory:[294,440,587]}[kind]||[147];
-  const durations=kind==='suspense'?[.72,.77,1.1]:[.3,.3,.68];
-  pitches.forEach((hz,i)=>scoutTone(ctx,ctx.destination,at+i*.42,durations[i],hz,hz*.92,.07,kind==='suspense'?'sine':'sawtooth'));
- }catch(_){/* Falha de áudio não modifica regras da partida. */}
-}
+function playRoyalMoment(kind,delayMs=0){if(!prefs.sound)return;const key={wound:'royalWound',suspense:'royalSuspense',guardian:'royalGuardian',victory:'royalVictory'}[kind];if(key)audioPlayer.play(key,delayMs);}
 function detectRoyalMoment(before,next,action){
  const oldPieces=[...before.pieces.values()];
  const wasKingHit=oldPieces.some(p=>p.type==='king'&&p.hp===2&&next.get(p.id)?.hp===1);
@@ -107,193 +46,18 @@ function royalImpactDelay(action){
  return 150;
 }
 function savePrefs(){try{localStorage.setItem(PREF_STORE,JSON.stringify(prefs));}catch(e){}}
-function applyPrefs(){document.body.classList.toggle('classicPieces',!prefs.illustrated);let a=el('artToggle'),b=el('audioToggle');
+function applyPrefs(){audioPlayer.setEnabled(prefs.sound);document.body.classList.toggle('classicPieces',!prefs.illustrated);let a=el('artToggle'),b=el('audioToggle');
  if(a){a.textContent=prefs.illustrated?'◉ Artes ativas':'◯ Símbolos clássicos';a.setAttribute('aria-pressed',String(prefs.illustrated));}
  if(b){b.textContent=prefs.sound?'♫ Som ligado':'♫ Som desligado';b.setAttribute('aria-pressed',String(prefs.sound));}}
 // Efeitos sonoros gerados no próprio navegador: nenhum áudio externo ou necessidade de rede.
-function sound(kind){if(!prefs.sound)return;try{
- let C=window.AudioContext||window.webkitAudioContext;if(!C)return;
- soundCtx=soundCtx||new C();if(soundCtx.state==='suspended')soundCtx.resume();
- let notes=({hit:[[180,.05],[120,.13]],magic:[[430,.08],[670,.15]],trap:[[300,.08],[145,.18]],heal:[[410,.09],[530,.12],[725,.19]],summon:[[320,.1],[480,.13],[650,.16]],move:[[185,.035]],charge:[[165,.12],[120,.11]],victory:[[390,.12],[490,.12],[590,.13],[780,.25]]})[kind]||[[280,.1]];
- let now=soundCtx.currentTime;
- notes.forEach(([freq,dur],i)=>{let osc=soundCtx.createOscillator(),gain=soundCtx.createGain(),start=now+i*.08;
- osc.type=['magic','heal','summon','victory'].includes(kind)?'sine':'triangle';osc.frequency.setValueAtTime(freq,start);osc.frequency.exponentialRampToValueAtTime(Math.max(80,freq*.78),start+dur);
- gain.gain.setValueAtTime(.0001,start);gain.gain.exponentialRampToValueAtTime(.052,start+.012);gain.gain.exponentialRampToValueAtTime(.0001,start+dur);
- osc.connect(gain);gain.connect(soundCtx.destination);osc.start(start);osc.stop(start+dur+.025);});
- }catch(e){}}
-// Batedor: efeitos próprios de Web Audio (sem downloads). Todos os eventos são
-// agendados no relógio de áudio; a detonação acontece na chegada do projétil.
-function scoutAudioContext(){
- if(!prefs.sound)return null;
- const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;
- soundCtx=soundCtx||new C();
- if(soundCtx.state==='suspended')soundCtx.resume().catch(()=>{});
- return soundCtx;
-}
-function scoutNoise(ctx){
- if(scoutNoiseCache?.sampleRate===ctx.sampleRate)return scoutNoiseCache;
- const buffer=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*1.6),ctx.sampleRate),ch=buffer.getChannelData(0);
- for(let i=0;i<ch.length;i++)ch[i]=Math.random()*2-1;
- scoutNoiseCache=buffer;return buffer;
-}
-function scoutTone(ctx,out,at,duration,startHz,endHz,gain,kind='sine'){
- const osc=ctx.createOscillator(),amp=ctx.createGain();osc.type=kind;
- osc.frequency.setValueAtTime(startHz,at);osc.frequency.exponentialRampToValueAtTime(Math.max(30,endHz),at+duration);
- amp.gain.setValueAtTime(.0001,at);amp.gain.exponentialRampToValueAtTime(gain,at+Math.min(.018,duration*.18));
- amp.gain.exponentialRampToValueAtTime(.0001,at+duration);
- osc.connect(amp);amp.connect(out);osc.start(at);osc.stop(at+duration+.01);
-}
-function scoutNoiseBurst(ctx,out,at,duration,filterType,initialFreq,finalFreq,gain){
- const node=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),amp=ctx.createGain();
- node.buffer=scoutNoise(ctx);filter.type=filterType;filter.Q.value=.8;
- filter.frequency.setValueAtTime(initialFreq,at);
- filter.frequency.exponentialRampToValueAtTime(Math.max(80,finalFreq),at+duration);
- amp.gain.setValueAtTime(.0001,at);amp.gain.exponentialRampToValueAtTime(gain,at+Math.min(.022,duration*.17));
- amp.gain.exponentialRampToValueAtTime(.0001,at+duration);
- node.connect(filter);filter.connect(amp);amp.connect(out);
- node.start(at,Math.random()*.18);node.stop(at+duration+.01);
-}
-function playScoutAttackAudio(variant,travelMs){
- try{
-  const ctx=scoutAudioContext();if(!ctx)return;
-  const master=ctx.createGain(),compressor=ctx.createDynamicsCompressor();
-  master.gain.value=.47;compressor.threshold.value=-18;compressor.ratio.value=5;
-  master.connect(compressor);compressor.connect(ctx.destination);
-  const at=ctx.currentTime+.025,travel=Math.max(.08,travelMs/1000),impact=at+travel;
-  // Agendamento simultâneo durante a interação: no celular a explosão toca
-  // mesmo que o usuário não toque novamente na tela no instante do impacto.
-  const prefix=variant==='blue'?'blue':'red';
-  if(scoutWavBuffers.has(prefix+'Launch')&&scoutWavBuffers.has(prefix+'Impact')){
-   launchWav(ctx,prefix+'Launch',at,.87);
-   launchWav(ctx,prefix+'Impact',impact,.94);
-   return;
-  }
-  // Compatibilidade: o efeito sintetizado mantém o jogo funcionando
-  // enquanto os WAVs são preparados ou em ambientes sem decodificação.
-  primeScoutWavs();
-  if(variant==='blue'){
-   // Fallback para browsers em que o WAV ainda não foi decodificado:
-   // estalo de trovão e rugido curto no lançamento, sem zumbido de laser.
-   scoutNoiseBurst(ctx,master,at,.045,'highpass',11000,1600,.36);
-   scoutNoiseBurst(ctx,master,at+.009,.45,'lowpass',750,100,.37);
-   scoutNoiseBurst(ctx,master,at+.043,.12,'bandpass',2000,290,.27);
-   scoutNoiseBurst(ctx,master,at+.117,.14,'lowpass',850,230,.13);
-   // Impacto: chiado eletrostático em muitos micro-estalos, sem explosão grave.
-   scoutNoiseBurst(ctx,master,impact,.07,'highpass',9600,2400,.36);
-   scoutNoiseBurst(ctx,master,impact+.025,.35,'highpass',6400,1650,.19);
-   for(let i=0;i<12;i++){
-    const pop=impact+.035+i*.029;
-    scoutNoiseBurst(ctx,master,pop,.009,'highpass',11000,3000,.16*(1-i/16));
-   }
-  }else{
-   // Segunda magia: jato de chamas em deslocamento.
-   scoutNoiseBurst(ctx,master,at,Math.max(.12,travel*.86),'lowpass',1900,420,.17);
-   scoutTone(ctx,master,at,Math.min(.48,travel),210,78,.095,'sawtooth');
-   // Explosão incendiária sincronizada com o impacto.
-   scoutNoiseBurst(ctx,master,impact,.43,'lowpass',5500,240,.28);
-   scoutNoiseBurst(ctx,master,impact+.022,.27,'bandpass',1100,210,.14);
-   scoutTone(ctx,master,impact,.42,165,39,.28,'sine');
-   scoutTone(ctx,master,impact+.045,.25,93,41,.11,'triangle');
-  }
- }catch(err){/* Áudio indisponível: mantém a partida e a animação funcionando. */}
-}
-// Arqueiro: soltura da corda + assobio da flecha; madeira/solo no impacto.
-// Reutiliza o mesmo cache WAV dos efeitos do Batedor e o relógio do Web Audio.
-function playArcherAttackAudio(travelMs){
- try{
-  const ctx=scoutAudioContext();if(!ctx)return;
-  const at=ctx.currentTime+.025,travel=Math.max(.08,travelMs/1000);
-  if(scoutWavBuffers.has('arrowLaunch')&&scoutWavBuffers.has('arrowImpact')){
-   launchWav(ctx,'arrowLaunch',at,.76);
-   launchWav(ctx,'arrowImpact',at+travel,.86);
-   return;
-  }
-  // Em conexões lentas, a flecha ainda terá áudio sem precisar bloquear o jogo.
-  primeScoutWavs();
-  scoutTone(ctx,ctx.destination,at,.20,470,185,.034,'triangle');
-  scoutNoiseBurst(ctx,ctx.destination,at+.03,Math.min(travel,.24),'bandpass',2200,880,.028);
-  scoutNoiseBurst(ctx,ctx.destination,at+travel,.13,'lowpass',900,160,.07);
- }catch(_){/* Sem áudio não significa sem jogada. */}
-}
-// Soldado: metal cortando o ar e impacto de lâmina. O segundo som só entra no acerto.
-function playSoldierSwordAudio(impactMs=250){
- try{
-  const ctx=scoutAudioContext();if(!ctx)return;
-  const at=ctx.currentTime+.025,travel=Math.max(.12,impactMs/1000);
-  if(scoutWavBuffers.has('swordSwing')&&scoutWavBuffers.has('swordImpact')){
-   launchWav(ctx,'swordSwing',at,.83);
-   launchWav(ctx,'swordImpact',at+travel,.78);
-   return;
-  }
-  primeScoutWavs();
-  // Compatibilidade para primeira execução caso os WAVs ainda carreguem.
-  scoutNoiseBurst(ctx,ctx.destination,at,.24,'bandpass',5600,380,.065);
-  scoutTone(ctx,ctx.destination,at+.025,.21,740,245,.02,'triangle');
-  scoutNoiseBurst(ctx,ctx.destination,at+travel,.12,'highpass',7500,700,.085);
-  scoutTone(ctx,ctx.destination,at+travel,.22,1900,390,.04,'triangle');
- }catch(_){/* jogo continua sem áudio se o navegador bloquear */}
-}
-// Colosso: três pancadas rápidas APENAS na Investida; Esmagamento ganha
-// um golpe distinto contra o chão. Os WAVs ficam no arquivo HTML offline.
-function playColossusChargeAudio(steps=3){
- try{
-  const ctx=scoutAudioContext();if(!ctx)return;
-  const count=Math.max(0,Math.min(3,Math.floor(steps)));
-  if(!count)return;
-  const at=ctx.currentTime+.11,spacing=.185;
-  if(scoutWavBuffers.has('giantStep')){
-   for(let i=0;i<count;i++)launchWav(ctx,'giantStep',at+i*spacing,.72+i*.05);
-  }else{
-   primeScoutWavs();
-   for(let i=0;i<count;i++){
-    const start=at+i*spacing;
-    scoutNoiseBurst(ctx,ctx.destination,start,.22,'lowpass',410,120,.21);
-    scoutTone(ctx,ctx.destination,start,.24,90,30,.14,'sine');
-   }
-  }
- }catch(_){/* A Investida continua funcionando se o áudio estiver indisponível. */}
-}
-function playColossusSmashAudio(delayMs=340){
- try{
-  const ctx=scoutAudioContext();if(!ctx)return;
-  const at=ctx.currentTime+Math.max(.09,delayMs/1000);
-  if(scoutWavBuffers.has('groundSmash'))launchWav(ctx,'groundSmash',at,.94);
-  else{
-   primeScoutWavs();
-   scoutNoiseBurst(ctx,ctx.destination,at,.74,'lowpass',1700,120,.35);
-   scoutTone(ctx,ctx.destination,at,.58,125,32,.22,'sine');
-   for(let i=0;i<5;i++)scoutNoiseBurst(ctx,ctx.destination,at+.12+i*.085,.10,'highpass',3400,900,.09);
-  }
- }catch(_){/* Sem som, a animação e as regras não são interrompidas. */}
-}
-// Sons exclusivos das feras, do Rei e da magia ancestral do Guardião.
-// O mesmo som é usado quando a habilidade é copiada pelo Rei.
-function playCharacterSfx(kind,delayMs=0){
- try{
-  const ctx=scoutAudioContext();if(!ctx)return;
-  const at=ctx.currentTime+Math.max(.018,delayMs/1000);
-  const volume={wolfGrowl:.66,wolfBite:.80,wolfHowl:.70,kingBlast:.78,guardianArea:.68,guardianLine:.78};
-  if(scoutWavBuffers.has(kind)){launchWav(ctx,kind,at,volume[kind]||.65);return;}
-  primeScoutWavs();
-  // Fallback na primeira abertura enquanto os seis WAVs são decodificados.
-  if(kind==='wolfGrowl'||kind==='wolfHowl'){
-   scoutTone(ctx,ctx.destination,at,kind==='wolfHowl'?1.3:.85,kind==='wolfHowl'?390:125,kind==='wolfHowl'?250:63,.11,'sawtooth');
-   scoutNoiseBurst(ctx,ctx.destination,at,.4,'lowpass',800,100,.11);
-  }else if(kind==='wolfBite'){
-   scoutNoiseBurst(ctx,ctx.destination,at,.22,'bandpass',2900,230,.14);
-  }else if(kind==='kingBlast'){
-   scoutNoiseBurst(ctx,ctx.destination,at,.55,'lowpass',5500,90,.31);
-   scoutTone(ctx,ctx.destination,at,.48,155,39,.21,'sine');
-  }else{
-   scoutNoiseBurst(ctx,ctx.destination,at,.72,'bandpass',kind==='guardianArea'?1300:2300,145,.12);
-   scoutTone(ctx,ctx.destination,at,.67,kind==='guardianArea'?84:140,48,.15,'triangle');
-  }
- }catch(_){/* Áudio opcional: a jogada continua normalmente. */}
-}
-function playWolfAttackAudio(delayMs=310){
- playCharacterSfx('wolfGrowl',0);
- playCharacterSfx('wolfBite',delayMs);
-}
+function sound(kind){if(prefs.sound)audioPlayer.utility(kind);}
+function playScoutAttackAudio(variant,travelMs){if(!prefs.sound)return;const prefix=variant==='blue'?'blue':'red';audioPlayer.sequence([{key:prefix+'Launch',delay:0},{key:prefix+'Impact',delay:Math.max(80,travelMs)}]);}
+function playArcherAttackAudio(travelMs){if(prefs.sound)audioPlayer.sequence([{key:'arrowLaunch',delay:0},{key:'arrowImpact',delay:Math.max(80,travelMs)}]);}
+function playSoldierSwordAudio(impactMs=250){if(prefs.sound)audioPlayer.sequence([{key:'swordSwing',delay:0},{key:'swordImpact',delay:Math.max(120,impactMs)}]);}
+function playColossusChargeAudio(steps=3){if(!prefs.sound)return;const count=Math.max(0,Math.min(3,Math.floor(steps)));audioPlayer.sequence(Array.from({length:count},(_,i)=>({key:'giantStep',delay:85+i*185,volume:.72+i*.05})));}
+function playColossusSmashAudio(delayMs=340){if(prefs.sound)audioPlayer.play('groundSmash',Math.max(65,delayMs-25));}
+function playCharacterSfx(kind,delayMs=0){if(prefs.sound)audioPlayer.play(kind,delayMs);}
+function playWolfAttackAudio(delayMs=310){if(prefs.sound)audioPlayer.sequence([{key:'wolfGrowl',delay:0},{key:'wolfBite',delay:delayMs}]);}
 function realImpactDelay(action,attacker){
  const k=action?.kind||'';
  if(['mark','execute'].includes(k)&&attacker)return Math.max(420,Math.max(Math.abs(attacker.x-action.x),Math.abs(attacker.y-action.y))*120);
@@ -326,7 +90,7 @@ function noteBattleFx(before,action){let next=new Map(game.s.pieces.map(p=>[p.id
  // ou sacrifício no Cristal. A vitória mantém prioridade sonora à fanfarra.
  if(action&&!(game.s.phase==='over'&&game.s.winner!==-1)){
   const attacker=before.pieces.get(action.p),wolves=[...before.pieces.values()].filter(p=>p.type==='wolf'&&!next.has(p.id));
-  wolves.forEach((p,i)=>battleFx.push({kind:'wolfDeath',x:p.x,y:p.y,delay:realImpactDelay(action,attacker)+i*130}));
+  wolves.forEach((p,i)=>battleFx.push({kind:'wolfDeath',x:p.x,y:p.y,delay:realImpactDelay(action,attacker)+i*130,silent:i>0}));
  }
  if(action){let kind=action.kind||'',attacker=before.pieces.get(action.p);
   if(['charge','copyCharge','fieldCharge'].includes(kind)&&attacker){
@@ -507,7 +271,7 @@ function showBattleFx(){
    popBattle('🐺 LOBO • ROSNADO DE MATILHA E MORDIDA');continue;
   }
   if(fx.kind==='wolfDeath'){
-   playCharacterSfx('wolfHowl',fx.delay);
+   if(!fx.silent)playCharacterSfx('wolfHowl',fx.delay);
    setTimeout(()=>popBattle('🐺 O UIVO DO LOBO CAÍDO'),fx.delay);
    continue;
   }

@@ -13,10 +13,10 @@ const guides={
  soldier:'Move 1 casa em qualquer direção. Ataca 1 casa em +. Evolui para Colosso no Campo de Cura inimigo ativo.',
  archer:'Move 1 casa em qualquer direção. Ataca até 2 casas nas diagonais em X, sem atravessar outras peças. Evolui para Batedor no Campo de Cura inimigo ativo.'
 };
-const sfx={wolfGrowl:'lobo_matilha_rosnado.wav',wolfBite:'lobo_mordida_impacto.wav',wolfDeath:'lobo_uivo_morte.wav',king:'rei_ataque_explosao.wav',kingWound:'rei_primeira_vida_tam_tam_taam.wav',kingDeath:'rei_morto_guardiao_vivo_suspense.wav',guardianArea:'guardiao_ataque_area_ancestral.wav',guardianLine:'guardiao_ataque_linha_ancestral.wav',guardianDeath:'guardiao_original_trompeta.wav',victory:'vitoria_trompetas_marcha.wav',scoutBlue:'batedor_azul_lancamento.wav',scoutBlueImpact:'batedor_azul_impacto.wav',scoutRed:'batedor_vermelho_lancamento.wav',scoutRedImpact:'batedor_vermelho_explosao.wav',archer:'arqueiro_disparo.wav',archerImpact:'arqueiro_impacto.wav',soldier:'soldado_espada_corte.wav',soldierImpact:'soldado_espada_impacto.wav',charge:'colosso_passo_estrondoso.wav',smash:'colosso_esmagamento_rachadura.wav'};
-function play(name,delay=0){if(!soundOn||!sfx[name])return;setTimeout(()=>{const a=new Audio('/assets/'+sfx[name]);a.volume=.56;a.play().catch(()=>{});},delay);}
-function setSound(){soundOn=!soundOn;localStorage.setItem('kt-online-sound',soundOn?'yes':'no');$('sound').textContent=soundOn?'♫ Som ligado':'♫ Som desligado';if(soundOn)play('soldier');}
-$('sound').onclick=setSound;$('sound').textContent=soundOn?'♫ Som ligado':'♫ Som desligado';
+const audioPlayer=KharTallAudio.create({enabled:soundOn});
+if(soundOn)audioPlayer.preload();
+function setSound(){soundOn=!soundOn;localStorage.setItem('kt-online-sound',soundOn?'yes':'no');audioPlayer.setEnabled(soundOn);$('sound').textContent=soundOn?'♫ Som ligado':'♫ Som desligado';$('sound').setAttribute('aria-pressed',String(soundOn));if(soundOn){audioPlayer.preload();audioPlayer.utility('summon');}}
+$('sound').onclick=setSound;$('sound').textContent=soundOn?'♫ Som ligado':'♫ Som desligado';$('sound').setAttribute('aria-pressed',String(soundOn));
 function toast(msg){let n=$('alert');n.textContent=msg;n.classList.add('visible');clearTimeout(toastHandle);toastHandle=setTimeout(()=>n.classList.remove('visible'),4300);}
 function errMsg(e){return e.message||'Falha de conexão.';}
 async function request(url,payload){const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(payload)});const dat=await res.json().catch(()=>({}));if(!res.ok)throw new Error(dat.error||`Erro ${res.status}`);return dat;}
@@ -33,26 +33,7 @@ function actionAllowed(){return myTurn()&&!loading;}
 function pickOptions(title,help,options){$('choiceTitle').textContent=title;$('choiceHelp').textContent=help||'';const root=$('choiceButtons');root.replaceChildren();for(const o of options){let b=document.createElement('button');b.type='button';b.textContent=o.label;b.onclick=()=>{closeOptions();o.choose();};root.append(b);}$('choiceOverlay').hidden=false;}
 function closeOptions(){$('choiceOverlay').hidden=true;}$('cancelChoice').onclick=closeOptions;
 async function submit(op,input={}){if(!room||loading)return;loading=true;try{await request(`/api/online/rooms/${room.code}/action`,{op,revision:lastRevision,...input});selected=null;picker=null;closeOptions();await refresh();}catch(e){toast(errMsg(e));await refresh();}finally{loading=false;}}
-function soundEvent(e,old){if(!e||e.at===old?.at||!room)return;
- if(e.winner!==null&&e.winner!==undefined){play('victory');return;}
- if(e.lost?.some(p=>p.type==='guardian'&&p.original))play('guardianDeath');
- if(e.lost?.some(p=>p.type==='king'))play('kingDeath');else if(e.wounded?.length)play('kingWound');
- if(e.lost?.some(p=>p.type==='wolf'))play('wolfDeath');
- const k=e.actionKind,p=e.pieceType,tech=e.tech;
- const ph=p==='king'&&k?.startsWith('copy')?tech:p;
- if(k==='wolfHit'||k==='copyWolfHit'){play('wolfGrowl');play('wolfBite',270);}
- else if(k==='mark'||k==='execute'){play(k==='mark'?'scoutBlue':'scoutRed');play(k==='mark'?'scoutBlueImpact':'scoutRedImpact',500);}
- else if(k==='smash'){play('smash');}
- else if(['charge','copyCharge','fieldCharge'].includes(k)){play('charge');play('charge',220);play('charge',440);}
- else if(['area','copyArea'].includes(k)){play('guardianArea');}
- else if(['line','copyLine'].includes(k)){play('guardianLine');}
- else if(['hit','copyHit'].includes(k)){
-   if(k==='hit'&&p==='king')play('king');
-   else if(ph==='archer'){play('archer');play('archerImpact',330);}
-   else if(ph==='soldier'){play('soldier');play('soldierImpact',200);}
-   else if(ph==='king')play('king');
- }
-}
+function soundEvent(e){if(!e||!room||!soundOn)return;const result=KharTallAudio.plan(e);audioPlayer.sequence(result.cues);if(result.utility)audioPlayer.utility(result.utility);}
 async function refresh(){if(!room)return;try{const r=await fetch('/api/online/rooms/'+room.code,{credentials:'same-origin',cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Sala inacessível.');if(d.revision<lastRevision)return;connected=true;
   const old=lastEvent,priorRevision=lastRevision; if(d.revision!==lastRevision){lastRevision=d.revision;lastEvent=d.lastEvent; if(priorRevision>=0){soundEvent(d.lastEvent,old);}}clockOffset=d.serverMs-Date.now();deadline=d.deadlineMs||0;room=d;game=KharTall.restore(d.state);$('connection').textContent='Conectado · você controla os '+colors[d.side]+(d.hasOpponent?' · dois jogadores na sala':' · esperando adversário');$('roomTitle').textContent='Sala '+d.code;
   $('lobby').hidden=true;$('match').hidden=false;paint();

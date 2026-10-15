@@ -1,0 +1,22 @@
+{
+  "arqueiro_disparo.wav": "cdb4f095ce5f2c6a8b3a25b2156a55eced64934b36b16736aba684ebad7d5f33",
+  "arqueiro_impacto.wav": "92fe1193e9801ceab6ffedee9ed20f944cba9b5106d0ed3474665829afffee52",
+  "batedor_azul_impacto.wav": "f620ab392bdbac196609dfb3ab59cf3e1fed34d1c0d2866c6065a4478a0bb19c",
+  "batedor_azul_lancamento.wav": "86c5ba966fdab5bc6abee1c69d2e4d2c89dbef94048ea9c9ecc9dd18109848e1",
+  "batedor_vermelho_explosao.wav": "8fe5b64472d29be746931df014d3b83c2a98cc58918c9aee49e827d72008c843",
+  "batedor_vermelho_lancamento.wav": "3e9ada7f5667fff6d6716d629f01192a1e73164f65408ae744fd894b2b55563f",
+  "colosso_esmagamento_rachadura.wav": "b81722cc395c7ce7162867a71b68fbc4a5de6aac416ea9a4f33feec2814974ba",
+  "colosso_passo_estrondoso.wav": "fbf23ca0443e3322d3bf1a73e0e9a8c2e817e6168e0386f85f15ec053358550f",
+  "guardiao_ataque_area_ancestral.wav": "5a3248d39ec4655d3900f7974a9cfbc2d12bc30728248a4be0eed30723d0d9f6",
+  "guardiao_ataque_linha_ancestral.wav": "eff2b98a565ef8252b04005a1cfa974f0fca2ed2a90caaaca3ad8814af67eba5",
+  "guardiao_original_trompeta.wav": "9cea1ef5f3a684f529d5ca916166419885cc2e4c68801dd744322fce54900d01",
+  "lobo_matilha_rosnado.wav": "1780b931327677934eb9bf9e3ae70a1df6e55354341222bfb425c977d74d741b",
+  "lobo_mordida_impacto.wav": "95bfcdf8bdc132bb26c7c915241921d846ada7861633303f0b6b13c098dba8e0",
+  "lobo_uivo_morte.wav": "ce57a5e641278f7c9284b9899cd71befc6f54ed8549d5d6a1c893871d11707fc",
+  "rei_ataque_explosao.wav": "c483a57fd3dd671e6ad1ebca1e2c768cd530c5df2c833e9fc21bd745122dafd0",
+  "rei_morto_guardiao_vivo_suspense.wav": "c74b65e5bd6c1ca4f9d683338c724e2a394ff0655636ef40c78b0ae31a12e4dd",
+  "rei_primeira_vida_tam_tam_taam.wav": "f315e7fc38bd266a7798448ee778dececbb541d9590c608aceb680b0513a6f41",
+  "soldado_espada_corte.wav": "1b6310d5c3de62ff8c76477f123b2b74a2cee2f3fc2ce12c2bdfa689a34b7a95",
+  "soldado_espada_impacto.wav": "667794758187ab9d1837c6b26f3f86f6ea50251b2e75a6a87567ad4ec0208782",
+  "vitoria_trompetas_marcha.wav": "e30c84dab20ef275e23a51471f271ea254305993b398992e236ffccfe4af6241"
+}
