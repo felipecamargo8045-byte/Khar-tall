@@ -47,7 +47,7 @@ class Context{
  const first=player.sequence(WOLF_ATTACK);assert.equal(starts.length,0);
  release();assert.equal(await first,true);assert.equal(starts.length,1);
  assert.equal(starts[0].buffer.tag,1);assert.equal(starts[0].at,10.025);
- assert.deepEqual(requested,['/assets/lobo_uivo_real.wav?v=3.4.2']);
+ assert.deepEqual(requested,['/assets/lobo_uivo_real.wav?v=3.4.3']);
  assert.deepEqual(starts.map(s=>s.gain),[.70]);
  player.setEnabled(false);assert.ok(sources.every(s=>s.stopped));assert.equal(await player.sequence(WOLF_ATTACK),false);
  let finish;const pending=new Promise(r=>{finish=r;});const muted=new Player({AudioContext:Context,fetch:async()=>{await pending;return {ok:true,arrayBuffer:async()=>new ArrayBuffer(2)};}});

@@ -10,5 +10,44 @@
     "duration_seconds": 3.6,
     "processing": "Original pitch and speed; mono PCM16/24000Hz; 70Hz high-pass; 5000Hz low-pass; gain 4.5; 60ms fade-in; 350ms fade-out.",
     "generation": "None — real animal recording."
+  },
+  "soldado_espadas_choque_nitido.wav": {
+    "credit": "StarNinjas — 20 Sword Sound Effects (Attacks and Clashes), sword_clash.2.ogg",
+    "license": "CC0 1.0",
+    "source_page": "https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes",
+    "source_url": "https://opengameart.org/sites/default/files/sword_clash_-_starninjas_0.zip",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sha256": "05ce4994936721d4fb912b573ddb798b06a5ca5bb8affd2e68ddbccd860ed8b8",
+    "source_sha256": "e09f222b70d53f2967514d076e2ae50c21526ac640fe4919965f964af043da1a",
+    "source_start_seconds": 0.022,
+    "duration_seconds": 0.44604166666666667,
+    "processing": "Mono PCM16/24000Hz; highpass=f=100,lowpass=f=10000,afade=t=in:st=0:d=0.002,afade=t=out:st=0.10:d=0.34; peak normalized to 0.76.",
+    "generation": "None — licensed source audio, edited locally.",
+    "source_archive_sha256": "f363c80ea1627548d336370750651b0d2d092978148ecfb3642717c2efb54b6b"
+  },
+  "guardiao_ventania_magica.wav": {
+    "credit": "remaxim — Short wind sound",
+    "license": "CC0 1.0",
+    "source_page": "https://opengameart.org/content/short-wind-sound",
+    "source_url": "https://opengameart.org/sites/default/files/short%20wind%20sound.wav",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sha256": "e42c2bac5865eb6af3aa9d8f742cef879ecb407664eeb2d8fb8edbe7afbdb609",
+    "source_sha256": "4435f5ad1baf171f21f876f778d0a8a7447becea0c4955bb2566e0c63ab20f41",
+    "source_start_seconds": 0.05,
+    "duration_seconds": 2.256875,
+    "processing": "Mono PCM16/24000Hz; highpass=f=90,lowpass=f=6500,atempo=1.15,aecho=0.8:0.7:85|160:0.12|0.06,afade=t=in:st=0:d=0.04,afade=t=out:st=1.90:d=0.347; peak normalized to 0.72.",
+    "generation": "None — licensed source audio, edited locally."
+  },
+  "guardiao_trombeta_aviso.wav": {
+    "credit": "U.S. Army — Attention bugle warning call",
+    "license": "Public domain (PD-USGov-Military)",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Attention.mp3",
+    "source_url": "https://upload.wikimedia.org/wikipedia/commons/5/5f/Attention.mp3",
+    "sha256": "14a4298f2d69479c591359c726be42b4d1e084501860982f00133969c815998e",
+    "source_sha256": "7c3967a31be5fb9c246d60b3d9daf677c53c823b41cbc133c749aa82bdecf588",
+    "source_start_seconds": 0.55,
+    "duration_seconds": 3.7999583333333335,
+    "processing": "Mono PCM16/24000Hz; highpass=f=100,lowpass=f=8000,afade=t=in:st=0:d=0.012,afade=t=out:st=3.55:d=0.25; peak normalized to 0.76.",
+    "generation": "None — licensed source audio, edited locally."
   }
 }

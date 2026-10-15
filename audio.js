@@ -5,17 +5,17 @@ const FILES=Object.freeze({
  blueLaunch:'batedor_azul_lancamento.wav',blueImpact:'batedor_azul_impacto.wav',
  redLaunch:'batedor_vermelho_lancamento.wav',redImpact:'batedor_vermelho_explosao.wav',
  arrowLaunch:'arqueiro_disparo.wav',arrowImpact:'arqueiro_impacto.wav',
- swordSwing:'soldado_espada_corte.wav',swordImpact:'soldado_espada_impacto.wav',
+ swordSwing:'soldado_espada_corte.wav',swordImpact:'soldado_espadas_choque_nitido.wav',
  giantStep:'colosso_passo_estrondoso.wav',groundSmash:'colosso_esmagamento_rachadura.wav',
  royalWound:'rei_primeira_vida_tam_tam_taam.wav',royalSuspense:'rei_morto_guardiao_vivo_suspense.wav',
- royalGuardian:'guardiao_original_trompeta.wav',royalVictory:'vitoria_trompetas_marcha.wav',
+ royalGuardian:'guardiao_trombeta_aviso.wav',royalVictory:'vitoria_trompetas_marcha.wav',
  wolfHowl:'lobo_uivo_real.wav',
- kingBlast:'rei_ataque_explosao.wav',guardianArea:'guardiao_ataque_area_ancestral.wav',guardianLine:'guardiao_ataque_linha_ancestral.wav'
+ kingBlast:'rei_ataque_explosao.wav',guardianArea:'guardiao_ataque_area_ancestral.wav',guardianLine:'guardiao_ventania_magica.wav'
 });
 const VOLUMES=Object.freeze({blueLaunch:.87,blueImpact:.94,redLaunch:.87,redImpact:.94,
- arrowLaunch:.76,arrowImpact:.86,swordSwing:.83,swordImpact:.78,giantStep:.72,groundSmash:.94,
- royalWound:.73,royalSuspense:.60,royalGuardian:.66,royalVictory:.76,
- wolfHowl:.70,kingBlast:.78,guardianArea:.68,guardianLine:.78});
+ arrowLaunch:.76,arrowImpact:.86,swordSwing:.83,swordImpact:.72,giantStep:.72,groundSmash:.94,
+ royalWound:.73,royalSuspense:.60,royalGuardian:.60,royalVictory:.76,
+ wolfHowl:.70,kingBlast:.78,guardianArea:.68,guardianLine:.72});
 const WOLF_ATTACK=Object.freeze([Object.freeze({key:'wolfHowl',delay:0})]);
 function plan(event){
  const cues=[];let utility=null;
@@ -65,7 +65,7 @@ class Player{
  network(key){
   if(!FILES[key]||!this.fetch)return Promise.reject(Error('Unavailable audio'));
   if(!this.bytes.has(key)){
-   const job=this.fetch('/assets/'+FILES[key]+'?v=3.4.2')
+   const job=this.fetch('/assets/'+FILES[key]+'?v=3.4.3')
     .then(r=>{if(!r.ok)throw Error('Audio request failed');return r.arrayBuffer();})
     .catch(e=>{this.bytes.delete(key);this.failed.add(key);throw e;});
    this.bytes.set(key,job);

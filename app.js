@@ -21,7 +21,7 @@ function detectRoyalMoment(before,next,action){
  const newlyDeadKing=oldPieces.some(p=>p.type==='king'&&!next.has(p.id)&&
   [...next.values()].some(t=>t.side===p.side&&t.type==='guardian'&&t.original));
  const originalGuardianFell=!!action&&oldPieces.some(p=>p.type==='guardian'&&p.original&&!next.has(p.id));
- // A vitória sobrepõe a trompeta individual e o suspense em uma ação final.
+ // A vitória sobrepõe a trombeta de aviso e o suspense em uma ação final.
  if(game.s.phase==='over'&&game.s.winner!==null&&game.s.winner!==-1)return 'victory';
  if(newlyDeadKing)return 'suspense';
  if(originalGuardianFell)return 'guardian';
@@ -483,8 +483,8 @@ function openCodexDetail(type){
   {label:'⚑ Ouvir fanfarra de vitória',desc:'Várias trompetas e marcha militar breve, mais baixa no fundo.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playRoyalMoment('victory');}}
  ]:type==='guardian'?[
   {label:'◈ Ouvir magia ancestral em área',desc:'Uma onda grave, vibração da matéria e ressonância antiga.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playCharacterSfx('guardianArea');}},
-  {label:'◇ Ouvir ataque mágico em linha',desc:'Fluxo de energia da terra concentrado, impacto e pedra vibrando.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playCharacterSfx('guardianLine');}},
-  {label:'♜ Ouvir queda do Guardião original',desc:'Uma trompeta solitária anuncia a perda do Guardião original.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playRoyalMoment('guardian');}}
+  {label:'◇ Ouvir ataque mágico em linha',desc:'Uma ventania mágica forte, com ar em movimento e um eco discreto.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playCharacterSfx('guardianLine');}},
+  {label:'♜ Ouvir queda do Guardião original',desc:'Uma trombeta de aviso anuncia a perda do Guardião original.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playRoyalMoment('guardian');}}
  ]:type==='wolf'?[
   {label:'🐺 Ouvir ataque · uivo real',desc:'Um trecho curto de uma gravação real de lobos uivando.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playWolfAttackAudio();}},
   {label:'☾ Ouvir morte · uivo real',desc:'O mesmo uivo natural quando o Lobo é eliminado em combate.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playCharacterSfx('wolfHowl');}}
@@ -492,7 +492,7 @@ function openCodexDetail(type){
   {label:'◈ Ouvir Investida • 3 passos',desc:'Três pisadas rápidas, pesadas e estrondosas. Não toca na movimentação comum.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playColossusChargeAudio(3);}},
   {label:'⛰ Ouvir Esmagamento • solo quebrando',desc:'Um golpe brutal no chão seguido por fissuras, fragmentos e pedras se partindo.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playColossusSmashAudio(120);}}
  ]:type==='soldier'?[
-  {label:'⚔ Ouvir corte de espada',desc:'Lâmina cortando o ar, seguida de impacto metálico no adversário.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playSoldierSwordAudio(280);}}
+  {label:'⚔ Ouvir corte de espada',desc:'Lâmina cortando o ar, seguida de uma batida nítida entre lâminas de metal.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playSoldierSwordAudio(280);}}
  ]:type==='archer'?[
   {label:'➶ Ouvir flecha sendo disparada',desc:'Corda do arco, flecha cortando o ar e impacto no alvo.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playArcherAttackAudio(490);}}
  ]:type==='scout'?[
@@ -514,7 +514,7 @@ function openRoyalAudioDemo(){
  showModal({title:'♛ Momentos da Realeza · Ecos da Chama',intro:'Ouça os quatro efeitos que sinalizam vidas perdidas, suspense, queda do Guardião original e vitória.',choices:[
   {label:'♛ Rei perde a primeira vida',desc:'Tam, tam, taaam em tom medieval sombrio.',fn:()=>listen('wound')},
   {label:'☾ Rei morre, Guardião original sobrevive',desc:'Suspense opressivo e sufocante; a perseguição ainda não terminou.',fn:()=>listen('suspense')},
-  {label:'♜ Guardião original eliminado',desc:'Uma trompeta isolada, de caráter solene.',fn:()=>listen('guardian')},
+  {label:'♜ Guardião original eliminado',desc:'Uma trombeta de aviso, com toque militar de alerta.',fn:()=>listen('guardian')},
   {label:'⚑ Vitória conquistada',desc:'Várias trompetas com passos de marcha mais baixos e mais curtos.',fn:()=>listen('victory')}
  ],footer:[{label:'Voltar',fn:openStart}]});
 }

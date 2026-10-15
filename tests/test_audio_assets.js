@@ -4,6 +4,9 @@ const {FILES}=require('../audio.js'),expected=require('./original-audio-sha256.j
 const recordings=require('../audio-assets/manifest.json');
 assert.equal(Object.keys(FILES).length,18);
 assert.equal(FILES.wolfHowl,'lobo_uivo_real.wav');
+assert.equal(FILES.swordImpact,'soldado_espadas_choque_nitido.wav');
+assert.equal(FILES.guardianLine,'guardiao_ventania_magica.wav');
+assert.equal(FILES.royalGuardian,'guardiao_trombeta_aviso.wav');
 assert.ok(!FILES.wolfGrowl&&!FILES.wolfBite);
 for(const name of Object.values(FILES)){
  const data=fs.readFileSync(path.join(__dirname,'../assets',name));
@@ -19,4 +22,4 @@ for(const name of Object.values(FILES)){
  let peak=0,energy=0;for(let i=0;i<pcm.length;i+=2){const sample=pcm.readInt16LE(i);peak=Math.max(peak,Math.abs(sample));energy+=sample*sample;}
  assert.ok(peak>100&&peak<32760,name+' silent or clipped');assert.ok(energy>0);
 }
-console.log('Audio assets OK: 17 unchanged WAVs and 1 real wolf howl; verified checksums, deploy payload, PCM and no clipping.');
+console.log('Audio assets OK: 14 original WAVs, real wolf howl, steel clash, wind spell and warning trumpet; verified checksums, deploy payload, PCM and no clipping.');
