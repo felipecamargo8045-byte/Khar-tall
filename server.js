@@ -9,6 +9,7 @@ const {URL}=require('node:url');
 const {RoomStore}=require('./room-store.js');
 const {closePool}=require('./database.js');
 const {clientIP}=require('./request-security.js');
+const {sendStatic}=require('./static-files.js');
 const store=new RoomStore();
 const VERSION=require('./package.json').version;
 let ready=false,ticking=false,timer,cleanupTimer;
@@ -75,7 +76,7 @@ const STATIC=new Map([['/audio.js','audio.js'],['/','index.html'],['/index.html'
 const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.webp':'image/webp','.png':'image/png','.wav':'audio/wav','.ico':'image/x-icon'};
 function serve(req,res,pathname){let rel=STATIC.get(pathname);if(!rel&&/^\/assets\/[A-Za-z0-9_.-]+$/.test(pathname))rel=pathname.slice(1);if(!rel)fail(404,'Página não encontrada.');
  const file=path.join(ROOT,rel);if(!file.startsWith(ROOT+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile())fail(404,'Arquivo não encontrado.');
- const typ=TYPES[path.extname(file)]||'application/octet-stream',data=fs.readFileSync(file);head(res);res.writeHead(200,{'Content-Type':typ,'Content-Length':data.length,'Cache-Control':rel.startsWith('assets/')?'public, max-age=3600':'no-cache'});res.end(req.method==='HEAD'?undefined:data);}
+ const typ=TYPES[path.extname(file)]||'application/octet-stream';head(res);sendStatic(req,res,file,rel,typ);}
 async function handler(req,res){try{const u=new URL(req.url,'http://local'),pathname=u.pathname;
  if(await auth.process(req,res,pathname))return;
  if(pathname.startsWith('/api/online/'))req.ktUser=await auth.current(req);

@@ -24,6 +24,8 @@ O serviço Render existente acompanha a branch `main`. Seu comando de build `nod
 
 Variáveis: `HOST=0.0.0.0`, `NODE_ENV=production`, `TRUST_PROXY=true`, `ACCOUNTS_DATABASE_URL` como segredo e `ENABLE_ACCOUNT_REGISTRATION=true`. O código mantém a hospedagem gratuita e não exige disco persistente do Render. Configure `/api/health` como health check.
 
+O orçamento do projeto é **R$ 0**. [CUSTOS_E_LIMITES.md](CUSTOS_E_LIMITES.md) registra os planos verificados, os limites de consumo aplicados e a conferência de cobrança ainda pendente no painel do Render. Plano Free da instância não bloqueia sozinho cobranças por excedentes quando há cartão cadastrado. Os arquivos estáticos usam compressão sem perda e ETag para reduzir tráfego, mantendo os mesmos recursos e a mesma qualidade.
+
 `migrations/001_online_rooms.sql` cria de forma aditiva a tabela de salas. Não altera nem substitui contas existentes. O servidor aplica essa migração ao iniciar, depois de preparar a autenticação. Os testes de migração e integração devem usar uma branch separada do banco. Para testar as contas: `ACCOUNTS_DATABASE_URL=... node tests/test_auth_e2e.js`.
 
 ## Comportamento
