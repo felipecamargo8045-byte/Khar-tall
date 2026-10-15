@@ -18,4 +18,5 @@ while(at+30<=bytes.length&&bytes.readUInt32LE(at)===0x04034b50){
 if(count!==8||allowed.size)throw Error('Pacote de contas incompleto');
 for(const p of ['auth-server.js','server.js','auth-client.js'])cp.execFileSync(process.execPath,['--check',p],{cwd:root,stdio:'inherit'});
 cp.execFileSync('npm',['install','--omit=dev','--no-audit','--no-fund','--ignore-scripts'],{cwd:root,stdio:'inherit',timeout:180000});
+if(process.env.ACCOUNTS_DATABASE_URL){console.log('Validando cadastro/login no Neon...');cp.execFileSync(process.execPath,['tests/test_auth_e2e.js'],{cwd:root,stdio:'inherit',timeout:180000});}
 console.log('Khar Tall: contas protegidas com Neon, oito arquivos instalados');
