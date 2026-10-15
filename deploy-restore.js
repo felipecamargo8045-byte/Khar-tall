@@ -25,5 +25,6 @@ while(ptr+30<=zip.length&&zip.readUInt32LE(ptr)===0x04034b50){
 }
 if(count<40)throw Error('Pacote incompleto: '+count+' arquivos');
 console.log('Khar Tall: '+count+' arquivos restaurados do pacote original');
-// Aplica apenas duas substituições de áudio; motor de regras preservado.
+// Mantém os outros sons da versão online e remove definitivamente o rito.
 require('./deploy-audio-fix.js');
+require('./deploy-remove-rito.js');
