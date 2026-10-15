@@ -1,0 +1,14 @@
+{
+  "lobo_uivo_real.wav": {
+    "sha256": "5eb820d6ab74a1746d48987c48be6bb80f65aee8e3339030e6a2842445af25bb",
+    "credit": "U.S. Fish and Wildlife Service — Wolf howls",
+    "license": "Public domain (PD-USGov-FWS)",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Wolf_howls.ogg",
+    "source_url": "https://upload.wikimedia.org/wikipedia/commons/8/87/Wolf_howls.ogg",
+    "source_sha1": "44ce16c609c16ce8ae05b4da61179bf6c9c4ce09",
+    "source_start_seconds": 20.05,
+    "duration_seconds": 3.6,
+    "processing": "Original pitch and speed; mono PCM16/24000Hz; 70Hz high-pass; 5000Hz low-pass; gain 4.5; 60ms fade-in; 350ms fade-out.",
+    "generation": "None — real animal recording."
+  }
+}

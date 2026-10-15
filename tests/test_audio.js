@@ -1,11 +1,13 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {Player,plan,FILES,WOLF_ORIGINAL}=require('../audio.js');
+const {Player,plan,FILES,WOLF_ATTACK}=require('../audio.js');
 require('./test_audio_assets.js');
 const event=(actionKind,pieceType,extra={})=>({kind:'move',actionKind,pieceType,lost:[],wounded:[],winner:null,impactDelay:310,...extra});
 const keys=e=>plan(e).cues.map(x=>x.key);
-assert.deepEqual(plan(event('wolfHit','wolf')).cues,WOLF_ORIGINAL);
-assert.deepEqual(plan(event('copyWolfHit','king',{tech:'wolf'})).cues,WOLF_ORIGINAL);
+assert.deepEqual(WOLF_ATTACK,[{key:'wolfHowl',delay:0}]);
+for(const actorSide of [0,1])assert.deepEqual(plan(event('wolfHit','wolf',{actorSide})).cues,WOLF_ATTACK);
+assert.deepEqual(plan(event('copyWolfHit','king',{tech:'wolf'})).cues,WOLF_ATTACK);
+assert.deepEqual(plan(event('wolfHit','wolf',{lost:[{type:'wolf'}]})).cues,WOLF_ATTACK,'A wolf killing another wolf must play just one howl');
 assert.deepEqual(keys(event('wolfHit','wolf',{attackBlocked:true,trapTriggered:true})),[]);
 assert.equal(plan(event('wolfHit','wolf',{attackBlocked:true})).utility,'trap');
 for(const [kind,piece,expected]of [
@@ -23,7 +25,7 @@ assert.equal(keys(event('hit','soldier',{lost:[{type:'wolf'}]})).filter(k=>k==='
 assert.equal(keys(event('area','guardian',{lost:[{type:'wolf'},{type:'wolf'}]})).filter(k=>k==='wolfHowl').length,1);
 assert.deepEqual(keys({...event('transform','wolf',{lost:[{type:'wolf'}]}),kind:'field'}),[]);
 const final=keys(event('wolfHit','wolf',{winner:0,lost:[{type:'king'},{type:'guardian',original:true},{type:'wolf'}],wounded:[1]}));
-assert.ok(final.includes('royalVictory'));assert.ok(!final.some(k=>['wolfHowl','royalSuspense','royalGuardian','royalWound'].includes(k)));
+assert.ok(final.includes('royalVictory'));assert.equal(final.filter(k=>k==='wolfHowl').length,1);assert.ok(!final.some(k=>['royalSuspense','royalGuardian','royalWound'].includes(k)));
 assert.ok(keys(event('hit','soldier',{lost:[{type:'king'}]})).includes('royalSuspense'));
 assert.ok(keys(event('area','guardian',{lost:[{type:'guardian',original:true}]})).includes('royalGuardian'));
 assert.ok(keys(event('hit','archer',{wounded:[0]})).includes('royalWound'));
@@ -35,21 +37,21 @@ class Context{
  constructor(){this.state='suspended';this.currentTime=10;this.destination={};}
  createGain(){return new Node();}createDynamicsCompressor(){return {threshold:param(),knee:param(),ratio:param(),attack:param(),release:param(),connect(){}};}
  createBufferSource(){const n=new Node();sources.push(n);return n;}
- createOscillator(){throw Error('Original WAV effects must never use synthesized fallback');}
+ createOscillator(){throw Error('Recorded WAV effects must never use synthesized fallback');}
  resume(){this.state='running';return Promise.resolve();}decodeAudioData(data){return Promise.resolve({tag:new Uint8Array(data)[0]});}
 }
 (async()=>{
  let release;const wait=new Promise(r=>{release=r;});
- const fetch=async url=>{await wait;return {ok:true,arrayBuffer:async()=>new Uint8Array([url.includes('rosnado')?1:2]).buffer};};
+ const requested=[];const fetch=async url=>{requested.push(url);await wait;return {ok:true,arrayBuffer:async()=>new Uint8Array([1]).buffer};};
  const player=new Player({AudioContext:Context,fetch});
- const first=player.sequence(WOLF_ORIGINAL);assert.equal(starts.length,0);
- release();assert.equal(await first,true);assert.equal(starts.length,2);
- assert.equal(starts[0].buffer.tag,1);assert.equal(starts[1].buffer.tag,2);
- assert.ok(Math.abs(starts[1].at-starts[0].at-.310)<1e-9);
- assert.deepEqual(starts.map(s=>s.gain),[.66,.80]);
- player.setEnabled(false);assert.ok(sources.every(s=>s.stopped));assert.equal(await player.sequence(WOLF_ORIGINAL),false);
+ const first=player.sequence(WOLF_ATTACK);assert.equal(starts.length,0);
+ release();assert.equal(await first,true);assert.equal(starts.length,1);
+ assert.equal(starts[0].buffer.tag,1);assert.equal(starts[0].at,10.025);
+ assert.deepEqual(requested,['/assets/lobo_uivo_real.wav?v=3.4.2']);
+ assert.deepEqual(starts.map(s=>s.gain),[.70]);
+ player.setEnabled(false);assert.ok(sources.every(s=>s.stopped));assert.equal(await player.sequence(WOLF_ATTACK),false);
  let finish;const pending=new Promise(r=>{finish=r;});const muted=new Player({AudioContext:Context,fetch:async()=>{await pending;return {ok:true,arrayBuffer:async()=>new ArrayBuffer(2)};}});
- const loading=muted.sequence(WOLF_ORIGINAL);muted.setEnabled(false);finish();assert.equal(await loading,false);assert.equal(starts.length,2);
- const broken=new Player({AudioContext:Context,fetch:async()=>{throw Error('offline');}});assert.equal(await broken.sequence(WOLF_ORIGINAL),false);
- console.log('Audio playback OK: original first attack, 310ms timing, copies, all pieces, real charge steps, traps, death priority, cold load, mute and missing-file handling.');
+ const loading=muted.sequence(WOLF_ATTACK);muted.setEnabled(false);finish();assert.equal(await loading,false);assert.equal(starts.length,1);
+ const broken=new Player({AudioContext:Context,fetch:async()=>{throw Error('offline');}});assert.equal(await broken.sequence(WOLF_ATTACK),false);
+ console.log('Audio playback OK: one real howl for both sides and copies, no attack/death overlap, all pieces, charge steps, traps, death priority, cold load and mute.');
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});

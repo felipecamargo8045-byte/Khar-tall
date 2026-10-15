@@ -25,6 +25,17 @@ while(offset+30<=archive.length&&archive.readUInt32LE(offset)===0x04034b50){
 if(count<35)throw Error('Incomplete asset bundle');
 console.log('Verified image/audio assets:',count);
 
+// New licensed recordings are versioned separately from the immutable bundle.
+const audioDir=path.join(__dirname,'audio-assets');
+const audioManifest=JSON.parse(fs.readFileSync(path.join(audioDir,'manifest.json'),'utf8'));
+for(const [name,meta] of Object.entries(audioManifest)){
+ if(!/^[A-Za-z0-9_-]+\.wav$/.test(name)||!/^[a-f0-9]{64}$/.test(meta.sha256))throw Error('Invalid audio asset manifest');
+ const data=Buffer.from(fs.readFileSync(path.join(audioDir,name+'.b64'),'utf8').replace(/\s/g,''),'base64');
+ if(crypto.createHash('sha256').update(data).digest('hex')!==meta.sha256)throw Error('Audio recording checksum mismatch: '+name);
+ fs.writeFileSync(path.join(__dirname,'assets',name),data);
+ console.log('Verified recording:',name);
+}
+
 execFileSync('npm',['ci','--omit=dev','--ignore-scripts','--no-audit','--no-fund'],options);
 execFileSync(process.execPath,['scripts/check.js'],options);
 

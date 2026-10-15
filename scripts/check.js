@@ -13,6 +13,5 @@ for(const file of ['index.html','online.html','conta.html','style.css','online.c
 }
 for(const file of ['app.js','online.js'])
   assert.doesNotMatch(fs.readFileSync(path.join(root,file),'utf8'),/battleCeremony|battleRitual|rito_guerra|rito_inicio_de_batalha/,'Removed ritual must stay removed.');
-assert.ok(fs.statSync(path.join(root,'assets/lobo_uivo_morte.wav')).size>10000);
 require('../tests/test_audio_assets.js');
-console.log('Build OK: source syntax, required files, referenced assets and original wolf howl.');
+console.log('Build OK: source syntax, required files, referenced assets and real wolf recording.');

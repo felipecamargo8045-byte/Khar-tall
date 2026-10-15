@@ -1,4 +1,4 @@
-/* Khar Tall: the original approved WAVs, shared by local and online play. */
+/* Khar Tall: shared battle audio for local and online play. */
 (function(root){
 'use strict';
 const FILES=Object.freeze({
@@ -9,16 +9,14 @@ const FILES=Object.freeze({
  giantStep:'colosso_passo_estrondoso.wav',groundSmash:'colosso_esmagamento_rachadura.wav',
  royalWound:'rei_primeira_vida_tam_tam_taam.wav',royalSuspense:'rei_morto_guardiao_vivo_suspense.wav',
  royalGuardian:'guardiao_original_trompeta.wav',royalVictory:'vitoria_trompetas_marcha.wav',
- wolfGrowl:'lobo_matilha_rosnado.wav',wolfBite:'lobo_mordida_impacto.wav',wolfHowl:'lobo_uivo_morte.wav',
+ wolfHowl:'lobo_uivo_real.wav',
  kingBlast:'rei_ataque_explosao.wav',guardianArea:'guardiao_ataque_area_ancestral.wav',guardianLine:'guardiao_ataque_linha_ancestral.wav'
 });
 const VOLUMES=Object.freeze({blueLaunch:.87,blueImpact:.94,redLaunch:.87,redImpact:.94,
  arrowLaunch:.76,arrowImpact:.86,swordSwing:.83,swordImpact:.78,giantStep:.72,groundSmash:.94,
  royalWound:.73,royalSuspense:.60,royalGuardian:.66,royalVictory:.76,
- wolfGrowl:.66,wolfBite:.80,wolfHowl:.70,kingBlast:.78,guardianArea:.68,guardianLine:.78});
-const WOLF_ORIGINAL=Object.freeze([
- Object.freeze({key:'wolfGrowl',delay:0}),Object.freeze({key:'wolfBite',delay:310})
-]);
+ wolfHowl:.70,kingBlast:.78,guardianArea:.68,guardianLine:.78});
+const WOLF_ATTACK=Object.freeze([Object.freeze({key:'wolfHowl',delay:0})]);
 function plan(event){
  const cues=[];let utility=null;
  if(!event)return {cues,utility};
@@ -29,7 +27,7 @@ function plan(event){
  if(event.kind==='field'){if(k!=='skip')utility='heal';return {cues,utility};}
  if(event.kind!=='move')return {cues,utility};
  if(event.attackBlocked){utility='trap';}
- else if(k==='wolfHit'||k==='copyWolfHit')WOLF_ORIGINAL.forEach(c=>add(c.key,c.delay));
+ else if(k==='wolfHit'||k==='copyWolfHit')WOLF_ATTACK.forEach(c=>add(c.key,c.delay));
  else if(k==='mark'||k==='execute'){
   const prefix=k==='mark'?'blue':'red';add(prefix+'Launch');add(prefix+'Impact',impact);
  }else if(k==='smash')add('groundSmash',340);
@@ -50,7 +48,7 @@ function plan(event){
  if(lost.some(p=>p.type==='king'))add('royalSuspense',impact);
  else if(lost.some(p=>p.type==='guardian'&&p.original))add('royalGuardian',impact);
  else if(event.wounded?.length)add('royalWound',impact);
- if(lost.some(p=>p.type==='wolf'))add('wolfHowl',impact);
+ if(lost.some(p=>p.type==='wolf')&&!cues.some(c=>c.key==='wolfHowl'))add('wolfHowl',impact);
  return {cues,utility};
 }
 class Player{
@@ -67,7 +65,7 @@ class Player{
  network(key){
   if(!FILES[key]||!this.fetch)return Promise.reject(Error('Unavailable audio'));
   if(!this.bytes.has(key)){
-   const job=this.fetch('/assets/'+FILES[key]+'?v=original-3.4.1')
+   const job=this.fetch('/assets/'+FILES[key]+'?v=3.4.2')
     .then(r=>{if(!r.ok)throw Error('Audio request failed');return r.arrayBuffer();})
     .catch(e=>{this.bytes.delete(key);this.failed.add(key);throw e;});
    this.bytes.set(key,job);
@@ -122,7 +120,7 @@ class Player{
     source.start(at+Math.max(0,cue.delay||0)/1000);
    });
    return true;
-  }catch{return false;} // Never replace an unavailable original with a harsh synthetic imitation.
+  }catch{return false;} // Never replace an unavailable recording with a harsh synthetic imitation.
  }
  play(key,delay=0,volume){return this.sequence([{key,delay,volume}]);}
  async utility(kind){
@@ -140,7 +138,7 @@ class Player{
   }catch{return false;}
  }
 }
-const api={FILES,VOLUMES,WOLF_ORIGINAL,plan,Player,create:options=>new Player(options)};
+const api={FILES,VOLUMES,WOLF_ATTACK,plan,Player,create:options=>new Player(options)};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 else root.KharTallAudio=api;
 })(typeof window!=='undefined'?window:globalThis);
