@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: virginia
-    buildCommand: node deploy-restore.js && node --check server.js && node --check engine.js && node --check online.js
+    buildCommand: node deploy-restore.js
     startCommand: node server.js
     healthCheckPath: /api/health
     envVars:
@@ -14,11 +14,9 @@ services:
         value: production
       - key: HOST
         value: 0.0.0.0
-      - key: DATABASE_PATH
-        value: /tmp/khar-tall.sqlite3
       - key: TRUST_PROXY
         value: 'true'
-      - key: DATA_PERSISTENT
-        value: 'false'
       - key: ENABLE_ACCOUNT_REGISTRATION
-        value: 'false'
+        value: 'true'
+      - key: ACCOUNTS_DATABASE_URL
+        sync: false

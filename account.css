@@ -1,0 +1,38 @@
+/* KHAR TALL V2.3 — identidade literária mantida no cadastro */
+.accountEntry{box-shadow:inset 0 1px 0 #f6d4a150,0 0 0 1px #e6b97733;white-space:nowrap}
+body.accountOpen{overflow:hidden}
+.accountOverlay{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:#0a060bd9;backdrop-filter:blur(8px);padding:18px;overflow-y:auto}
+.accountSheet{position:relative;width:min(570px,100%);max-height:calc(100dvh - 30px);overflow-y:auto;border-radius:15px;border:1px solid #c59b68;background:repeating-linear-gradient(88deg,#b4864a09 0 1px,transparent 1px 12px),linear-gradient(152deg,#382426,#1e1519 65%,#140e11);color:#f4e4cd;box-shadow:0 25px 85px #000e,inset 0 0 0 2px #e5be8736;padding:clamp(20px,4vw,32px)}
+.accountSheet::before{content:'';display:block;width:80px;height:3px;background:linear-gradient(90deg,#85252c,#d9a666,#85252c);margin:0 0 22px}
+.accountClose{position:absolute;top:12px;right:12px;width:36px;height:36px;border:1px solid #806148;border-radius:9px;background:#352324;color:#f0d3ac;font-size:19px;cursor:pointer}
+.accountEyebrow{font-size:11px;color:#d8ac70;letter-spacing:.16em;font-weight:800}
+.accountTitle{font:700 clamp(27px,5vw,38px)/1.12 Georgia,'Times New Roman',serif;color:#f8e7c8;margin:7px 0 9px}
+.accountSubtitle{font:15px/1.6 Georgia,serif;color:#e4cfb0;margin:0 0 18px}
+.accountBook{border:1px solid #b68b5b;background:linear-gradient(130deg,#e8d5b2,#cfb38d);color:#48291e;padding:12px 15px;border-radius:8px;font:14px/1.45 Georgia,serif;margin-bottom:18px}
+.accountBook strong{color:#732128}
+.accountForm{display:grid;grid-template-columns:1fr 1fr;column-gap:12px;row-gap:13px}
+.accountField{display:grid;gap:5px;min-width:0}.accountWide{grid-column:1/-1}
+.accountField label{color:#e9d7bd;font-weight:700;font-size:12px;letter-spacing:.02em}
+.accountField label span{color:#e9a083;margin-left:2px}
+.accountField input{width:100%;height:47px;color:#fbf2e5;background:#130f12;border:1px solid #806251;border-radius:9px;padding:10px 12px;min-width:0;font:15px system-ui,sans-serif;color-scheme:dark}
+.accountField input::placeholder{color:#9d8a81}
+.accountField input:focus{outline:2px solid #d6a05d;outline-offset:1px;border-color:#e2b16a}
+.accountField small{color:#b8a392;font-size:11px}
+.accountCheck{display:flex;gap:9px;align-items:flex-start;font-size:12px;line-height:1.45;color:#dbc7b2;cursor:pointer}
+.accountCheck input{width:17px;height:17px;accent-color:#ca9259;flex:none;margin-top:1px}
+.accountCheck a{color:#f1c482}
+.accountActions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.accountPrimary{border:1px solid #eac58c;background:linear-gradient(180deg,#9e4937,#64252b);color:#fff1d6;padding:12px 18px;border-radius:9px;min-height:46px;font-weight:700;flex:1;cursor:pointer}
+.accountPrimary:disabled{opacity:.6;cursor:wait}.accountSecondary{border:1px solid #80634c;background:#2b2020;color:#ecdfcc;padding:12px 17px;border-radius:9px;min-height:46px;cursor:pointer}
+.accountServer{font-size:12px;color:#e4c7a8;background:#3f2a27;border:1px solid #775448;border-radius:8px;padding:11px 13px;margin-top:14px}
+.accountServer.offline{color:#ecc8ba;background:#432329;border-color:#965f53}.accountServer.online{color:#c7e2bf;background:#20342c;border-color:#65866d}
+.accountMessage{padding:12px 13px;border-radius:8px;margin-top:15px;font-size:13px;border:1px solid #8c6d51;background:#402a25}
+.accountMessage.error{border-color:#bc726c;color:#ffdbd2;background:#492427}.accountMessage.success{border-color:#769f7b;color:#d5efce;background:#283d2e}
+.accountMeta{font-size:11px;color:#b8a99a;margin-top:14px;line-height:1.5}
+.accountSuccessIcon{font-size:42px;color:#e8ba76;margin:15px 0}
+@media(max-width:520px){.accountForm{grid-template-columns:1fr}.accountSheet{max-height:calc(100dvh - 18px);padding:20px}.accountOverlay{padding:9px}.accountTitle{font-size:29px}.accountActions{flex-direction:column}.accountActions button{width:100%}}
+@media(prefers-reduced-motion:reduce){.accountOverlay{backdrop-filter:none}}
+
+.accountPrivacy{border:1px solid #795947;background:#291c1c;border-radius:8px;padding:10px 12px;color:#ddc7ad;font-size:12px;line-height:1.6}
+.accountPrivacy summary{cursor:pointer;color:#e9be84;font-weight:700}
+.accountPrivacy p{margin:10px 0 0}

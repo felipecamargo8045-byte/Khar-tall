@@ -1,0 +1,16 @@
+{
+  "name": "khar-tall-online",
+  "private": true,
+  "version": "3.4.0",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "pg": "^8.13.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "build": "node scripts/check.js",
+    "test": "node tests/run.js"
+  }
+}
