@@ -28,3 +28,6 @@ console.log('Khar Tall: '+count+' arquivos restaurados do pacote original');
 // Mantém os outros sons da versão online e remove definitivamente o rito.
 require('./deploy-audio-fix.js');
 require('./deploy-remove-rito.js');
+
+// Cadastro protegido por banco PostgreSQL externo; inativo até validar a conexão.
+require('./deploy-auth.js');
