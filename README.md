@@ -90,3 +90,9 @@ O portal consulta catálogo, identidade e metadados do APK nas APIs atuais. O li
 ### Atualização 3.5.2
 
 Créditos públicos: Victoryno. O ataque em linha do Guardião alcança até 5 casas na horizontal ou vertical, para na primeira peça e só atinge o primeiro inimigo. A Cópia Real desse ataque obedece ao mesmo limite. O movimento do Guardião e seu ataque em área mantêm as regras anteriores. Jogo local, IA, servidor online e APK usam o mesmo motor atualizado; a assinatura Android original é preservada. O tutorial usa a arte oficial da peça e o texto atualizado, em lugar da ficha antiga que descrevia alcance até a borda.
+
+### Atualização 3.5.3 — privacidade das armadilhas
+
+A visão das armadilhas é independente do exército que joga. Contra o computador, a interface mostra apenas as armadilhas dos Rubros (jogador humano), inclusive quando os Azuis começam, durante a jogada e animações da IA e ao retomar uma partida. No modo local, nenhuma armadilha aparece durante a troca de jogador; o novo lado só é revelado depois de confirmar que recebeu o aparelho. O contador também respeita a visão do jogador. Armadilhas ativadas continuam produzindo os efeitos previstos. No online, o servidor continua enviando somente as armadilhas da conta/lado autorizado. O APK 3.5.3 inclui a mesma correção, preservando assinatura, dados locais, artes e áudios.
+
+`tests/test_trap_visibility.js` executa a interface real com DOM simulado, testa a preparação, sorteio, cada reconstrução do tabuleiro, animações, passagem de turno e retomada. O teste reproduziu a falha anterior e passa com a correção.

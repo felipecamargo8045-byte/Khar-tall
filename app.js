@@ -347,7 +347,7 @@ function animateMovement(prev){if(!prev?.size||window.matchMedia('(prefers-reduc
 }
 const el=id=>document.getElementById(id);
 const htmlEscape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-let game=new KharTall(),selectedId=null,inspectedId=null,orientation='up',modal=null,picker=null,veil=false,secsLeft=60,clockEnd=0,aiTimer=null,flashUntil=0,areaChosen=[];
+let game=new KharTall(),selectedId=null,inspectedId=null,orientation='up',modal=null,picker=null,veil=false,secsLeft=60,clockEnd=0,aiTimer=null,flashUntil=0,areaChosen=[],viewSide=null;
 const one=(tag,text,cls)=>{const x=document.createElement(tag);x.textContent=text;if(cls)x.className=cls;return x;};
 function save(){try{localStorage.setItem(STORE,JSON.stringify(game.snapshot()));}catch(e){}}
 function clearSelection(){selectedId=null;orientation='up';picker=null;areaChosen=[];}
@@ -370,6 +370,8 @@ function paintClock(){const total=Math.max(0,Math.min(60,secsLeft));el('timer').
 function isHumanTurn(){return game.s.phase==='setup'?game.s.mode==='local'||game.s.setupSide===RED:game.s.mode==='local'||game.s.side===RED;}
 function isAI(){return !informationalClockPaused&&!document.body.classList.contains('accountOpen')&&game.s.phase==='play'&&game.s.mode==='ai'&&game.s.side===BLUE&&!veil;}
 function currentSide(){return game.s.phase==='setup'?game.s.setupSide:game.s.side;}
+// The viewer is independent of the active side. Never paint an opponent's secrets.
+function visibleTrapSide(){if(veil)return null;if(game.s.mode==='ai')return RED;return viewSide===currentSide()?viewSide:null;}
 function isInputBlocked(){return document.body.classList.contains('accountOpen')||veil||!!modal||!isHumanTurn();}
 let informationalClockPaused=false;
 function isInformationalModal(m){return !!m&&(m.visual==='tutorial'||m.visual==='codex'||m.visual==='detail'||m.title?.startsWith('Regras — capítulo')||m.title?.startsWith('Manual de campo'));}
@@ -393,7 +395,7 @@ function paintModal(){const root=el('modalRoot');root.replaceChildren();renderPr
  if(modal?.visual==='codex')box.classList.add('codexModal');
  if(modal?.visual==='tutorial')box.classList.add('tutorialModal');
  if(veil){box.append(one('div','KHAR TALL • TROCA SEGURA','pane-eyebrow'),one('h2','Passe o dispositivo ao próximo jogador'),one('p',veil.text));
-  let btn=one('button','Estou pronto para jogar','actionBtn primary');btn.onclick=()=>{veil=false;beginClock();render();scheduleAI();};box.append(btn);
+  let btn=one('button','Estou pronto para jogar','actionBtn primary');btn.onclick=()=>{viewSide=currentSide();veil=false;beginClock();render();scheduleAI();};box.append(btn);
  }else{
   box.append(one('h2',modal.title));if(modal.intro)box.append(one('p',modal.intro));
   if(modal.extra){const extra=one('div','', 'setupGuide');extra.textContent=modal.extra;box.append(extra);}
@@ -442,8 +444,8 @@ function paintModal(){const root=el('modalRoot');root.replaceChildren();renderPr
  }
  backdrop.append(box);root.append(backdrop);
  }
-function cover(text){veil={text};pauseClock();paintModal();}
-function fresh(mode='local',difficulty=3){clearTimeout(aiTimer);informationalClockPaused=false;game=new KharTall({mode,difficulty});clearSelection();inspectedId=null;dismissModal();veil=false;save();beginClock();render();}
+function cover(text){veil={text};viewSide=null;pauseClock();for(const icon of el('board').querySelectorAll('.trapIcon'))icon.remove();renderObjectives();paintModal();}
+function fresh(mode='local',difficulty=3){clearTimeout(aiTimer);informationalClockPaused=false;game=new KharTall({mode,difficulty});viewSide=RED;clearSelection();inspectedId=null;dismissModal();veil=false;save();beginClock();render();}
 const TUTORIAL_ART={
  focus:'assets/tutorial_focus.webp',
  light:'assets/tutorial_light.webp',
@@ -642,7 +644,7 @@ function currentHighlights(){const hints=new Map(),chosen=[];
 }
 function renderBoard(){const root=el('board'),s=game.s;const {hints,chosen}=currentHighlights(),fragment=document.createDocumentFragment();
  for(let y=0;y<10;y++)for(let x=0;x<10;x++){
-  const p=game.pieceAt(x,y),f=game.field(x,y),myTrap=s.traps.find(t=>t.x===x&&t.y===y&&t.side===currentSide());
+  const p=game.pieceAt(x,y),f=game.field(x,y),myTrap=s.traps.find(t=>t.x===x&&t.y===y&&t.side===visibleTrapSide());
   const sq=one('button','',`sq ${(x+y)%2?'dark':'light'} ${f?.kind||''} ${f?(game.fieldReady(f)?'activeField':'coolingField'):''} ${hints.get(`${x},${y}`)||''} ${selectedId===p?.id?'selected':''} ${inspectedId===p?.id?'inspected':''} ${chosen.includes(`${x},${y}`)?'targetChosen':''}`);
   if(s.flash&&s.flash.x===x&&s.flash.y===y&&Date.now()<flashUntil)sq.classList.add('trapActive');
   sq.type='button';sq.role='gridcell';sq.title=`${square(x,y)}${p?' • '+NAMES[p.type]+' • '+sideName(p.side):''}${f?' • '+(f.kind==='heal'?'Cura':'Cristal')+' dos '+sideName(f.owner):''}`;
@@ -776,7 +778,7 @@ function makeActionButton(label,cb,primary=false){const b=one('button',label,`ac
 function renderObjectives(){const root=el('objectives'),s=game.s;root.innerHTML='';
  for(let side of [RED,BLUE]){const wrap=one('div','', 'statLine'),k=game.king(side),g=game.guardian(side);
   const traps=s.traps.filter(t=>t.side===side).length;
-  wrap.innerHTML=`<div class="statRow"><strong>${sideName(side)}</strong><span>Rei ${k?k.hp+'/2':'✕'} · Original ${g?'VIVO':'✕'}</span></div><div class="sub">${s.pieces.filter(p=>p.side===side).length} peças em combate · ${side===currentSide()?traps+' armadilha(s) própria(s)':'Armadilhas secretas'}</div>`;
+  wrap.innerHTML=`<div class="statRow"><strong>${sideName(side)}</strong><span>Rei ${k?k.hp+'/2':'✕'} · Original ${g?'VIVO':'✕'}</span></div><div class="sub">${s.pieces.filter(p=>p.side===side).length} peças em combate · ${side===visibleTrapSide()?traps+' armadilha(s) própria(s)':'Armadilhas secretas'}</div>`;
   root.append(wrap);
  }
  for(let f of s.fields){let remaining=Math.max(...f.need.map((n,i)=>Math.max(0,n-s.turns[i])));
@@ -914,7 +916,7 @@ function scheduleAI(){clearTimeout(aiTimer);if(!isAI())return;
 }
 function setupResume(){let old=null;try{old=JSON.parse(localStorage.getItem(STORE)||'null');}catch(e){}
  if(old&&old.version===2&&old.phase!=='over')showModal({title:'Bem-vindo de volta ao Khar Tall',intro:'Encontrei uma partida V2 salva neste navegador. Deseja retomá-la?',choices:[
-  {label:'Continuar partida',fn:()=>{game=KharTall.restore(old);clearSelection();inspectedId=null;dismissModal();if(game.s.mode==='local')cover(`Vamos retomar a partida. Entregue o dispositivo aos ${sideName(currentSide())}; suas armadilhas permanecerão privadas.`);else{veil=false;beginClock();render();scheduleAI();}}},
+  {label:'Continuar partida',fn:()=>{game=KharTall.restore(old);viewSide=null;clearSelection();inspectedId=null;dismissModal();if(game.s.mode==='local')cover(`Vamos retomar a partida. Entregue o dispositivo aos ${sideName(currentSide())}; suas armadilhas permanecerão privadas.`);else{veil=false;beginClock();render();scheduleAI();}}},
   {label:'Começar uma nova partida',fn:openStart}],footer:[{label:'✦ Criar conta',primary:true,fn:()=>el('accountButton').click()}]});
  else {const entry=new URLSearchParams(location.search).get('abrir');if(entry==='ia')openDifficulty();else if(entry==='tutorial')showTutorial(0,true);else if(entry==='regras')showRules();else if(entry==='compendio')openCodex();else openStart();}}
 function tick(){if(veil||informationalClockPaused||modal?.title?.startsWith('Uma nova batalha')||modal?.title?.startsWith('Escolha a dificuldade')||modal?.title?.startsWith('Bem-vindo')||game.s.phase==='over'||!clockEnd)return;
