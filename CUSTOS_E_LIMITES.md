@@ -76,3 +76,10 @@ Referências adicionais: [Mercado Pago Checkout Pro](https://www.mercadopago.com
 O portal em `/portal` reutiliza o servidor Render, o banco, as contas, o APK 3.5.1 e o Mercado Pago existentes. Não foram contratados domínio, servidor, disco, assinatura ou API adicionais. A entrada do Sites encaminha ao portal canônico para manter sessões e salvamentos na mesma origem. Nenhuma camada de autenticação paralela é provisionada. Os limites e as pendências de conferência financeira descritos acima continuam aplicáveis.
 
 Nesta revisão, as APIs públicas confirmaram banco persistente e cadastro ativo; o catálogo está vazio e o checkout fechado. Vendas dependem de o criador indicar o usuário administrador e configurar recebimento, condições e produtos. Não foram feitas compras reais.
+
+
+## Alteração autorizada em 16/10/2026 — InfinitePay
+
+O usuário escolheu InfinitePay e confirmou a InfiniteTag `consultorcamargo`. O Checkout Integrado não exige mensalidade ou credencial bancária na aplicação. O Pix é anunciado pelo provedor com tarifa zero; cartões continuam sujeitos às taxas e ao prazo da conta do vendedor. A integração não altera o plano de recebimento da conta, contrata antecipação, cria recorrência nem abre novas vendas sozinha. O catálogo estava vazio, sem pedidos ou configuração anterior de recebimentos na consulta de produção desta alteração. O próprio administrador configura produtos, contato e condições antes de abrir vendas.
+
+Fontes consultadas: https://www.infinitepay.io/checkout e https://www.infinitepay.io/desenvolvedores . Nenhuma compra real foi executada como teste.

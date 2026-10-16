@@ -96,3 +96,16 @@ Créditos públicos: Victoryno. O ataque em linha do Guardião alcança até 5 c
 A visão das armadilhas é independente do exército que joga. Contra o computador, a interface mostra apenas as armadilhas dos Rubros (jogador humano), inclusive quando os Azuis começam, durante a jogada e animações da IA e ao retomar uma partida. No modo local, nenhuma armadilha aparece durante a troca de jogador; o novo lado só é revelado depois de confirmar que recebeu o aparelho. O contador também respeita a visão do jogador. Armadilhas ativadas continuam produzindo os efeitos previstos. No online, o servidor continua enviando somente as armadilhas da conta/lado autorizado. O APK 3.5.3 inclui a mesma correção, preservando assinatura, dados locais, artes e áudios.
 
 `tests/test_trap_visibility.js` executa a interface real com DOM simulado, testa a preparação, sorteio, cada reconstrução do tabuleiro, animações, passagem de turno e retomada. O teste reproduziu a falha anterior e passa com a correção.
+
+
+### Atualização 3.5.4 — InfinitePay
+
+O Checkout Integrado InfinitePay substitui o Mercado Pago nas novas compras quando `STORE_PAYMENT_PROVIDER=infinitepay`. Configure `INFINITEPAY_HANDLE` com a InfiniteTag confirmada do vendedor e mantenha `STORE_SETTINGS_KEY` como segredo hexadecimal de 32 bytes. A conta administradora confirmada é `victoryno`; o recebimento confirmado é `consultorcamargo`. A tag é uma identificação pública, não uma credencial bancária.
+
+O servidor calcula preços e entrega em centavos e cria o link oficial com referência exclusiva do pedido. Notificações usam um token por pedido derivado do segredo do servidor. Tanto a notificação quanto o retorno do comprador precisam passar pela API `payment_check`, que recebe a conta original, pedido, transação e fatura. Valores, forma de pagamento, referências e unicidade da transação são verificados antes de liberar o item. O provedor de cada pedido fica identificado em `merchant_id` (`infinitepay:<handle>`); não houve mudança de esquema ou migração destrutiva. Pedidos antigos do Mercado Pago mantêm sua reconciliação com as configurações anteriores.
+
+A documentação pública consultada em 16/10/2026 descreve confirmação de aprovação, sem contrato documentado de eventos de estorno/chargeback. Por isso reembolsos financeiros são feitos pelo criador no aplicativo InfinitePay; depois, o painel permite registrar o reembolso/contestação com nova autenticação e revoga o acesso digital. Um aviso antigo não reativa um pedido cancelado. A loja continua exigindo produtos, contato, condições e abertura explícita pelo administrador para iniciar vendas. Não há mensalidade da integração, assinaturas ou chamadas reais de pagamento nos testes.
+
+Os testes `tests/test_infinitepay.js` cobrem valores adulterados, notificações falsas, consultas independentes, repetições e concorrência, transação usada em dois pedidos, isolamento por conta, atualização da InfiniteTag sem redirecionar pedidos antigos, entrega digital, reembolsos, reinício e URLs permitidas. O Android 3.5.4 mantém a assinatura original e inclui o mesmo fluxo de loja.
+
+Documentação oficial: https://www.infinitepay.io/checkout-documentacao
