@@ -24,6 +24,6 @@ A chave de assinatura Android e sua senha ficam fora do repositório; preserve o
 ## Skins (16/10/2026)
 
 - As 16 skins alteram roupas, nome público do jogador e identificação do próprio time. Preço fixo: R$ 2,50 por skin, no servidor e no catálogo. Não alteram regras ou vantagens.
-- O usuário pediu Pix ou débito e crédito apenas acima de R$ 10. O Checkout Integrado da InfinitePay documenta Pix e crédito, sem débito, e não documenta restrição de meios por valor em cada link. A Lei paulista 17.832/2023, art. 93, veda valor mínimo para compras com cartão.
-- As skins estão publicadas para prévia, com vendas pausadas no servidor até o usuário escolher uma política compatível. Não habilite crédito de qualquer valor nem prometa débito sem decisão explícita. Não gere cobrança para depois negar a skin por causa do meio de pagamento.
+- Em 16/10/2026, o usuário aceitou explicitamente abrir as vendas com Pix e cartão de crédito sem restrição por valor no Checkout Integrado da InfinitePay. Pediu que não haja aviso sobre valor mínimo. Não anuncie débito, que não é documentado para este checkout.
+- A venda das skins segue o controle geral de abertura da loja, com recebimento conectado, banco persistente e informações de atendimento preenchidas. Não gere cobrança para depois negar a skin por causa do meio de pagamento. Testes usam apenas respostas simuladas, sem cobrança real.
 - A propriedade e a skin equipada são verificadas no servidor; reembolso revoga o uso. Preferências de skin e tabuleiro são separadas. Dados públicos do multiplayer incluem somente nome e skin verificada, sem identificadores privados.

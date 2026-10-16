@@ -13,6 +13,6 @@
   name_color:light,description:'Recolore as roupas das sete unidades, o nome do jogador e a identificação do seu time em '+label.toLowerCase()+' '+(tone==='light'?'claro':'escuro')+'. Compra única por R$ 2,50, vinculada à sua conta. Skin exclusivamente visual: não altera poderes, regras ou desempenho.'
  }))));
  const findSkin=id=>SKINS.find(s=>s.id===id)||null;
- const PAYMENT_NOTICE='Cada skin custa R$ 2,50 e é uma compra única para sua conta. As skins mudam as roupas das peças, o nome do jogador e a identificação do time, sem vantagens nas partidas. A venda das skins está temporariamente pausada enquanto as formas de pagamento são definidas. Nenhuma cobrança é feita pela prévia.';
+ const PAYMENT_NOTICE='Cada skin custa R$ 2,50 e é uma compra única para sua conta. As skins mudam as roupas das peças, o nome do jogador e a identificação do time, sem vantagens nas partidas. Pague por Pix ou cartão de crédito no ambiente seguro da InfinitePay. A skin é liberada na sua coleção após a confirmação do pagamento.';
  return {SKINS,PRICE_CENTS,findSkin,PAYMENT_NOTICE};
 });
