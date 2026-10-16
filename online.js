@@ -6,7 +6,7 @@ const aliases={king:'Rei',guardian:'Guardião',colossus:'Colosso',wolf:'Lobo',sc
 const tokens={king:'token_king.webp',guardian:'token_guardian.webp',colossus:'token_colossus.webp',wolf:'token_wolf.webp',scout:'token_scout.webp',soldier:'token_soldier.webp',archer:'token_archer.webp'};
 const guides={
  king:'Movimento e ataque: até 2 casas nas oito direções. Possui 2 vidas e copia o último ataque recebido, uma vez no próximo turno. Seu ataque próprio causa uma explosão.',
- guardian:'Move quantas casas quiser nas oito direções, sem atravessar peças. Ataca até 3 inimigos num raio de 3 ou o primeiro inimigo em uma linha horizontal ou vertical. Somente o original conta para vitória.',
+ guardian:'Move quantas casas quiser nas oito direções, sem atravessar peças. Ataca até 3 inimigos num raio de 3 ou o primeiro inimigo a até 5 casas em linha horizontal ou vertical, sem atravessar peças. Somente o original conta para vitória.',
  colossus:'Move 1 casa. Investe exatamente 3 casas em linha cardinal, atingindo o trajeto; depois pode avançar 1 e esmagar até 8 vizinhos na sua próxima ação. Armadilhas interrompem a Investida.',
  wolf:'Salta em L de 3×2 ou 2×3, podendo atacar no destino. Após atacar fica 1 turno parado. Pode trocar de lugar com o Rei em resgates permitidos.',
  scout:'Move 1 casa. Magia em V até 4 casas nas diagonais orientáveis; primeiro ataque marca e paralisa, segundo executa marca ativa. Dois ataques no turno quando permitido.',
@@ -61,7 +61,7 @@ function boardClick(x,y){if(!game||!room)return;const p=pieceAt(x,y);if(game.s.p
   else useAction(choices[0]);return;}
  if(p){audioPlayer.ui('tap');selected=p.id;paint();}else{selected=null;paint();}
 }
-function actionLabel(k){return ({move:'Mover',hit:'Ataque normal',charge:'Investida do Colosso',fieldCharge:'Investida ao campo',smash:'Esmagamento',rescue:'Resgate Real',wolfHit:'Salto de ataque',area:'Ataque em área',line:'Ataque em linha',mark:'Marcar e paralisar',execute:'Executar marca',copyMove:'Salto copiado',copyWolfHit:'Ataque copiado do Lobo',copyCharge:'Investida copiada',copyHit:'Ataque copiado',copyArea:'Área copiada',copyLine:'Linha copiada'})[k]||k;}
+function actionLabel(k){return ({move:'Mover',hit:'Ataque normal',charge:'Investida do Colosso',fieldCharge:'Investida ao campo',smash:'Esmagamento',rescue:'Resgate Real',wolfHit:'Salto de ataque',area:'Ataque em área',line:'Ataque em linha (até 5 casas)',mark:'Marcar e paralisar',execute:'Executar marca',copyMove:'Salto copiado',copyWolfHit:'Ataque copiado do Lobo',copyCharge:'Investida copiada',copyHit:'Ataque copiado',copyArea:'Área copiada',copyLine:'Linha copiada (até 5 casas)'})[k]||k;}
 function useAction(a){if(['area','copyArea'].includes(a.kind)){
  const p=game.piece(a.p),candidates=game.guardianTargets(p);
  const overlay=$('choiceOverlay'),title=$('choiceTitle'),help=$('choiceHelp'),root=$('choiceButtons');

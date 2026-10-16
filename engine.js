@@ -88,7 +88,7 @@ class KharTall{
   return targets;
  }
  guardianTargets(p){return this.s.pieces.filter(q=>q.side!==p.side&&dist(p,q)<=3&&!this.blockedByAllyArea(p,q));}
- guardianLineTargets(p){let out=[];for(const [dx,dy] of DIR4){for(let i=1;i<N;i++){let x=p.x+dx*i,y=p.y+dy*i;if(!inside(x,y))break;let t=this.pieceAt(x,y);if(t){if(t.side!==p.side)out.push(t);break;}}}return out;}
+ guardianLineTargets(p){let out=[];for(const [dx,dy] of DIR4){for(let i=1;i<=5;i++){let x=p.x+dx*i,y=p.y+dy*i;if(!inside(x,y))break;let t=this.pieceAt(x,y);if(t){if(t.side!==p.side)out.push(t);break;}}}return out;}
  statusActive(p,k){return !!(p[k]&&p[k].n>0);}
  canPieceAct(p){if(p.type==='king')return true;return !(this.statusActive(p,'stun')||this.statusActive(p,'freeze')||this.statusActive(p,'rest'));}
  isKingRestricted(p){return this.statusActive(p,'stun')||this.statusActive(p,'freeze');}
