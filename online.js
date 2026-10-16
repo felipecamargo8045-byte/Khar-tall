@@ -37,7 +37,7 @@ async function submit(op,input={}){if(!room||loading)return;loading=true;renderP
 function renderPreparation(){gameUI.preparation({active:!!game&&game.s.phase==='setup'&&!!myTurn(),key:room?.code+':'+game?.s.setupSide,count:game?.s.traps.filter(t=>t.side===room.side).length||0,side:colors[room?.side]||'',busy:loading});}
 function soundEvent(e){if(!e||!room||!soundOn)return;const result=KharTallAudio.plan(e);audioPlayer.sequence(result.cues);if(result.utility)audioPlayer.utility(result.utility);}
 async function refresh(){if(!room)return;try{const r=await fetch('/api/online/rooms/'+room.code,{credentials:'same-origin',cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Sala inacessível.');if(d.revision<lastRevision)return;connected=true;
-  const old=lastEvent,priorRevision=lastRevision; if(d.revision!==lastRevision){lastRevision=d.revision;lastEvent=d.lastEvent; if(priorRevision>=0){soundEvent(d.lastEvent,old);}}clockOffset=d.serverMs-Date.now();deadline=d.deadlineMs||0;room=d;game=KharTall.restore(d.state);$('connection').textContent='Conectado · você controla os '+colors[d.side]+(d.hasOpponent?' · dois jogadores na sala':' · esperando adversário');$('roomTitle').textContent='Sala '+d.code;
+  const old=lastEvent,priorRevision=lastRevision; if(d.revision!==lastRevision){lastRevision=d.revision;lastEvent=d.lastEvent; if(priorRevision>=0){soundEvent(d.lastEvent,old);}}clockOffset=d.serverMs-Date.now();deadline=d.deadlineMs||0;room=d;window.KharTallAppearance?.setPlayers(d.players);game=KharTall.restore(d.state);$('connection').textContent='Conectado · você controla os '+colors[d.side]+(d.hasOpponent?' · dois jogadores na sala':' · esperando adversário');$('roomTitle').textContent='Sala '+d.code;
   $('lobby').hidden=true;$('match').hidden=false;paint();
  }catch(e){connected=false;$('connection').textContent='Sem conexão — tentando reconectar';toast(errMsg(e));}}
 function listen(){if(!room)return;events?.close();events=new EventSource('/api/online/rooms/'+room.code+'/events');events.addEventListener('update',refresh);events.addEventListener('open',()=>{connected=true;refresh();});events.onerror=()=>{connected=false;$('connection').textContent='Conexão instável — reconectando automaticamente';};}
@@ -109,7 +109,7 @@ function paint(){if(!game||!room)return;let s=game.s,$board=$('onlineBoard');$bo
   const cell=document.createElement('button');cell.type='button';cell.className='sq '+((x+y)%2?'dark':'light');cell.setAttribute('role','gridcell');cell.setAttribute('aria-label',`Casa ${'ABCDEFGHIJ'[x]}${10-y}`);
   const field=game.field(x,y);if(field){cell.classList.add(field.kind==='heal'?'heal':'crystal');let ico=document.createElement('span');ico.className='tileMark';ico.textContent=field.kind==='heal'?'✚':'◆';cell.append(ico);}
   if(s.traps.some(t=>t.side===room.side&&t.x===x&&t.y===y))cell.classList.add('ownTrap');
-  const p=pieceAt(x,y);if(p){const div=document.createElement('span');div.className='online-unit '+(p.side===0?'red':'blue')+(p.original?' original':'');const img=document.createElement('img');img.src='/assets/'+tokens[p.type];img.alt=aliases[p.type];div.append(img);
+  const p=pieceAt(x,y);if(p){const div=document.createElement('span');div.className='online-unit '+(p.side===0?'red':'blue')+(p.original?' original':'');const img=document.createElement('img');img.src='/assets/'+tokens[p.type];img.alt=aliases[p.type];window.KharTallSkins?.paintPiece(img,p.type,window.KharTallAppearance?.forSide(p.side));window.KharTallSkins?.decorate(div,window.KharTallAppearance?.forSide(p.side));div.append(img);
    if(p.type==='king'){const h=document.createElement('span');h.className='mini';h.textContent='♥'+p.hp;div.append(h);}
    if(p.mark||p.stun||p.freeze){const st=document.createElement('span');st.className='mark';st.textContent=p.freeze?'⚑':p.stun?'❄':'✧';div.append(st);}
    cell.append(div);
@@ -118,6 +118,7 @@ function paint(){if(!game||!room)return;let s=game.s,$board=$('onlineBoard');$bo
  }
  $('redStatus').textContent='RUBROS · '+s.pieces.filter(p=>p.side===0).length+' peças'+(s.side===0&&s.phase==='play'?' • TURNO':'');
  $('blueStatus').textContent='AZUIS · '+s.pieces.filter(p=>p.side===1).length+' peças'+(s.side===1&&s.phase==='play'?' • TURNO':'');
+ for(const side of [0,1]){const root=$(side===0?'redStatus':'blueStatus');window.KharTallSkins?.decorate(root,window.KharTallAppearance?.forSide(side));const username=window.KharTallAppearance?.username(side);if(username){const label=document.createElement('span');label.className='kt-player-name';label.textContent=username;root.append(label);}}
  $('phase').textContent=s.phase==='setup'?'ARMADILHAS':s.phase==='play'?'EM COMBATE':s.phase==='over'?'FIM':'ESPERA';
  $('battleStatus').textContent=room.status==='waiting'?'Compartilhe o convite e aguarde o segundo comandante.':s.phase==='setup'?(myTurn()?'Sua vez de posicionar duas armadilhas.':'O adversário prepara as armadilhas em segredo.'):s.phase==='over'?(s.winner===-1?'Empate.':`Vitória dos ${colors[s.winner]}.`):s.fieldPending?'Uma peça alcançou um campo mágico. Escolha o efeito.':s.combo?'O Batedor pode realizar seu segundo ataque.':s.reaction?'Reação Real: movimento defensivo, resgate ou ataque copiado.':myTurn()?'É o seu turno. Escolha uma ação.':'Aguardando a jogada do adversário.';
  const logs=$('log');logs.replaceChildren();for(const entry of s.logs.slice(0,12)){const d=document.createElement('div');d.className='logentry';d.textContent=entry.msg;logs.append(d);}
@@ -137,3 +138,4 @@ setInterval(()=>{if(room?.state&&!document.hidden&&!connected)refresh();},15000)
 recent();init();
 window.KharTallOnline={getGame:()=>game,refresh,code:()=>room?.code,side:()=>room?.side};
 })();
+

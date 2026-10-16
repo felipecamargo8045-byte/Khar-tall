@@ -654,7 +654,7 @@ function renderBoard(){const root=el('board'),s=game.s;const {hints,chosen}=curr
   if(s.phase==='setup'&&!p&&!f){sq.classList.add('setupSquare');}
   if(p){const item=one('div','',`unit ${p.side===RED?'red':'blue'} ${p.original?'original':''} ${p.mark?'marked':''} ${(p.stun||p.freeze||p.rest)?'disabled':''}`);
    item.dataset.pid=String(p.id);
-   let portrait=one('span','', 'tokenPortrait'),img=one('img','', 'tokenArt');img.src=TOKEN_ART[p.type];img.alt='';img.draggable=false;portrait.append(img);item.append(portrait);
+   let portrait=one('span','', 'tokenPortrait'),img=one('img','', 'tokenArt');img.src=TOKEN_ART[p.type];img.alt='';img.draggable=false;window.KharTallSkins?.paintPiece(img,p.type,window.KharTallAppearance?.forSide(p.side));window.KharTallSkins?.decorate(item,window.KharTallAppearance?.forSide(p.side));portrait.append(img);item.append(portrait);
    item.append(one('span',SYMBOL[p.type],'glyph'));item.append(one('span',SHORT[p.type],'unitName'));
    if(p.type==='king')item.append(one('span',`${p.hp}♥`,'life'));
    if(p.stun||p.freeze||p.rest)item.append(one('span',p.freeze?'⚑':p.stun?'❄':'⌛','effect'));
@@ -668,6 +668,7 @@ function renderTeams(){const s=game.s;
  for(let side of [RED,BLUE]){let k=game.king(side),original=game.guardian(side),count=s.pieces.filter(p=>p.side===side).length;
   let root=el(side===RED?'redTeam':'blueTeam');root.className=`team ${side===RED?'red':'blue'} ${currentSide()===side?'now':''}`;
   root.innerHTML=`<div class="banner">${side===RED?'⚑':'⚜'}</div><div class="words"><strong>${sideName(side)}</strong><small>${count}/20 peças · ${k?'<span class="hp">'+('♥'.repeat(k.hp))+'</span>':'Rei ✕'}</small><small>Guardião original ${original?'◆':'✕'}</small></div>`;
+  window.KharTallSkins?.decorate(root,window.KharTallAppearance?.forSide(side));const username=window.KharTallAppearance?.username(side);if(username){const label=one('span',username,'kt-player-name');root.querySelector('.words').append(label);}
  }
 }
 
@@ -935,8 +936,10 @@ function wire(){applyPrefs();el('codexButton').onclick=openCodex;el('tutorialBut
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(picker)cancelPicker();else if(modal&&!modal.locked)dismissModal();else if(selectedId){clearSelection();render();}}});
  setInterval(tick,150);
 }
+window.addEventListener('kt-appearance-change',()=>{renderTeams();renderBoard();});
 primeScoutWavs();
 wire();render();setupResume();
 // Interface de testes manuais, sem enviar dados para fora do navegador.
 window.KharTallV2={getGame:()=>game,launch:fresh,chooseAI,autoField:()=>aiFieldResolve(game),codex:openCodex,settings:()=>({...prefs})};
 })();
+

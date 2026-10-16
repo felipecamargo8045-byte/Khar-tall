@@ -1,7 +1,7 @@
 {
   "name": "khar-tall-online",
   "private": true,
-  "version": "3.5.4",
+  "version": "3.6.0",
   "engines": {
     "node": ">=22.13"
   },
@@ -14,3 +14,4 @@
     "test": "node tests/run.js"
   }
 }
+

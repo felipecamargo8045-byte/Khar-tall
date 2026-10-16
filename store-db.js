@@ -1,6 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
 const {getPool}=require('./database.js');
+const {SKINS,PRICE_CENTS,findSkin}=require('./skin-catalog.js');
 class ShopStore{
  constructor({pool=getPool(),file=process.env.STORE_DATABASE_PATH||path.join(__dirname,'data/store.sqlite3')}={}){this.pool=pool;this.persistent=!!pool;this.file=file;this.ready=false;this.pending=null;}
  async init(){if(this.ready)return;if(this.pending)return this.pending;this.pending=this.initialize().finally(()=>{this.pending=null;});return this.pending;}
@@ -12,7 +13,12 @@ class ShopStore{
    CREATE INDEX IF NOT EXISTS kt_store_orders_user ON kt_store_orders(user_id,created_ms);
    CREATE TABLE IF NOT EXISTS kt_store_preferences(user_id ${userType} PRIMARY KEY${prefFK},theme text NOT NULL DEFAULT 'classic');
    CREATE TABLE IF NOT EXISTS kt_store_settings(id text PRIMARY KEY,value text NOT NULL);`;
-  if(this.pool)await this.pool.query(sql);else this.db.exec(sql);this.ready=true;
+  if(this.pool){await this.pool.query(sql);await this.pool.query("ALTER TABLE kt_store_preferences ADD COLUMN IF NOT EXISTS skin text NOT NULL DEFAULT 'classic'");}
+  else{this.db.exec(sql);if(!this.db.prepare('PRAGMA table_info(kt_store_preferences)').all().some(c=>c.name==='skin'))this.db.exec("ALTER TABLE kt_store_preferences ADD COLUMN skin text NOT NULL DEFAULT 'classic'");}
+  // Stable product IDs make this safe on restarts; preserve any archive decision.
+  const seedSQL=`INSERT INTO kt_store_products(id,title,description,kind,price_cents,shipping_cents,image,reward,delivery_url,active,created_ms,updated_ms) VALUES($1,$2,$3,'digital',$4,0,$5,$6,'',1,$7,$8) ON CONFLICT(id) DO UPDATE SET price_cents=excluded.price_cents,shipping_cents=0,reward=excluded.reward,kind='digital'`;
+  for(const skin of SKINS){const params=[skin.product_id,'Skin '+skin.name,skin.description,PRICE_CENTS,'/assets/token_king.webp',skin.id,Date.now(),Date.now()];if(this.pool)await this.pool.query(seedSQL,params);else this.db.prepare(seedSQL.replace(/\$\d+/g,'?')).run(...params);}
+  this.ready=true;
  }
  async query(sql,params=[]){await this.init();if(this.pool)return this.pool.query(sql,params);const statement=this.db.prepare(sql.replace(/\$\d+/g,'?'));if(/^\s*(?:SELECT|WITH)/i.test(sql))return {rows:statement.all(...params)};const result=statement.run(...params);return {rows:[],rowCount:Number(result.changes)};}
  async one(sql,params=[]){return (await this.query(sql,params)).rows[0]||null;}
@@ -28,6 +34,10 @@ class ShopStore{
  async owned(userId){return (await this.query("SELECT DISTINCT reward FROM kt_store_orders WHERE user_id=$1 AND kind='digital' AND payment_status='approved' AND reward<>''",[userId])).rows.map(r=>r.reward);}
  async theme(userId){return (await this.one('SELECT theme FROM kt_store_preferences WHERE user_id=$1',[userId]))?.theme||'classic';}
  async setTheme(userId,theme){await this.query('INSERT INTO kt_store_preferences(user_id,theme) VALUES($1,$2) ON CONFLICT(user_id) DO UPDATE SET theme=excluded.theme',[userId,theme]);}
+ async skin(userId){return (await this.one('SELECT skin FROM kt_store_preferences WHERE user_id=$1',[userId]))?.skin||'classic';}
+ async setSkin(userId,skin){await this.query('INSERT INTO kt_store_preferences(user_id,skin) VALUES($1,$2) ON CONFLICT(user_id) DO UPDATE SET skin=excluded.skin',[userId,skin]);}
+ async publicCosmetic(userId){if(!userId||!this.pool)return {username:'',skin:'classic'};const user=await this.one('SELECT username FROM kt_users WHERE id=$1',[userId]);if(!user)return {username:'',skin:'classic'};const [skin,owned]=await Promise.all([this.skin(userId),this.owned(userId)]);return {username:user.username,skin:findSkin(skin)&&owned.includes(skin)?skin:'classic'};}
  close(){this.db?.close();this.db=null;this.ready=false;}
 }
 module.exports={ShopStore};
+
