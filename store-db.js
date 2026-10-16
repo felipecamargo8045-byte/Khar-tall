@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
 const {getPool}=require('./database.js');
-const {SKINS,PRICE_CENTS,findSkin}=require('./skin-catalog.js');
+const {SKINS,PRICE_CENTS,findSkin,LEGACY_NAMES}=require('./skin-catalog.js');
 class ShopStore{
  constructor({pool=getPool(),file=process.env.STORE_DATABASE_PATH||path.join(__dirname,'data/store.sqlite3')}={}){this.pool=pool;this.persistent=!!pool;this.file=file;this.ready=false;this.pending=null;}
  async init(){if(this.ready)return;if(this.pending)return this.pending;this.pending=this.initialize().finally(()=>{this.pending=null;});return this.pending;}
@@ -16,8 +16,8 @@ class ShopStore{
   if(this.pool){await this.pool.query(sql);await this.pool.query("ALTER TABLE kt_store_preferences ADD COLUMN IF NOT EXISTS skin text NOT NULL DEFAULT 'classic'");}
   else{this.db.exec(sql);if(!this.db.prepare('PRAGMA table_info(kt_store_preferences)').all().some(c=>c.name==='skin'))this.db.exec("ALTER TABLE kt_store_preferences ADD COLUMN skin text NOT NULL DEFAULT 'classic'");}
   // Stable product IDs make this safe on restarts; preserve any archive decision.
-  const seedSQL=`INSERT INTO kt_store_products(id,title,description,kind,price_cents,shipping_cents,image,reward,delivery_url,active,created_ms,updated_ms) VALUES($1,$2,$3,'digital',$4,0,$5,$6,'',1,$7,$8) ON CONFLICT(id) DO UPDATE SET price_cents=excluded.price_cents,shipping_cents=0,reward=excluded.reward,kind='digital'`;
-  for(const skin of SKINS){const params=[skin.product_id,'Skin '+skin.name,skin.description,PRICE_CENTS,'/assets/token_king.webp',skin.id,Date.now(),Date.now()];if(this.pool)await this.pool.query(seedSQL,params);else this.db.prepare(seedSQL.replace(/\$\d+/g,'?')).run(...params);}
+  const seedSQL=`INSERT INTO kt_store_products(id,title,description,kind,price_cents,shipping_cents,image,reward,delivery_url,active,created_ms,updated_ms) VALUES($1,$2,$3,'digital',$4,0,$5,$6,'',1,$7,$8) ON CONFLICT(id) DO UPDATE SET price_cents=excluded.price_cents,shipping_cents=0,reward=excluded.reward,kind='digital',title=CASE WHEN kt_store_products.title=$9 THEN excluded.title ELSE kt_store_products.title END,description=CASE WHEN kt_store_products.title=$10 THEN excluded.description ELSE kt_store_products.description END`;
+  for(const skin of SKINS){const oldTitle=LEGACY_NAMES[skin.id]?'Skin '+LEGACY_NAMES[skin.id]:'',params=[skin.product_id,'Skin '+skin.name,skin.description,PRICE_CENTS,'/assets/token_king.webp',skin.id,Date.now(),Date.now(),oldTitle,oldTitle];if(this.pool)await this.pool.query(seedSQL,params);else this.db.prepare(seedSQL.replace(/\$\d+/g,'?')).run(...params);}
   this.ready=true;
  }
  async query(sql,params=[]){await this.init();if(this.pool)return this.pool.query(sql,params);const statement=this.db.prepare(sql.replace(/\$\d+/g,'?'));if(/^\s*(?:SELECT|WITH)/i.test(sql))return {rows:statement.all(...params)};const result=statement.run(...params);return {rows:[],rowCount:Number(result.changes)};}

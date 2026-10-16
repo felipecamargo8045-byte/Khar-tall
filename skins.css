@@ -3,6 +3,7 @@
 .team.kt-skin-colors strong,.online-team.kt-skin-colors,.kt-player-name.kt-skin-colors{color:var(--skin-name)!important}
 .team.kt-skin-colors .banner{background:var(--skin-color)!important;color:#fff!important}
 .unit.kt-skin-colors,.online-unit.kt-skin-colors{border-color:var(--skin-color)!important;box-shadow:0 0 0 1px var(--skin-name),0 2px 7px #000c!important}
+.unit.kt-skin-colors::after{background:none!important;opacity:0}
 .kt-player-name{display:block;font:600 12px/1.4 system-ui,sans-serif;overflow-wrap:anywhere}
 .skin-art{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:20px;background:radial-gradient(ellipse at top,color-mix(in srgb,var(--skin-color) 35%,#17151a),#121217);border-bottom:1px solid var(--skin-color);min-height:225px;align-content:center}
 .skin-art img{width:100%;aspect-ratio:1;object-fit:contain;border-radius:18%;box-shadow:0 5px 18px #0006}

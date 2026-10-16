@@ -27,8 +27,9 @@
    const at=(y*canvas.width+x)*4,[h,s,l]=hsl(pixels[at],pixels[at+1],pixels[at+2]);
    const distance=Math.min(h,360-h),blend=(1-smooth(15,32,distance))*smooth(.06,.25,s)*smooth(.035,.14,l)*(1-smooth(.76,.9,l));
    if(blend<=0)continue;
-   const light=skin.tone==='light'?Math.min(.86,l*1.15+.08):Math.max(.035,l*.78);
-   const next=rgb(skin.hue,Math.max(.35,Math.min(.75,s*.8)),light);
+   const shade=skin.cloth_lightness||(skin.tone==='light'?[1.15,.08]:[.78,0]);
+   const light=Math.max(.035,Math.min(.86,l*shade[0]+shade[1]));
+   const next=rgb(skin.hue,skin.cloth_saturation??Math.max(.35,Math.min(.75,s*.8)),light);
    for(let channel=0;channel<3;channel++)pixels[at+channel]=Math.round(pixels[at+channel]*(1-blend)+next[channel]*blend);
   }
   context.putImageData(frame,0,0);return canvas.toDataURL('image/png');

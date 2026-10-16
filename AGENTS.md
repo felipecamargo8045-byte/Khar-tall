@@ -24,6 +24,7 @@ A chave de assinatura Android e sua senha ficam fora do repositório; preserve o
 ## Skins (16/10/2026)
 
 - As 16 skins alteram roupas, nome público do jogador e identificação do próprio time. Preço fixo: R$ 2,50 por skin, no servidor e no catálogo. Não alteram regras ou vantagens.
+- O vermelho e o azul padrões pertencem aos visuais gratuitos. As opções pagas dessas famílias usam coral claro, vinho escuro, azul-gelo claro e azul-noite escuro, com tons de roupa distintos dos padrões. Preserve os IDs de skins/produtos e as compras ao ajustar nomes ou cores. Não aplique a sobreposição vermelha/azul padrão sobre roupas com skin equipada.
 - Em 16/10/2026, o usuário aceitou explicitamente abrir as vendas com Pix e cartão de crédito sem restrição por valor no Checkout Integrado da InfinitePay. Pediu que não haja aviso sobre valor mínimo. Não anuncie débito, que não é documentado para este checkout.
 - A venda das skins segue o controle geral de abertura da loja, com recebimento conectado, banco persistente e informações de atendimento preenchidas. Não gere cobrança para depois negar a skin por causa do meio de pagamento. Testes usam apenas respostas simuladas, sem cobrança real.
 - A propriedade e a skin equipada são verificadas no servidor; reembolso revoga o uso. Preferências de skin e tabuleiro são separadas. Dados públicos do multiplayer incluem somente nome e skin verificada, sem identificadores privados.

@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),crypto=require('node:crypto'),http=require('node:http'),vm=require('node:vm');
-const {SKINS,PRICE_CENTS,findSkin,PAYMENT_NOTICE}=require('../skin-catalog.js'),{ShopStore}=require('../store-db.js'),{createCommerce}=require('../store-server.js');
+const {SKINS,PRICE_CENTS,findSkin,PAYMENT_NOTICE,LEGACY_NAMES}=require('../skin-catalog.js'),{ShopStore}=require('../store-db.js'),{createCommerce}=require('../store-server.js');
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'kt-skins-')),file=path.join(temp,'shop.sqlite3');
 const {DatabaseSync}=require('node:sqlite');const old=new DatabaseSync(file);old.exec("CREATE TABLE kt_store_preferences(user_id text PRIMARY KEY,theme text NOT NULL DEFAULT 'classic'); INSERT INTO kt_store_preferences VALUES('prior-player','frost')");old.close();
 const users=Object.fromEntries(['owner','buyer','other'].map(username=>[username,{id:crypto.randomUUID(),username}]));
@@ -23,11 +23,25 @@ async function renderer(){
  const image={dataset:{},style:{}};context.window.KharTallSkins.paintPiece(image,'king','skin_green_light');await new Promise(resolve=>setImmediate(resolve));
  assert.equal(image.src,'data:image/png;fixture');const out=canvases[0];assert.ok(out);assert.deepEqual([...out.slice(face,face+4)],[...pixels.slice(face,face+4)],'Face outside cloth polygon is untouched');assert.deepEqual([...out.slice(background,background+4)],[...pixels.slice(background,background+4)],'Background is untouched');assert.deepEqual([...out.slice(metal,metal+4)],[...pixels.slice(metal,metal+4)],'Gold metal is untouched');assert.notDeepEqual([...out.slice(cloth,cloth+3)],[...pixels.slice(cloth,cloth+3)],'Cloth changes color');assert.ok(out[cloth+1]>out[cloth],'Green skin changes red clothing to green');
  assert.equal(out.length,pixels.length,'Resolution preserved');for(let i=3;i<out.length;i+=4)assert.equal(out[i],pixels[i],'Alpha preserved');
+ const clothColors=[];
+ for(const id of ['skin_red_light','skin_red_dark','skin_blue_light','skin_blue_dark']){
+  const sample={dataset:{},style:{}};context.window.KharTallSkins.paintPiece(sample,'king',id);await new Promise(resolve=>setImmediate(resolve));
+  const rendered=canvases.at(-1),color=[...rendered.slice(cloth,cloth+3)];clothColors.push(color);
+  const distance=other=>Math.hypot(...color.map((v,i)=>v-other[i]));
+  assert.ok(distance([105,24,24])>30,id+' clearly differs from the original red cloth');
+  assert.ok(distance([25,71,118])>30,id+' differs from a standard blue cloth');
+  for(const at of [face,background,metal])assert.deepEqual([...rendered.slice(at,at+4)],[...pixels.slice(at,at+4)],id+' preserves the portrait outside its clothes');
+ }
+ assert.equal(new Set(clothColors.map(x=>x.join(','))).size,4,'All four variants have distinct cloth colors');
 }
 (async()=>{try{
  assert.equal(SKINS.length,16);assert.equal(new Set(SKINS.map(s=>s.id)).size,16);assert.equal(new Set(SKINS.map(s=>s.product_id)).size,16);assert.ok(SKINS.every(s=>s.price_cents===250));assert.equal(PRICE_CENTS,250);
  await new Promise(r=>server.listen(0,'127.0.0.1',r));origin='http://127.0.0.1:'+server.address().port;
  const catalog=(await api('catalog','GET',null,null)).data;assert.equal(catalog.products.filter(p=>findSkin(p.reward)).length,16);assert.equal(catalog.skin_checkout_enabled,false);assert.match(catalog.skin_payment_notice,/R\$ 2,50/);assert.equal(catalog.payment_methods.includes('Débito'),false);
+ for(const [id,oldName]of Object.entries(LEGACY_NAMES)){const skin=findSkin(id);await store.query('UPDATE kt_store_products SET title=$1,description=$2,active=$3 WHERE id=$4',['Skin '+oldName,'Legacy description',id==='skin_red_dark'?0:1,skin.product_id]);}
+ store.close();store=new ShopStore({pool:null,file});store.persistent=true;commerce=createCommerce({store,env,auth:{current:async req=>users[req.headers['x-user']]||null},fetcher:provider});
+ for(const id of Object.keys(LEGACY_NAMES)){const skin=findSkin(id),product=await store.product(skin.product_id);assert.equal(product.title,'Skin '+skin.name,'Existing product is renamed with the same purchase ID');assert.equal(product.description,skin.description);assert.equal(Number(product.price_cents),250);assert.equal(Number(product.active),id==='skin_red_dark'?0:1,'An archived product stays archived');}
+ await store.query('UPDATE kt_store_products SET active=1 WHERE id=$1',[findSkin('skin_red_dark').product_id]);
  assert.equal(await store.theme('prior-player'),'frost','Old board preference survives migration');assert.equal(await store.skin('prior-player'),'classic');
  assert.equal((await api('skin','POST',{skin:SKINS[0].id},null)).status,401);assert.equal((await api('skin','POST',{skin:SKINS[0].id})).status,403);assert.equal((await api('skin','POST',{skin:'forged'})).status,422);
  const p=await store.product(SKINS[0].product_id);for(const price_cents of [0,249,251,1000]){const r=await api('admin/products','POST',{...p,price_cents,active:true},'owner');assert.equal(r.status,422,'Reject skin price '+price_cents);}
