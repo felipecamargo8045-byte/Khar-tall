@@ -109,3 +109,7 @@ A documentação pública consultada em 16/10/2026 descreve confirmação de apr
 Os testes `tests/test_infinitepay.js` cobrem valores adulterados, notificações falsas, consultas independentes, repetições e concorrência, transação usada em dois pedidos, isolamento por conta, atualização da InfiniteTag sem redirecionar pedidos antigos, entrega digital, reembolsos, reinício e URLs permitidas. O Android 3.5.4 mantém a assinatura original e inclui o mesmo fluxo de loja.
 
 Documentação oficial: https://www.infinitepay.io/checkout-documentacao
+
+## Android 3.6.1
+
+Inclui as variações coral, vinho, azul-gelo e azul-noite, mantendo os IDs das compras. O instalador assinado está preservado em partes Base64 em `android-releases/3.6.1`. `node scripts/restore-android.js` recompõe os bytes e confere tamanho e SHA-256 antes dos testes e da publicação. A chave privada de assinatura permanece fora do repositório.

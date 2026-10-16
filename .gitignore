@@ -13,4 +13,5 @@ android-signing/
 *.jks
 *.keystore
 *.apk.idsig
+downloads/khar-tall-3.6.1.apk
 icons/*.png

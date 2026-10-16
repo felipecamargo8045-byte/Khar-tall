@@ -1,0 +1,24 @@
+{
+  "file": "khar-tall-3.6.1.apk",
+  "size": 8592339,
+  "sha256": "db07a6249598787959d41b499c56dfac1afe4b0cd2666372f71ff3bee0614c21",
+  "parts": [
+    "part-000.b64",
+    "part-001.b64",
+    "part-002.b64",
+    "part-003.b64",
+    "part-004.b64",
+    "part-005.b64",
+    "part-006.b64",
+    "part-007.b64",
+    "part-008.b64",
+    "part-009.b64",
+    "part-010.b64",
+    "part-011.b64",
+    "part-012.b64",
+    "part-013.b64",
+    "part-014.b64",
+    "part-015.b64",
+    "part-016.b64"
+  ]
+}
