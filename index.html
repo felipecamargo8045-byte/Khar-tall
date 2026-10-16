@@ -7,8 +7,8 @@
 <link rel="stylesheet" href="/skins.css"></head><body>
 <div class="shell">
 <header class="masthead">
-  <div class="brand"><div class="eyebrow">ECOS DA CHAMA <span class="tiny-sep">✦</span> O ÚLTIMO VICTORINO</div><h1>KHAR <i>TALL</i></h1><div class="tagline">Estratégia • Guerra • Sacrifício <span class="vtag">EDIÇÃO LITERÁRIA · V3.0</span></div></div>
-  <div class="topActions"><a href="/loja" class="actionBtn">◇ Loja</a><a href="/instalar" class="actionBtn">Instalar aplicativo</a><a id="accountButton" class="actionBtn" href="/conta">Minha conta</a><a href="/online" class="actionBtn primary online-main-link">⚔ Jogar online</a><button id="tutorialButton" class="actionBtn book-tutorial-action">✦ Tutorial</button><button id="codexButton" class="actionBtn">✦ Compêndio visual</button><button id="audioToggle" class="actionBtn" aria-pressed="false">♫ Som desligado</button><button id="artToggle" class="actionBtn" aria-pressed="true">◉ Artes ativas</button><button id="newGame" class="actionBtn">↻ Nova partida</button><button id="helpButton" class="actionBtn">ⓘ Regras</button></div>
+  <div class="brand"><div class="eyebrow">ECOS DA CHAMA <span class="tiny-sep">✦</span> O ÚLTIMO VICTORINO</div><h1>KHAR <i>TALL</i></h1><div class="tagline">Estratégia • Guerra • Sacrifício <span class="vtag">EDIÇÃO LITERÁRIA · V3.7.0</span></div></div>
+  <div class="topActions"><button id="learnButton" class="actionBtn primary">✦ Aprender jogando</button><button id="newGame" class="actionBtn">↻ Nova partida</button><a href="/online" class="actionBtn online-main-link">⚔ Jogar online</a><button id="helpButton" class="actionBtn">ⓘ Regras</button><button id="settingsButton" class="actionBtn">Configurações</button><a id="accountButton" class="actionBtn" href="/conta">Minha conta</a><details class="gameExtras"><summary class="actionBtn">Mais opções</summary><div><button id="tutorialButton" class="actionBtn book-tutorial-action">Tutorial ilustrado</button><button id="codexButton" class="actionBtn">Compêndio visual</button><button id="audioToggle" class="actionBtn" aria-pressed="false">♫ Som desligado</button><button id="artToggle" class="actionBtn" aria-pressed="true">◉ Artes ativas</button><a href="/instalar" class="actionBtn">Instalar aplicativo</a><a href="/loja" class="actionBtn">◇ Loja</a></div></details></div>
 </header>
 <section class="book-origin" aria-label="Origem literária do Khar Tall">
   <div class="book-origin-seal" aria-hidden="true">✦</div>
@@ -27,6 +27,8 @@
    <div class="team team-red" id="redTeam"></div>
   </div>
   <div class="status" id="status"><span>Prepare as armadilhas para iniciar o confronto.</span></div>
+  <div class="victoryGoal" id="victoryGoal" role="status" aria-live="polite"></div>
+  <section class="learningPanel" id="learningPanel" hidden aria-labelledby="learningTitle"><strong id="learningTitle"></strong><p id="learningText" aria-live="polite"></p><button id="learningExit" class="actionBtn">Voltar à minha partida</button></section>
   <div class="board-stage"><div class="arena-rune" aria-hidden="true">✦</div><div class="board-outer"><div class="board-edge"><div class="board" id="board" role="grid" aria-label="Tabuleiro Khar Tall 10 por 10"></div></div><div class="axes" id="axes"></div></div></div>
   <div class="board-bottom"><span><i class="dot dot-move"></i>Mover</span><span><i class="dot dot-attack"></i>Atacar</span><span><i class="dot dot-skill"></i>Especial</span><span>✚ Cura</span><span>◆ Cristal</span><span>⚑ Armadilha</span></div>
   <div id="notice" class="notice" aria-live="polite">Toque em uma peça para ver sua descrição, ataque e especial.</div>
@@ -46,6 +48,6 @@
 <footer><strong>KHAR TALL</strong> · Criado por Victoryno · Jogo criado com base no livro <cite>Ecos da Chama: O Último Victorino</cite> <span aria-hidden="true">✦</span> Edição literária · Jogo local, IA e multiplayer online</footer>
 </div>
 <div id="modalRoot"></div><div id="accountRoot"></div><div id="battleAnnouncer" class="battleAnnouncer" aria-live="polite"></div>
-<script src="/skin-catalog.js"></script><script src="/skins.js"></script><script src="audio.js?v=3.6.0"></script><script src="game-ui.js"></script><script src="engine.js"></script><script src="app.js"></script><script src="account.js"></script>
+<script src="/skin-catalog.js"></script><script src="/skins.js"></script><script src="audio.js?v=3.6.0"></script><script src="game-ui.js"></script><script src="engine.js"></script><script src="learning.js"></script><script src="app.js"></script><script src="account.js"></script>
 <script src="/app-shell.js"></script><script src="/portal-nav.js"></script></body></html>
 

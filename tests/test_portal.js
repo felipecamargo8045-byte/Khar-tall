@@ -4,7 +4,7 @@ const origin=process.env.KT_URL||'http://127.0.0.1:8765';
 (async()=>{
  const get=p=>fetch(origin+p,{signal:AbortSignal.timeout(15000)});
  const page=await get('/portal');assert.equal(page.status,200);assert.equal(page.headers.get('x-frame-options'),'DENY');const html=await page.text();assert.doesNotMatch(html,/<iframe\b/i);
- const routes=new Set(['/jogar','/online','/conta','/loja','/painel-loja','/instalar','/portal.css','/portal.js','/portal-nav.css','/portal-nav.js']);
+ const routes=new Set(['/jogar','/online','/conta','/loja','/painel-loja','/instalar','/portal.css','/portal.js','/learning.js','/portal-nav.css','/portal-nav.js']);
  for(const match of html.matchAll(/data-route="([^"?#]+)/g))routes.add(match[1]);
  for(const route of routes){const r=await get(route);assert.equal(r.status,200,route);assert.equal(r.headers.get('x-frame-options'),'DENY',route+' keeps framing protection');}
  const [game,legacy]=await Promise.all(['/jogar','/'].map(async p=>(await get(p)).text()));assert.equal(game,legacy,'Portal uses the original complete game');

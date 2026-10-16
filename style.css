@@ -256,5 +256,15 @@ footer strong{color:#e2be86}footer cite{font-style:italic;color:#eed0a3}
 .tutorialProgress{gap:5px}
 .tutorialDot{flex:1;max-width:42px}
 @media(max-width:600px){.tutorialVisualImg{max-height:43vh}.tutorialVisualImg.expanded{max-height:none}.tutorialSummary{font-size:15px}.tutorialBullets{font-size:14px}.tutorialModal{padding:14px}}
+.victoryGoal{margin:0 0 10px;padding:11px 14px;border:1px solid #b9935a66;border-radius:8px;background:#272022;color:#f5dfbc;font:13px/1.55 system-ui,sans-serif}
+.victoryGoal.pursuit{border-color:#e1ae65;background:#482d23;color:#fff0cc;font-weight:650}
+.learningPanel{padding:14px;margin:0 0 10px;background:#24352f;border:1px solid #8fba96;border-radius:8px;color:#f3ead7}
+.learningPanel[hidden]{display:none}.learningPanel strong{display:block;color:#f4d59d}.learningPanel p{margin:7px 0 10px;font:15px/1.55 system-ui,sans-serif}
+.lessonSource{outline:3px solid #f2dba1;outline-offset:-4px}.lessonTarget{box-shadow:inset 0 0 0 3px #a2e2a4!important}
+.sq .lessonCoord{position:absolute;top:0;left:0;padding:1px 3px;background:#17281d;color:#fff3ce;font:bold clamp(8px,1.1vw,12px)/1.3 system-ui,sans-serif;z-index:6;border-radius:2px}
+.clock.untimed{font-size:clamp(12px,2vw,18px);letter-spacing:.5px}.gameExtras{position:relative}.gameExtras summary{list-style:none;cursor:pointer}.gameExtras summary::-webkit-details-marker{display:none}
+.gameExtras>div{position:absolute;right:0;top:100%;z-index:30;width:240px;padding:9px;background:#231b1d;border:1px solid #98754d;border-radius:8px;display:grid;gap:6px}
+.gameExtras>div .actionBtn{width:100%;text-align:left}.tutorialIllustration{border-top:1px solid #b9935a55;padding-top:10px}.tutorialIllustration summary{cursor:pointer;color:#e7c58f;padding:6px 0;min-height:40px}.tutorialIllustration img{margin-top:10px}.tutorialModal .modalFooter{position:sticky;bottom:-18px;margin-top:14px;padding:12px 0;background:#23171bef;backdrop-filter:blur(8px)}
+@media(max-width:600px){.topActions .actionBtn,.topActions summary{min-height:42px;display:flex;align-items:center;justify-content:center;font-size:12px}.gameExtras>div{left:0;right:auto;width:min(270px,85vw)}.victoryGoal{font-size:12px;padding:10px}.learningPanel{padding:11px}.learningPanel p{font-size:14px}.unit .unitName{font-size:clamp(6px,1.6vw,9px)}.tutorialModal .modalFooter{bottom:-14px}}
 
 /* V2.15 · Ritual de abertura antes do primeiro turno: escudos, lanças, vozes. */

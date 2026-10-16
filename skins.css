@@ -18,3 +18,5 @@
 .skin-payment-note{max-width:850px;padding:18px 22px;border-left:3px solid #d2ad76;background:#282226;color:#dfd1bf;font-size:13px;line-height:1.65;margin:0 0 25px}
 .skin-payment-note strong{color:#f6e2bf}
 @media(max-width:520px){.skin-preview-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.skin-art{min-height:200px}.skin-preview-sample strong{font-size:22px}}
+.unit.kt-skin-colors.original,.online-unit.kt-skin-colors.original{border-color:#efd28b!important;box-shadow:0 0 0 2px #9d8159,0 0 10px #f3b75988!important}
+.unit .originalBadge,.online-unit .originalBadge{position:absolute;top:-5px;left:-4px;z-index:7;display:grid;place-items:center;width:13px;height:13px;border-radius:50%;background:#30240c;border:1px solid #efd28b;color:#ffe4a2;font:bold 9px/1 system-ui,sans-serif;pointer-events:none}

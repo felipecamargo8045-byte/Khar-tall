@@ -347,13 +347,20 @@ function animateMovement(prev){if(!prev?.size||window.matchMedia('(prefers-reduc
 }
 const el=id=>document.getElementById(id);
 const htmlEscape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-let game=new KharTall(),selectedId=null,inspectedId=null,orientation='up',modal=null,picker=null,veil=false,secsLeft=60,clockEnd=0,aiTimer=null,flashUntil=0,areaChosen=[],viewSide=null;
+let game=new KharTall(),selectedId=null,inspectedId=null,orientation='up',modal=null,picker=null,veil=false,secsLeft=60,clockEnd=0,aiTimer=null,flashUntil=0,areaChosen=[],viewSide=null,learning=null,learningBackup=null;
 const one=(tag,text,cls)=>{const x=document.createElement(tag);x.textContent=text;if(cls)x.className=cls;return x;};
-function save(){try{localStorage.setItem(STORE,JSON.stringify(game.snapshot()));}catch(e){}}
+function save(){if(learning)return;try{localStorage.setItem(STORE,JSON.stringify(game.snapshot()));}catch(e){}}
 function clearSelection(){selectedId=null;orientation='up';picker=null;areaChosen=[];}
-function beginClock(){secsLeft=60;clockEnd=Date.now()+60000;paintClock();}
+function isUntimed(){return !!learning||game.s.untimed===true;}
+function beginClock(){secsLeft=60;clockEnd=isUntimed()?0:Date.now()+60000;paintClock();}
 function pauseClock(){if(clockEnd)secsLeft=Math.max(0,Math.ceil((clockEnd-Date.now())/1000));clockEnd=0;paintClock();}
-let accountWasRunning=false;
+let accountWasRunning=false,backgroundPaused=false,backgroundWasRunning=false;
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden){backgroundWasRunning=!!clockEnd;backgroundPaused=true;pauseClock();clearTimeout(aiTimer);save();return;}
+ if(!backgroundPaused)return;backgroundPaused=false;
+ if(backgroundWasRunning&&!isUntimed()&&!modal&&!veil&&game.s.phase!=='over'&&!document.body.classList.contains('accountOpen'))clockEnd=Date.now()+secsLeft*1000;
+ backgroundWasRunning=false;paintClock();if(isAI())scheduleAI();
+});
 window.addEventListener('khartall-account-open',()=>{
  accountWasRunning=!!clockEnd;
  if(accountWasRunning)pauseClock();
@@ -361,30 +368,32 @@ window.addEventListener('khartall-account-open',()=>{
  renderPreparation();
 });
 window.addEventListener('khartall-account-close',()=>{
- if(accountWasRunning&&game.s.phase!=='over'&&!veil&&!modal&&secsLeft>0){clockEnd=Date.now()+secsLeft*1000;paintClock();}
+ if(accountWasRunning&&!isUntimed()&&game.s.phase!=='over'&&!veil&&!modal&&secsLeft>0){clockEnd=Date.now()+secsLeft*1000;paintClock();}
  accountWasRunning=false;
  renderPreparation();
  if(isAI())scheduleAI();
 });
-function paintClock(){const total=Math.max(0,Math.min(60,secsLeft));el('timer').textContent=`${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;el('timer').classList.toggle('urgent',total<=10);el('clockFill').style.width=(total/60*100)+'%';}
+function paintClock(){const total=Math.max(0,Math.min(60,secsLeft));el('timer').textContent=isUntimed()?'SEM TEMPO':`${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;el('timer').classList.toggle('untimed',isUntimed());el('timer').classList.toggle('urgent',!isUntimed()&&total<=10);el('clockFill').style.width=isUntimed()?'100%':(total/60*100)+'%';}
 function isHumanTurn(){return game.s.phase==='setup'?game.s.mode==='local'||game.s.setupSide===RED:game.s.mode==='local'||game.s.side===RED;}
-function isAI(){return !informationalClockPaused&&!document.body.classList.contains('accountOpen')&&game.s.phase==='play'&&game.s.mode==='ai'&&game.s.side===BLUE&&!veil;}
+function isAI(){return !backgroundPaused&&!learning&&!modal&&!informationalClockPaused&&!document.body.classList.contains('accountOpen')&&game.s.phase==='play'&&game.s.mode==='ai'&&game.s.side===BLUE&&!veil;}
 function currentSide(){return game.s.phase==='setup'?game.s.setupSide:game.s.side;}
 // The viewer is independent of the active side. Never paint an opponent's secrets.
 function visibleTrapSide(){if(veil)return null;if(game.s.mode==='ai')return RED;return viewSide===currentSide()?viewSide:null;}
 function isInputBlocked(){return document.body.classList.contains('accountOpen')||veil||!!modal||!isHumanTurn();}
-let informationalClockPaused=false;
-function isInformationalModal(m){return !!m&&(m.visual==='tutorial'||m.visual==='codex'||m.visual==='detail'||m.title?.startsWith('Regras — capítulo')||m.title?.startsWith('Manual de campo'));}
+let informationalClockPaused=false,informationReturnToStart=false;
+function isInformationalModal(m){return !!m&&(m.visual==='tutorial'||m.visual==='codex'||m.visual==='detail'||m.title?.startsWith('Regras — capítulo')||m.title?.startsWith('Manual de campo')||m.title==='Configurações'||m.title?.includes('Sons do Batedor')||m.title?.includes('Momentos da Realeza'));}
 function showModal({title,intro,choices,footer=[],extra=null,locked=false,visual=null,unit=null,tutorialStep=0,tutorialTotal=0,tutorialData=null}){
  const next={title,intro,choices,footer,extra,locked,visual,unit,tutorialStep,tutorialTotal,tutorialData};
- if(!informationalClockPaused && isInformationalModal(next) && clockEnd){pauseClock();informationalClockPaused=true;clearTimeout(aiTimer);}
+ if(isInformationalModal(next)&&modal?.visual==='start')informationReturnToStart=true;
+ if(!informationalClockPaused && isInformationalModal(next)){pauseClock();informationalClockPaused=true;clearTimeout(aiTimer);}
  modal=next;paintModal();
 }
 function dismissModal(){
+ if(informationReturnToStart){informationReturnToStart=false;informationalClockPaused=false;openStart();return;}
  modal=null;paintModal();
  if(informationalClockPaused){
   informationalClockPaused=false;
-  if(!veil && !document.body.classList.contains('accountOpen') && game.s.phase!=='over' && secsLeft>0){clockEnd=Date.now()+secsLeft*1000;paintClock();}
+  if(!isUntimed() && !veil && !document.body.classList.contains('accountOpen') && game.s.phase!=='over' && secsLeft>0){clockEnd=Date.now()+secsLeft*1000;paintClock();}
   if(isAI())scheduleAI();
  }
 }
@@ -394,35 +403,26 @@ function paintModal(){const root=el('modalRoot');root.replaceChildren();renderPr
  if(modal?.visual==='start')box.classList.add('startHero');
  if(modal?.visual==='codex')box.classList.add('codexModal');
  if(modal?.visual==='tutorial')box.classList.add('tutorialModal');
+ box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');
  if(veil){box.append(one('div','KHAR TALL • TROCA SEGURA','pane-eyebrow'),one('h2','Passe o dispositivo ao próximo jogador'),one('p',veil.text));
   let btn=one('button','Estou pronto para jogar','actionBtn primary');btn.onclick=()=>{viewSide=currentSide();veil=false;beginClock();render();scheduleAI();};box.append(btn);
  }else{
   box.append(one('h2',modal.title));if(modal.intro)box.append(one('p',modal.intro));
   if(modal.extra){const extra=one('div','', 'setupGuide');extra.textContent=modal.extra;box.append(extra);}
   if(modal.visual==='tutorial'){
-   const provenance=one('div','', 'tutorialBookCredit');
-   provenance.append(one('span','✦ KHAR TALL · ORIGEM LITERÁRIA','tutorialBookKicker'));
-   provenance.append(one('p','Jogo criado com base no livro Ecos da Chama: O Último Victorino.','tutorialBookLine'));
-   provenance.append(one('blockquote','“A chama está viva.”','tutorialBookQuote'));
-   box.append(provenance);
    const current=(modal.tutorialStep||0)+1,total=(modal.tutorialTotal||10);
    const progress=one('div','', 'tutorialProgress');progress.setAttribute('aria-label',`Etapa ${current} de ${total}`);
    for(let i=0;i<total;i++)progress.append(one('span','','tutorialDot'+(i<current?' passed':'')));
    box.append(progress);
    if(modal.tutorialData){
     const page=modal.tutorialData,wrap=one('div','', 'tutorialVisualWrap');
-    if(page.image){
-      const zoom=one('button','Ampliar ilustração','actionBtn tutorialZoomButton');zoom.type='button';zoom.setAttribute('aria-pressed','false');
-      const img=one('img','', 'tutorialVisualImg');img.loading='eager';img.decoding='async';img.src=page.image;img.alt=page.alt||modal.title;
-      zoom.onclick=()=>{const expanded=img.classList.toggle('expanded');zoom.textContent=expanded?'Reduzir ilustração':'Ampliar ilustração';zoom.setAttribute('aria-pressed',String(expanded));};
-      wrap.append(zoom,img);
-    }
     if(page.summary)wrap.append(one('p',page.summary,'tutorialSummary'));
     if(page.points?.length){const ul=one('ul','', 'tutorialBullets');
      for(const pt of page.points){const li=one('li','');li.append(one('strong',pt.label+': '),document.createTextNode(pt.text));ul.append(li);}
      wrap.append(ul);
     }
     if(page.tip)wrap.append(one('p','Dica estratégica: '+page.tip,'tutorialTip'));
+    if(page.image){const details=one('details','','tutorialIllustration'),summary=one('summary','Ver ilustração temática'),img=one('img','','tutorialVisualImg');img.loading='lazy';img.src=page.image;img.alt=page.alt||modal.title;details.append(summary,img);wrap.append(details);}
     wrap.append(one('small','Ilustração temática. Em caso de diferença nos esquemas visuais, considere as regras escritas deste tutorial e as casas permitidas pelo jogo.','tutorialAccuracy'));
     box.append(wrap);
    }
@@ -445,7 +445,49 @@ function paintModal(){const root=el('modalRoot');root.replaceChildren();renderPr
  backdrop.append(box);root.append(backdrop);
  }
 function cover(text){veil={text};viewSide=null;pauseClock();for(const icon of el('board').querySelectorAll('.trapIcon'))icon.remove();renderObjectives();paintModal();}
-function fresh(mode='local',difficulty=3){clearTimeout(aiTimer);informationalClockPaused=false;game=new KharTall({mode,difficulty});viewSide=RED;clearSelection();inspectedId=null;dismissModal();veil=false;save();beginClock();render();}
+function fresh(mode='local',difficulty=3,untimed=false){clearTimeout(aiTimer);learning=null;learningBackup=null;informationalClockPaused=false;informationReturnToStart=false;game=new KharTall({mode,difficulty});game.s.untimed=untimed===true;viewSide=RED;clearSelection();inspectedId=null;dismissModal();veil=false;save();beginClock();render();}
+
+function startLearning(){
+ if(!learning){pauseClock();let hadMatch=false;try{hadMatch=!!localStorage.getItem(STORE);}catch(e){}learningBackup={state:game.snapshot(),secs:secsLeft,hadMatch};}
+ clearTimeout(aiTimer);informationalClockPaused=false;informationReturnToStart=false;learning={index:0,done:false};loadLesson();
+}
+function loadLesson(){
+ clearTimeout(aiTimer);modal=null;veil=false;clockEnd=0;clearSelection();inspectedId=null;battleFx=[];
+ game=KharTallLearning.create(KharTall,learning.index);viewSide=RED;render();el('learningPanel').scrollIntoView?.({block:'start'});
+}
+function leaveLearning(toMenu=false){
+ if(!learningBackup)return;const backup=learningBackup;learning=null;learningBackup=null;clearTimeout(aiTimer);modal=null;veil=false;informationalClockPaused=false;informationReturnToStart=false;
+ game=KharTall.restore(backup.state);secsLeft=backup.secs;clockEnd=0;clearSelection();inspectedId=null;battleFx=[];viewSide=null;render();
+ if(toMenu||!backup.hadMatch){openStart();return;}
+ if(game.s.mode==='local'&&game.s.phase!=='over')cover('Os exercícios terminaram. Sua partida foi preservada. Entregue o dispositivo aos '+sideName(currentSide())+'.');
+ else{viewSide=RED;if(!isUntimed()&&game.s.phase!=='over')clockEnd=Date.now()+secsLeft*1000;render();scheduleAI();}
+}
+function completeLesson(){
+ learning.done=true;clockEnd=0;render();const last=learning.index===KharTallLearning.lessons.length-1;
+ if(last)try{localStorage.setItem('kt-learning-completed','yes');}catch(e){}
+ showModal({locked:true,title:last?'Você concluiu os exercícios!':`Exercício ${learning.index+1} concluído`,intro:KharTallLearning.lessons[learning.index].success,
+ choices:[{label:last?'Voltar ao menu':'Próximo exercício',fn:()=>{if(last)leaveLearning(true);else{learning.index++;learning.done=false;loadLesson();}}}],
+ footer:[{label:learningBackup.hadMatch?'Voltar à minha partida':'Voltar ao menu',fn:()=>leaveLearning()}]});
+}
+function learningClick(x,y){
+ if(learning.done)return;const lesson=KharTallLearning.lessons[learning.index];
+ if(lesson.kind==='trap'){
+  if(x===lesson.target[0]&&y===lesson.target[1]){game.placeTrap(RED,x,y);audioPlayer.ui('place');render();}return;
+ }
+ const actor=game.pieceAt(...lesson.source);
+ if(x===lesson.source[0]&&y===lesson.source[1]){selectedId=actor.id;inspectedId=actor.id;audioPlayer.ui('tap');render();return;}
+ if(selectedId!==actor.id||x!==lesson.target[0]||y!==lesson.target[1])return;
+ const action=KharTallLearning.action(game,learning.index);if(!action)return;
+ const before=captureBattle();if(game.act({...action,advance:false})){noteBattleFx(before,action);completeLesson();}
+}
+function renderLearning(){
+ const panel=el('learningPanel');panel.hidden=!learning;
+ if(!learning)return;const lesson=KharTallLearning.lessons[learning.index];
+ el('learningTitle').textContent=`Aprender jogando · ${learning.index+1}/${KharTallLearning.lessons.length} · ${lesson.title}`;
+ el('learningText').textContent=learning.done?lesson.success:lesson.instruction;
+ el('learningExit').textContent=learningBackup.hadMatch?'Voltar à minha partida':'Voltar ao menu';
+ el('passTurn').disabled=true;el('saveBtn').disabled=true;
+}
 const TUTORIAL_ART={
  focus:'assets/tutorial_focus.webp',
  light:'assets/tutorial_light.webp',
@@ -512,7 +554,7 @@ function openScoutAudioDemo(){
  showModal({title:'⚡🔥 Sons do Batedor',intro:'O primeiro ataque desce como um raio com trovão e termina em eletrostática. O segundo continua com fogo e explosão.',choices:[
   {label:'⚡ Ouvir primeiro ataque • Raios azuis',desc:'Estalo de raio e trovão; na chegada, crepitação eletrostática.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playScoutAttackAudio('blue',540);}},
   {label:'🔥 Ouvir segundo ataque • Fogo vermelho',desc:'Chamas em movimento e explosão no impacto.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playScoutAttackAudio('red',540);}}
- ],footer:[{label:'Voltar',fn:openStart}]});
+ ],footer:[{label:'Voltar às configurações',fn:openSettings}]});
 }
 function openRoyalAudioDemo(){
  primeScoutWavs();
@@ -522,15 +564,24 @@ function openRoyalAudioDemo(){
   {label:'☾ Rei morre, Guardião original sobrevive',desc:'Suspense opressivo e sufocante; a perseguição ainda não terminou.',fn:()=>listen('suspense')},
   {label:'♜ Guardião original eliminado',desc:'Uma trombeta de aviso, com toque militar de alerta.',fn:()=>listen('guardian')},
   {label:'⚑ Vitória conquistada',desc:'Várias trompetas com passos de marcha mais baixos e mais curtos.',fn:()=>listen('victory')}
- ],footer:[{label:'Voltar',fn:openStart}]});
+ ],footer:[{label:'Voltar às configurações',fn:openSettings}]});
 }
-function openStart(){showModal({title:'Khar Tall · Ecos da Chama',intro:'Jogo de estratégia criado com base no livro Ecos da Chama: O Último Victorino. Entre no tabuleiro de guerra: 10×10, 16 peças por exército, magia antiga, armadilhas e Reação Real.',visual:'start',
- choices:[{label:'⚔ Dois jogadores • mesmo dispositivo',desc:'Revezamento com tela de privacidade para esconder armadilhas.',fn:()=>fresh('local',3)},
- {label:'♛ Jogar contra o computador',desc:'Cinco níveis de dificuldade, sem conexão com a internet.',fn:openDifficulty}],
- footer:[{label:'✦ Criar conta',primary:true,fn:()=>el('accountButton').click()},{label:'♛ Ouvir sons do Rei e da vitória',fn:openRoyalAudioDemo},{label:'⚡🔥 Testar sons do Batedor',fn:openScoutAudioDemo},{label:'Tutorial inspirado no livro',fn:()=>showTutorial(0,true)},{label:'Manual de regras',fn:()=>showRules()}]});}
-function openDifficulty(){showModal({title:'Escolha a dificuldade da IA',intro:'Os cinco níveis obedecem às mesmas regras. A diferença está na avaliação estratégica das jogadas.',choices:
- [1,2,3,4,5].map((n)=>({label:`${n} • ${['Iniciante','Fácil','Normal','Difícil','Mestre'][n-1]}`,desc:['Movimentos pouco planejados','Preferências simples com imprevisibilidade','Avalia capturas e posições','Analisa ameaças e proteção do Rei','Compara respostas prováveis do adversário'][n-1],fn:()=>fresh('ai',n)})),footer:[{label:'Voltar',fn:openStart}]});}
-function finishSetup(){const previous=game.s.setupSide;game.finishSetup();clearSelection();save();render();if(game.s.phase==='setup'&&game.s.mode==='local'&&previous===RED){cover('Agora é a vez dos Azuis posicionarem até duas armadilhas. As posições dos Rubros permanecerão ocultas. O cronômetro de 60 segundos só começa quando o próximo jogador confirmar.');}
+function openSettings(){showModal({title:'Configurações',intro:'Ajuste a apresentação e ouça os efeitos do jogo.',choices:[
+ {label:prefs.sound?'Desligar som':'Ligar som',fn:()=>{prefs.sound=!prefs.sound;savePrefs();applyPrefs();openSettings();}},
+ {label:prefs.illustrated?'Usar símbolos clássicos':'Usar artes das peças',fn:()=>{prefs.illustrated=!prefs.illustrated;savePrefs();applyPrefs();openSettings();}},
+ {label:'Ouvir sons do Rei e da vitória',fn:openRoyalAudioDemo},{label:'Testar sons do Batedor',fn:openScoutAudioDemo}],footer:[{label:'Fechar',fn:dismissModal}]});}
+function openStart(){informationReturnToStart=false;informationalClockPaused=false;pauseClock();clearTimeout(aiTimer);showModal({title:'Khar Tall · Ecos da Chama',intro:'Proteja seu Rei e seu Guardião original. Elimine os dois do adversário para vencer. Jogue gratuitamente, sem precisar criar conta.',visual:'start',
+ choices:[{label:'✦ Aprender jogando',desc:'Seis exercícios curtos no tabuleiro, sem tempo. Sua partida salva é preservada.',highlight:true,fn:startLearning},
+ {label:'♛ Jogar contra o computador',desc:'Cinco dificuldades. Escolha treino sem tempo ou partidas de 60 segundos por turno.',fn:()=>openDifficulty()},
+ {label:'⚔ Dois jogadores • mesmo dispositivo',desc:'Revezamento com tela de privacidade. Com ou sem cronômetro.',fn:()=>openPace('local',3)},
+ {label:'⚔ Jogar online com um amigo',desc:'Compartilhe o convite de uma sala privada. Cada turno dura 60 segundos.',fn:()=>{location.href='/online';}}],
+ footer:[{label:'Tutorial ilustrado',fn:()=>showTutorial(0,true)},{label:'Manual de regras',fn:showRules},{label:'Configurações',fn:openSettings},{label:'Minha conta',fn:()=>el('accountButton').click()}]});}
+function openPace(mode,difficulty){showModal({title:'Escolha o ritmo da partida',intro:mode==='ai'?'Você controla os Rubros. As regras e os poderes são iguais nos dois ritmos.':'As armadilhas continuam protegidas na troca de jogador. As regras são iguais nos dois ritmos.',choices:[
+ {label:'Treino sem tempo',desc:'Prepare suas armadilhas e pense nas jogadas com calma. Não há passagem automática de turno.',highlight:true,fn:()=>fresh(mode,difficulty,true)},
+ {label:'Partida com cronômetro',desc:'60 segundos para a preparação e para cada turno.',fn:()=>fresh(mode,difficulty,false)}],footer:[{label:'Voltar',fn:mode==='ai'?()=>openDifficulty():openStart}]});}
+function openDifficulty(){showModal({title:'Escolha a dificuldade da IA',intro:'Os cinco níveis obedecem às mesmas regras. Depois escolha se deseja jogar com ou sem tempo.',choices:
+ [1,2,3,4,5].map((n)=>({label:`${n} • ${['Iniciante','Fácil','Normal','Difícil','Mestre'][n-1]}`,desc:['Movimentos pouco planejados','Preferências simples com imprevisibilidade','Avalia capturas e posições','Analisa ameaças e proteção do Rei','Compara respostas prováveis do adversário'][n-1],fn:()=>openPace('ai',n)})),footer:[{label:'Voltar',fn:openStart}]});}
+function finishSetup(){if(learning){if(learning.index===0&&game.s.traps.some(t=>t.side===RED&&t.x===4&&t.y===5)){game.finishSetup();completeLesson();}return;}const previous=game.s.setupSide;game.finishSetup();clearSelection();save();render();if(game.s.phase==='setup'&&game.s.mode==='local'&&previous===RED){cover('Agora é a vez dos Azuis posicionarem até duas armadilhas. As posições dos Rubros permanecerão ocultas. '+(isUntimed()?'O treino não tem limite de tempo.':'O cronômetro de 60 segundos só começa quando o próximo jogador confirmar.'));}
  else if(game.s.phase==='play'&&game.s.mode==='local'){cover('O sorteio escolheu '+sideName(game.s.side)+' para começar. Entregue o dispositivo ao jogador certo. Ao confirmar, a batalha começa imediatamente.');}
  else if(game.s.phase==='play'){beginClock();scheduleAI();}
  else{beginClock();scheduleAI();}}
@@ -572,6 +623,7 @@ function boardClick(x,y){
  // Mesmo uma peça inimiga, paralisada ou de um turno controlado pela IA pode
  // ser consultada; nenhuma informação secreta do adversário é revelada.
  if(veil||modal||document.body.classList.contains('accountOpen'))return;
+ if(learning){learningClick(x,y);return;}
  const s=game.s,p=game.pieceAt(x,y);
  if(p)inspectedId=p.id;
  if(!isHumanTurn()||s.phase==='over'){if(p)renderBoardNotice();return;}
@@ -626,6 +678,7 @@ function handlePicker(x,y){const s=game.s;
 function confirmArea(){if(!picker||picker.kind!=='area')return;let a=picker.action;let targets=[...areaChosen];picker=null;areaChosen=[];afterAction({...a,targets});}
 function cancelPicker(){if(!picker)return;if(game.s.fieldPending){picker=null;openField();}else{picker=null;areaChosen=[];render();}}
 function currentHighlights(){const hints=new Map(),chosen=[];
+ if(learning){const lesson=KharTallLearning.lessons[learning.index];if(!learning.done&&selectedId&&lesson.source)hints.set(lesson.target.join(','),lesson.kind==='move'?'moveHint':'attackHint');return {hints,chosen};}
  const add=(x,y,k)=>{let v=hints.get(`${x},${y}`);if(v==='attackHint')return;hints.set(`${x},${y}`,k);};
  if(game.s.phase==='setup')return {hints,chosen};
  if(picker){if(picker.kind==='area'){
@@ -648,7 +701,8 @@ function renderBoard(){const root=el('board'),s=game.s;const {hints,chosen}=curr
   const sq=one('button','',`sq ${(x+y)%2?'dark':'light'} ${f?.kind||''} ${f?(game.fieldReady(f)?'activeField':'coolingField'):''} ${hints.get(`${x},${y}`)||''} ${selectedId===p?.id?'selected':''} ${inspectedId===p?.id?'inspected':''} ${chosen.includes(`${x},${y}`)?'targetChosen':''}`);
   if(s.flash&&s.flash.x===x&&s.flash.y===y&&Date.now()<flashUntil)sq.classList.add('trapActive');
   sq.type='button';sq.role='gridcell';sq.title=`${square(x,y)}${p?' • '+NAMES[p.type]+' • '+sideName(p.side):''}${f?' • '+(f.kind==='heal'?'Cura':'Cristal')+' dos '+sideName(f.owner):''}`;
-  sq.setAttribute('aria-label',sq.title);
+  if(p?.original)sq.title+=' • Guardião original';if(p?.type==='king')sq.title+=' • '+p.hp+' de 2 vidas';sq.setAttribute('aria-label',sq.title);
+  if(learning&&!learning.done){const lesson=KharTallLearning.lessons[learning.index];if(lesson.target[0]===x&&lesson.target[1]===y){sq.classList.add('lessonTarget');sq.append(one('span',square(x,y),'lessonCoord'));}if(lesson.source&&lesson.source[0]===x&&lesson.source[1]===y){sq.classList.add('lessonSource');sq.append(one('span',square(x,y),'lessonCoord'));}}
   if(f){sq.append(one('span',f.kind==='heal'?'✚':'◆','tileMark'));sq.append(one('span',f.kind==='heal'?'CURA':'CRISTAL','tileOwner'));}
   if(myTrap)sq.append(one('span','⚑','trapIcon'));
   if(s.phase==='setup'&&!p&&!f){sq.classList.add('setupSquare');}
@@ -657,6 +711,7 @@ function renderBoard(){const root=el('board'),s=game.s;const {hints,chosen}=curr
    let portrait=one('span','', 'tokenPortrait'),img=one('img','', 'tokenArt');img.src=TOKEN_ART[p.type];img.alt='';img.draggable=false;window.KharTallSkins?.paintPiece(img,p.type,window.KharTallAppearance?.forSide(p.side));window.KharTallSkins?.decorate(item,window.KharTallAppearance?.forSide(p.side));portrait.append(img);item.append(portrait);
    item.append(one('span',SYMBOL[p.type],'glyph'));item.append(one('span',SHORT[p.type],'unitName'));
    if(p.type==='king')item.append(one('span',`${p.hp}♥`,'life'));
+   if(p.original)item.append(one('span','◆','originalBadge'));
    if(p.stun||p.freeze||p.rest)item.append(one('span',p.freeze?'⚑':p.stun?'❄':'⌛','effect'));
    sq.append(item);
   }
@@ -667,7 +722,8 @@ function renderBoard(){const root=el('board'),s=game.s;const {hints,chosen}=curr
 function renderTeams(){const s=game.s;
  for(let side of [RED,BLUE]){let k=game.king(side),original=game.guardian(side),count=s.pieces.filter(p=>p.side===side).length;
   let root=el(side===RED?'redTeam':'blueTeam');root.className=`team ${side===RED?'red':'blue'} ${currentSide()===side?'now':''}`;
-  root.innerHTML=`<div class="banner">${side===RED?'⚑':'⚜'}</div><div class="words"><strong>${sideName(side)}</strong><small>${count}/20 peças · ${k?'<span class="hp">'+('♥'.repeat(k.hp))+'</span>':'Rei ✕'}</small><small>Guardião original ${original?'◆':'✕'}</small></div>`;
+  root.innerHTML=`<div class="banner">${side===RED?'⚑':'⚜'}</div><div class="words"><strong>${sideName(side)}</strong><small>${count} peças · ${k?'<span class="hp">'+('♥'.repeat(k.hp))+'</span>':'Rei ✕'}</small><small>Guardião original ${original?'◆':'✕'}</small></div>`;
+  root.title='16 peças iniciais por exército; invocações permitem até 20 peças.';
   window.KharTallSkins?.decorate(root,window.KharTallAppearance?.forSide(side));const username=window.KharTallAppearance?.username(side);if(username){const label=one('span',username,'kt-player-name');root.querySelector('.words').append(label);}
  }
 }
@@ -736,6 +792,7 @@ function renderUnitGuide(p){
 }
 function renderBoardNotice(){
  const root=el('notice'),s=game.s;if(!root)return;
+ if(learning){root.classList.remove('unitGuideActive');const lesson=KharTallLearning.lessons[learning.index];root.textContent=learning.done?lesson.success:lesson.instruction;return;}
  let fallback=s.phase==='setup'?'Toque em uma casa vazia para colocar ou remover uma armadilha; toque em Confirmar quando terminar.':picker?{
   area:'Escolha até 3 alvos para o ataque em área e confirme.',summon:'Escolha uma casa verde adjacente.',reunionAlly:'Toque em uma peça aliada.',reunionDest:'Escolha uma casa vazia.'}[picker.kind]:s.fieldPending?'Escolha uma habilidade do campo mágico.':s.phase==='over'?'Use Nova partida para jogar novamente.':s.combo?'Segundo ataque mágico disponível.':'Toque em uma peça para ver sua descrição, ataque e especial.';
  const p=game.piece(inspectedId);
@@ -752,10 +809,11 @@ function selectionHelp(p){return {
  archer:'Move 1 casa em qualquer direção e dispara flechas nas diagonais X até 2 casas, sem atravessar nenhuma peça. Evolui para Batedor ao chegar à Cura inimiga ativa.'
 }[p.type];}
 function renderSelection(){const pane=el('selectionBody'),title=el('selectionTitle'),o=el('orientation'),actions=el('selectionActions');o.innerHTML='';actions.innerHTML='';o.hidden=true;
+ if(learning){const lesson=KharTallLearning.lessons[learning.index];title.textContent=lesson.title;pane.textContent=learning.done?lesson.success:lesson.instruction;if(lesson.kind==='trap'&&!learning.done)actions.append(makeActionButton('Confirmar armadilhas',finishSetup,true));return;}
  if(game.s.phase==='setup'){
   let cnt=game.s.traps.filter(t=>t.side===game.s.setupSide).length;
   title.textContent=`Armadilhas dos ${sideName(game.s.setupSide)}`;
-  pane.innerHTML=`<div class="chips"><span class="chip">${cnt}/2 armadilhas</span><span class="chip warn">60 segundos</span></div><p>Toque numa casa vazia que não seja mágica para colocar uma armadilha. Toque na mesma casa para retirá-la. É possível mudar as posições até confirmar.</p><p>Se não colocar ambas a tempo, as restantes serão perdidas.</p>`;
+  pane.innerHTML=`<div class="chips"><span class="chip">${cnt}/2 armadilhas</span><span class="chip warn">${isUntimed()?'Sem tempo':'60 segundos'}</span></div><p>Toque numa casa vazia que não seja mágica para colocar uma armadilha. Toque na mesma casa para retirá-la. É possível mudar as posições até confirmar.</p><p>${isUntimed()?'Confirme quando terminar. Não há limite de tempo neste treino.':'Se não colocar ambas a tempo, as restantes serão perdidas.'}</p>`;
   actions.append(makeActionButton(`Confirmar armadilhas (${cnt}/2)`,()=>finishSetup(),true));return;
  }
  if(picker){title.textContent={area:'Escolha até 3 alvos',summon:'Invocação',reunionAlly:'Reunião: escolha o aliado',reunionDest:'Reunião: escolha a casa'}[picker.kind]||'Escolha';
@@ -791,27 +849,28 @@ function render(){let prev=unitLocations();renderTeams();renderBoard();animateMo
  el('log').innerHTML=s.logs.slice(0,14).map(x=>`<div class="logentry">${htmlEscape(x.msg)}</div>`).join('');
  let phase=s.phase==='setup'?'PREPARAÇÃO':s.phase==='over'?'FIM DE JOGO':s.reaction?'REAÇÃO REAL':s.combo?'2º ATAQUE':'TURNO';
  el('phaseText').textContent=phase;
- let msg='';if(s.phase==='setup')msg=`Armadilhas dos <strong>${sideName(s.setupSide)}</strong>: ${s.traps.filter(t=>t.side===s.setupSide).length}/2 armadilhas colocadas. Preparação de 60 segundos.`;
+ let msg='';if(s.phase==='setup')msg=`Armadilhas dos <strong>${sideName(s.setupSide)}</strong>: ${s.traps.filter(t=>t.side===s.setupSide).length}/2 armadilhas colocadas. ${isUntimed()?'Sem limite de tempo.':'Preparação de 60 segundos.'}`;
  else if(s.phase==='over')msg=`<strong>${s.winner===-1?'EMPATE':'VITÓRIA DOS '+sideName(s.winner).toUpperCase()}</strong> — ${htmlEscape(s.endedReason)}`;
  else if(s.fieldPending)msg=`<strong>Campo mágico ativado:</strong> escolha um efeito para aplicar imediatamente.`;
  else if(s.reaction)msg=`<strong>REAÇÃO REAL • ${sideName(s.side)}</strong> — movimento defensivo, proteção, resgate, cura ou contra-ataque com Cópia Real.`;
  else if(s.combo)msg=`<strong>${sideName(s.side)}:</strong> Batedor pode realizar o segundo ataque mágico ou encerrar.`;
  else msg=`Vez dos <strong>${sideName(s.side)}</strong> · turno ${s.turnSerial+1} · ${s.mode==='ai'&&s.side===BLUE?'o computador está jogando':'selecione uma peça'}`;
  el('status').innerHTML=msg;
+ el('victoryGoal').textContent=KharTallLearning.objective(s);el('victoryGoal').classList.toggle('pursuit',s.phase!=='over'&&!!s.deadline);
  el('finishSetup').hidden=s.phase!=='setup';el('passTurn').disabled=s.phase!=='play'||s.mode==='ai'&&s.side===BLUE||!!s.fieldPending;
- el('clearSelect').disabled=s.phase!=='play';renderBoardNotice();
+ el('clearSelect').disabled=s.phase!=='play';el('saveBtn').disabled=false;renderBoardNotice();renderLearning();
  paintClock();paintModal();
 }
-function passTurn(msg){if(game.s.phase!=='play'||!isHumanTurn()||veil)return;const before=game.s.turnSerial,bside=game.s.side;
+function passTurn(msg){if(learning||game.s.phase!=='play'||!isHumanTurn()||veil)return;const before=game.s.turnSerial,bside=game.s.side;
  game.pass(msg||'Jogador passou a vez.');dismissModal();postChange(bside,before);
 }
 function showGameOver(){const s=game.s;showModal({title:s.winner===-1?'⚖ Partida empatada':`♛ Vitória dos ${sideName(s.winner)}`,intro:s.endedReason||'Confronto encerrado.',choices:[{label:'Iniciar outra batalha',fn:openStart}],footer:[{label:'Rever o tabuleiro',fn:dismissModal}]});}
-function showRules(){showModal({title:'Manual de campo • Khar Tall',intro:'Inspirado no livro Ecos da Chama: O Último Victorino. Dois exércitos de 16 peças disputam um tabuleiro 10×10. Cada jogada tem 60 segundos.',choices:[
+function showRules(){showModal({title:'Manual de campo • Khar Tall',intro:'Inspirado no livro Ecos da Chama: O Último Victorino. Dois exércitos de 16 peças disputam um tabuleiro 10×10. Partidas com cronômetro e salas online têm 60 segundos por turno; o treino local e contra a IA pode ser sem tempo.',choices:[
  {label:'1 • Objetivo e turnos',desc:'Elimine Rei (2 vidas) e Guardião original. Se o Rei morrer antes, o adversário tem 3 turnos próprios para eliminar o Guardião, ou haverá empate.',fn:()=>showRulePage(1)},
  {label:'2 • Unidades e habilidades',desc:'Aprendizes (+ e X), Colosso (Investida + Esmagamento), Lobo (3×2), Batedor (magia V), Guardião (área/linha) e Rei (cópias).',fn:()=>showRulePage(2)},
  {label:'3 • Campos, marcas e armadilhas',desc:'Campos inimigos recarregam após 3 rodadas, marcação de 2 turnos, paralisia de 1, armadilhas secretas e Reação Real.',fn:()=>showRulePage(3)}],footer:[{label:'Fechar',fn:dismissModal}]});}
 function showRulePage(n){let pages={
- 1:`1 peça ou habilidade por turno, salvo combos definidos. As peças não atravessam peças, exceto saltos do Lobo. O Rei tem 2 vidas; os demais têm 1. Só o Guardião original conta para a vitória. O primeiro jogador é sorteado. Perder o limite de 60 segundos equivale a passar.`,
+ 1:`1 peça ou habilidade por turno, salvo combos definidos. As peças não atravessam peças, exceto saltos do Lobo. O Rei tem 2 vidas; os demais têm 1. Só o Guardião original conta para a vitória. O primeiro jogador é sorteado. Em partidas com cronômetro, perder o limite de 60 segundos equivale a passar; no treino sem tempo, não há passagem automática.`,
  2:`Soldado anda 1 em todas as direções, ataca 1 em +; Arqueiro anda 1 e ataca a 1 ou 2 casas em X, com linha desobstruída (flechas não atravessam peças). Colosso anda 1, pode Investir exatamente 3 em +, atingindo inimigos, seguido por Esmagamento de adjacentes após 1 deslocamento. Lobo salta 3×2 ou 2×3 em qualquer orientação, podendo atacar no destino (repousa no turno seguinte). Batedor anda 1 e ataca com V mágico orientável a até 4 casas, duas vezes no mesmo turno. Guardião anda à vontade em oito direções e pode atingir até 3 inimigos em raio de 3 ou o primeiro inimigo em linha horizontal ou vertical de até 5 casas, sem atravessar peças. Rei anda e ataca em linha até 2 casas, copia ataques recebidos uma vez.`,
  3:`Apenas campos mágicos INIMIGOS ativam. Cura evolui Soldado→Colosso e Arqueiro→Batedor. Cristal invoca Aprendiz (limite de 20), transforma uma peça (exceto Rei/Guardião original) ou sacrifica para teletransportar outro aliado. Qualquer peça elegível pode ser sacrificada para curar um Rei ferido; o Guardião original só pode ser sacrificado para curar o Rei. A marca do Batedor dura 2 turnos da vítima, paralisia 1; uma execução em Rei tira 1 vida. A marca pode ser executada por aliados e permanece até expirar. Armadilhas: 2 ocultas por lado antes da partida, não podem estar em campos mágicos, paralisam por 1 turno e desaparecem. Peças comuns não atacam enquanto imobilizadas por armadilhas; Rei pode usar ataques normais e cópias. Reação Real prioriza defesa, salvo contra-ataque copiado. Campos recarregam após 3 rodadas completas; reentrar é necessário.`};
  showModal({title:`Regras — capítulo ${n}`,intro:pages[n]+' · Khar Tall é um jogo criado com base no universo do livro Ecos da Chama: O Último Victorino.',choices:[],footer:[{label:'Voltar ao índice',fn:showRules},{label:'Fechar',fn:dismissModal}]});}
@@ -916,20 +975,23 @@ function scheduleAI(){clearTimeout(aiTimer);if(!isAI())return;
  },Math.min(900,320+game.s.difficulty*110));
 }
 function setupResume(){let old=null;try{old=JSON.parse(localStorage.getItem(STORE)||'null');}catch(e){}
+ const entry=new URLSearchParams(location.search).get('abrir');
+ if(entry==='aprender'){if(old&&old.version===2&&old.phase!=='over')game=KharTall.restore(old);startLearning();return;}
  if(old&&old.version===2&&old.phase!=='over')showModal({title:'Bem-vindo de volta ao Khar Tall',intro:'Encontrei uma partida V2 salva neste navegador. Deseja retomá-la?',choices:[
   {label:'Continuar partida',fn:()=>{game=KharTall.restore(old);viewSide=null;clearSelection();inspectedId=null;dismissModal();if(game.s.mode==='local')cover(`Vamos retomar a partida. Entregue o dispositivo aos ${sideName(currentSide())}; suas armadilhas permanecerão privadas.`);else{veil=false;beginClock();render();scheduleAI();}}},
   {label:'Começar uma nova partida',fn:openStart}],footer:[{label:'✦ Criar conta',primary:true,fn:()=>el('accountButton').click()}]});
- else {const entry=new URLSearchParams(location.search).get('abrir');if(entry==='ia')openDifficulty();else if(entry==='tutorial')showTutorial(0,true);else if(entry==='regras')showRules();else if(entry==='compendio')openCodex();else openStart();}}
-function tick(){if(veil||informationalClockPaused||modal?.title?.startsWith('Uma nova batalha')||modal?.title?.startsWith('Escolha a dificuldade')||modal?.title?.startsWith('Bem-vindo')||game.s.phase==='over'||!clockEnd)return;
+ else {if(entry==='ia')openDifficulty();else if(entry==='tutorial')showTutorial(0,true);else if(entry==='regras')showRules();else if(entry==='compendio')openCodex();else openStart();}}
+function tick(){if(isUntimed()||veil||modal||informationalClockPaused||game.s.phase==='over'||!clockEnd)return;
  secsLeft=Math.max(0,Math.ceil((clockEnd-Date.now())/1000));paintClock();
  if(secsLeft>0)return;clockEnd=0;
  if(game.s.phase==='setup'){const lost=2-game.s.traps.filter(t=>t.side===game.s.setupSide).length;game.note(`Tempo de preparação esgotado; ${lost===1?'1 armadilha não colocada foi perdida':lost+' armadilhas não colocadas foram perdidas'}.`);finishSetup();return;}
  const before=game.s.turnSerial,bside=game.s.side;clearTimeout(aiTimer);game.pass('60 segundos esgotados: jogador perdeu apenas o turno.');dismissModal();postChange(bside,before);
 }
 function wire(){applyPrefs();el('codexButton').onclick=openCodex;el('tutorialButton').onclick=()=>showTutorial(0);
+ el('settingsButton').onclick=openSettings;el('learningExit').onclick=()=>leaveLearning();el('learnButton').onclick=startLearning;
  el('audioToggle').onclick=()=>{prefs.sound=!prefs.sound;savePrefs();applyPrefs();if(prefs.sound)audioPlayer.ui('confirm');};
  el('artToggle').onclick=()=>{prefs.illustrated=!prefs.illustrated;savePrefs();applyPrefs();};
- el('newGame').onclick=()=>showModal({title:'Recomeçar a partida?',intro:'Isso apaga a partida atual salva neste navegador.',choices:[{label:'Sim, iniciar nova batalha',fn:openStart}],footer:[{label:'Cancelar',fn:dismissModal}]});
+ el('newGame').onclick=()=>{if(learning){leaveLearning(true);return;}showModal({title:'Recomeçar a partida?',intro:'A partida atual só será substituída quando você iniciar outra. Os exercícios preservam seu salvamento.',choices:[{label:'Escolher modo de jogo',fn:openStart}],footer:[{label:'Cancelar',fn:dismissModal}]});};
  el('helpButton').onclick=showRules;el('passTurn').onclick=()=>passTurn();el('clearSelect').onclick=()=>{clearSelection();inspectedId=null;render();};
  el('finishSetup').onclick=finishSetup;el('saveBtn').onclick=()=>{save();const root=el('notice');root.classList.remove('unitGuideActive');root.textContent='Partida salva neste navegador.';};
  let axes=el('axes');'ABCDEFGHIJ'.split('').forEach(t=>axes.append(one('span',t)));
@@ -940,6 +1002,6 @@ window.addEventListener('kt-appearance-change',()=>{renderTeams();renderBoard();
 primeScoutWavs();
 wire();render();setupResume();
 // Interface de testes manuais, sem enviar dados para fora do navegador.
-window.KharTallV2={getGame:()=>game,launch:fresh,chooseAI,autoField:()=>aiFieldResolve(game),codex:openCodex,settings:()=>({...prefs})};
+window.KharTallV2={getGame:()=>game,launch:fresh,learn:startLearning,leaveLearning,chooseAI,autoField:()=>aiFieldResolve(game),codex:openCodex,settings:()=>({...prefs})};
 })();
 

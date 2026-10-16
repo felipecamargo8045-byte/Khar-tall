@@ -2,8 +2,9 @@
 // Exercise the real UI script without a browser dependency or real audio.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const {KharTall}=require('../engine.js');
-function ui(saved=null,{random=0,reduced=true}={}){
- const elements=new Map(),frames=[],timeouts=new Map(),rafs=[],listeners=new Map();let nextTimer=1;
+function ui(saved=null,{random=0,reduced=true,search=''}={}){
+ const elements=new Map(),frames=[],timeouts=new Map(),rafs=[],listeners=new Map(),intervals=[];let nextTimer=1,now=Date.now();
+ class Clock extends Date{static now(){return now;}}
  class Element{
   constructor(tag='div'){this.tagName=tag.toUpperCase();this.children=[];this.dataset={};this.attributes={};this.style={setProperty(){}};this.parentElement=null;this.hidden=false;this._class='';this._text='';this._html='';
    this.classList={contains:c=>this._class.split(/\s+/).includes(c),add:(...cs)=>{this._class=[...new Set([...this._class.split(/\s+/).filter(Boolean),...cs])].join(' ');},remove:(...cs)=>{this._class=this._class.split(/\s+/).filter(c=>!cs.includes(c)).join(' ');},toggle:(c,force)=>{const enabled=force===undefined?!this.classList.contains(c):force;enabled?this.classList.add(c):this.classList.remove(c);return enabled;}};
@@ -31,12 +32,14 @@ function ui(saved=null,{random=0,reduced=true}={}){
  const values=new Map(saved?[['khar-tall-v2-save',JSON.stringify(saved)]]:[]);
  class Game extends KharTall{constructor(options={}){super({...options,random:()=>random});}static restore(state){const g=new Game();g.s=structuredClone(state);return g;}}
  Game.CONSTANTS=KharTall.CONSTANTS;
- const sandbox={console,document,localStorage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)},location:{search:''},URLSearchParams,Date,Map,Set,Math,
+ const sandbox={console,document,localStorage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)},location:{search},URLSearchParams,Date:Clock,Map,Set,Math,KharTallLearning:require('../learning.js'),
   KharTall:Game,KharTallAudio:{create:()=>({preload:()=>Promise.resolve(),setEnabled(){},utility(){},ui(){},play(){},sequence(){}})},KharTallUI:{create:()=>({preparation(){}})},
-  setTimeout:(fn,ms)=>{const id=nextTimer++;timeouts.set(id,{fn,ms});return id;},clearTimeout:id=>timeouts.delete(id),setInterval:()=>1,requestAnimationFrame:fn=>rafs.push(fn),matchMedia:()=>({matches:reduced}),addEventListener(){}};
+  setTimeout:(fn,ms)=>{const id=nextTimer++;timeouts.set(id,{fn,ms});return id;},clearTimeout:id=>timeouts.delete(id),setInterval:fn=>{intervals.push(fn);return intervals.length;},requestAnimationFrame:fn=>rafs.push(fn),matchMedia:()=>({matches:reduced}),addEventListener(){}};
  sandbox.window=sandbox;vm.runInNewContext(fs.readFileSync(require.resolve('../app.js'),'utf8'),sandbox,{filename:'app.js'});
- return {api:sandbox.KharTallV2,get,frames,traps,clickText:(text)=>{const b=get('modalRoot').querySelectorAll('button').find(x=>x.textContent.includes(text)||x.innerHTML.includes(text));assert.ok(b,'Botão '+text);b.click();},flushRaf:()=>{for(const fn of rafs.splice(0))fn();},aiStep:()=>{const entry=[...timeouts].find(([,t])=>t.ms>=430&&t.ms<=900);assert.ok(entry,'IA agendada');timeouts.delete(entry[0]);entry[1].fn();}};
+ return {api:sandbox.KharTallV2,get,frames,traps,key:key=>listeners.get('keydown')?.({key}),saved:()=>values.get('khar-tall-v2-save'),visibility:hidden=>{document.hidden=hidden;listeners.get('visibilitychange')?.();},advance:ms=>{now+=ms;intervals.forEach(fn=>fn());},clickText:(text)=>{const b=get('modalRoot').querySelectorAll('button').find(x=>x.textContent.includes(text)||x.innerHTML.includes(text));assert.ok(b,'Botão '+text);b.click();},flushRaf:()=>{for(const fn of rafs.splice(0))fn();},aiStep:()=>{const entry=[...timeouts].find(([,t])=>t.ms>=430&&t.ms<=900);assert.ok(entry,'IA agendada');timeouts.delete(entry[0]);entry[1].fn();}};
 }
+module.exports={ui};
+if(require.main===module){
 // During the computer turn only the human's traps may exist in rendered DOM.
 for(const reduced of [true,false])for(const random of [0,.99]){
  const view=ui(null,{reduced,random});view.api.launch('ai',1);const g=view.api.getGame();view.get('board').children[44].click();view.get('board').children[45].click();assert.deepEqual(view.traps(),['4,4','5,4'],'Humano vê suas armadilhas na preparação');view.get('finishSetup').click();
@@ -56,3 +59,5 @@ for(const reduced of [true,false])for(const random of [0,.99]){
  const saved=g.snapshot(),resumed=ui(saved);assert.deepEqual(resumed.traps(),[]);resumed.clickText('Continuar partida');assert.deepEqual(resumed.traps(),[],'Retomada local mantém a cortina');resumed.clickText('Estou pronto');assert.deepEqual(resumed.traps(),['5,5']);
 }
 console.log('Trap privacy UI OK: AI turns/start/animations, every rendered frame, shared-device preparation/handoff and save resume.');
+
+}

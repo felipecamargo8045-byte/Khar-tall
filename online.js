@@ -110,6 +110,7 @@ function paint(){if(!game||!room)return;let s=game.s,$board=$('onlineBoard');$bo
   const field=game.field(x,y);if(field){cell.classList.add(field.kind==='heal'?'heal':'crystal');let ico=document.createElement('span');ico.className='tileMark';ico.textContent=field.kind==='heal'?'✚':'◆';cell.append(ico);}
   if(s.traps.some(t=>t.side===room.side&&t.x===x&&t.y===y))cell.classList.add('ownTrap');
   const p=pieceAt(x,y);if(p){const div=document.createElement('span');div.className='online-unit '+(p.side===0?'red':'blue')+(p.original?' original':'');const img=document.createElement('img');img.src='/assets/'+tokens[p.type];img.alt=aliases[p.type];window.KharTallSkins?.paintPiece(img,p.type,window.KharTallAppearance?.forSide(p.side));window.KharTallSkins?.decorate(div,window.KharTallAppearance?.forSide(p.side));div.append(img);
+   if(p.original){const badge=document.createElement('span');badge.className='originalBadge';badge.textContent='◆';div.append(badge);}
    if(p.type==='king'){const h=document.createElement('span');h.className='mini';h.textContent='♥'+p.hp;div.append(h);}
    if(p.mark||p.stun||p.freeze){const st=document.createElement('span');st.className='mark';st.textContent=p.freeze?'⚑':p.stun?'❄':'✧';div.append(st);}
    cell.append(div);
@@ -124,6 +125,7 @@ function paint(){if(!game||!room)return;let s=game.s,$board=$('onlineBoard');$bo
  const logs=$('log');logs.replaceChildren();for(const entry of s.logs.slice(0,12)){const d=document.createElement('div');d.className='logentry';d.textContent=entry.msg;logs.append(d);}
  let p=game.piece(selected);$('selectedTitle').textContent=p?aliases[p.type]+' · '+colors[p.side]:'Nenhuma peça';$('pieceGuide').textContent=p?guides[p.type]:'Toque numa unidade para consultar suas regras.';
  $('unitDescription').textContent=p?`${aliases[p.type]} — ${guides[p.type]}`:'Toque em uma peça para ver descrição, ataque e especial.';
+ $('victoryGoal').textContent=KharTallLearning.objective(s);$('victoryGoal').classList.toggle('pursuit',s.phase!=='over'&&!!s.deadline);
  paintActions();paintTime();renderPreparation();}
 function paintTime(){if(!deadline||room?.status==='waiting'||game?.s.phase==='over'){$('clock').textContent='--:--';return;}const ms=Math.max(0,deadline-Date.now()-clockOffset),sec=Math.max(0,Math.ceil(ms/1000));$('clock').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}
 setInterval(paintTime,250);

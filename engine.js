@@ -62,7 +62,7 @@ class KharTall{
   // O computador só conhece suas próprias armadilhas; o jogador jamais as vê antes de dispararem.
   for(let i=0;i<2;i++){const k=Math.floor(this.random()*free.length);this.s.traps.push({side:BLUE,...free.splice(k,1)[0]});}
  }
- begin(){const s=this.s;s.phase='play';s.side=this.random()<.5?RED:BLUE;s.turnSerial=0;this.note(`Sorteio: ${sideName(s.side)} começam. Os turnos têm 60 segundos.`);}
+ begin(){const s=this.s;s.phase='play';s.side=this.random()<.5?RED:BLUE;s.turnSerial=0;this.note(`Sorteio: ${sideName(s.side)} começam. ${s.untimed?'O treino não tem limite de tempo.':'Os turnos têm 60 segundos.'}`);}
  trail(a,b){if(!isRay(a,b))return null;const dx=Math.sign(b.x-a.x),dy=Math.sign(b.y-a.y),n=Math.max(Math.abs(b.x-a.x),Math.abs(b.y-a.y));let arr=[];
   for(let i=1;i<n;i++)arr.push({x:a.x+dx*i,y:a.y+dy*i});return arr;
  }
