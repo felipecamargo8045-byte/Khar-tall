@@ -1,0 +1,77 @@
+'use strict';
+const assert=require('node:assert/strict'),crypto=require('node:crypto'),http=require('node:http'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const {ShopStore}=require('../store-db.js'),{createCommerce,encrypt,decrypt}=require('../store-server.js'),{createShipping,QUOTE_TTL}=require('../shipping.js');
+const temp=fs.mkdtempSync(path.join(os.tmpdir(),'kt-shipping-')),file=path.join(temp,'shop.sqlite3');
+const env={STORE_PAYMENT_PROVIDER:'infinitepay',INFINITEPAY_HANDLE:'shipping_fixture',STORE_ADMIN_USERNAMES:'owner',STORE_SETTINGS_KEY:crypto.randomBytes(32).toString('hex'),TRUST_PROXY:'true'};
+const users=Object.fromEntries(['owner','buyer','other'].map(username=>[username,{id:crypto.randomUUID(),username}]));
+const auth={current:async req=>users[req.headers['x-test-user']]||null,reauthenticate:async(req,p)=>req.headers['x-test-user']==='owner'&&p==='local-test-password'};
+const quotes=[],links=[],emails=[];let unavailable=false,emailOutage=false;
+const fetcher=async(url,options)=>{
+ assert.equal(options.redirect,'error');const b=JSON.parse(options.body);
+ if(url==='https://melhorenvio.com.br/api/v2/me/shipment/calculate'){
+  quotes.push({b,options});if(unavailable)return {ok:true,json:async()=>[{id:1,error:'Unavailable'},{id:2,error:'Unavailable'}]};
+  return {ok:true,json:async()=>[{id:1,name:'PAC',company:{name:'Correios'},price:'18.00',custom_price:'21.90',delivery_time:3,custom_delivery_time:6,custom_delivery_range:{min:5,max:6}},{id:2,name:'SEDEX',company:{name:'Correios'},custom_price:'29.90',custom_delivery_time:2},{id:3,name:'Unselected carrier',company:{name:'Other'},custom_price:'1.00',custom_delivery_time:1},{id:1,name:'Broken response',custom_price:'NaN',custom_delivery_time:1},{id:2,error:'No service',custom_price:'0.00',custom_delivery_time:1}]};
+ }
+ if(url==='https://api.checkout.infinitepay.io/links'){links.push(b);return {ok:true,json:async()=>({url:'https://checkout.infinitepay.io/shipping_fixture/'+b.order_nsu})};}
+ assert.equal(url,'https://api.brevo.com/v3/smtp/email');assert.equal(options.headers['api-key'],'email-fixture-secret-only');emails.push(b);if(emailOutage)throw Error('Simulated timeout');return {ok:true,json:async()=>({messageId:'fixture-'+emails.length})};
+};
+let shop=new ShopStore({pool:null,file});shop.persistent=true;let commerce=createCommerce({auth,store:shop,fetcher,env});
+const server=http.createServer((req,res)=>commerce.process(req,res,new URL(req.url,'http://test').pathname));let base;
+async function api(route,method='GET',data,user='owner',extra={}){const r=await fetch(base+'/api/store/'+route,{method,headers:{...(user?{'X-Test-User':user}:{}),'X-Forwarded-For':user==='owner'?'192.0.2.1':'192.0.2.2',...(data?{'Content-Type':'application/json',Origin:base,'X-Kt-Csrf':'1'}:{}),...extra},body:data?JSON.stringify(data):undefined});return {status:r.status,data:await r.json()};}
+(async()=>{try{
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));base='http://127.0.0.1:'+server.address().port;
+ await api('admin/settings','POST',{seller_name:'Fixture store',support_contact:'seller@example.invalid',policy:'Fixture delivery terms',enabled:true});
+ let r=await api('catalog','GET',null,null);assert.equal(r.data.checkout_enabled,true);assert.equal(r.data.physical_checkout_enabled,false,'Digital sales remain available before shipping configuration');
+ const product={title:'Physical fixture',description:'Test only',kind:'physical',price_cents:5000,image:'/assets/tutorial_focus.webp',active:true,package:{weight_g:350,width_cm:20,height_cm:8,length_cm:25,preparation_days:3}};
+ assert.equal((await api('admin/products','POST',{...product,package:{}})).status,422);
+ const draft=await api('admin/products','POST',{...product,active:false,package:{}});assert.equal(draft.status,201);
+ const p=(await api('admin/products','POST',product)).data.product;assert.ok(p.id);
+ const request={product_id:p.id,quantity:2,postal_code:'01001-000'};
+ assert.equal((await api('shipping/quotes','POST',request,'buyer')).status,503);assert.equal(quotes.length,0);
+ assert.equal((await api('shipping/quotes','POST',request,'buyer',{Origin:'https://other.invalid'})).status,403);
+ const shippingSettings={password:'local-test-password',enabled:true,origin_postal_code:'13400-000',contact_email:'seller@example.invalid',services:'1,2',token:'shipping-fixture-secret-only'};
+ assert.equal((await api('admin/shipping','POST',shippingSettings,'buyer')).status,403);
+ assert.equal((await api('admin/shipping','POST',{...shippingSettings,password:'wrong'})).status,401);
+ assert.equal((await api('admin/shipping','POST',{...shippingSettings,origin_postal_code:'00000-000'})).status,422);
+ assert.equal((await api('admin/shipping','POST',shippingSettings)).status,200);
+ assert.ok(!JSON.stringify(await shop.setting('shipping')).includes(shippingSettings.token));
+ for(const route of ['catalog','admin/status','me'])assert.ok(!JSON.stringify((await api(route)).data).includes(shippingSettings.token));
+ assert.equal((await api('shipping/quotes','POST',{...request,product_id:draft.data.product.id},'buyer')).status,404);
+ r=await api('shipping/quotes','POST',request,'buyer');assert.equal(r.status,200);assert.equal(r.data.options.length,2);const quote=r.data.options[0];
+ assert.equal(quote.price_cents,2190,'Use the actual account custom_price');assert.equal(quote.min_days,5);assert.equal(quote.max_days,6);assert.equal(quote.preparation_days,3);
+ assert.equal(quotes[0].b.from.postal_code,'13400000');assert.equal(quotes[0].b.to.postal_code,'01001000');assert.equal(quotes[0].b.products[0].weight,.35);assert.equal(quotes[0].b.products[0].insurance_value,50);assert.equal(quotes[0].b.products[0].quantity,2);assert.equal(quotes[0].options.headers['User-Agent'],'Khar Tall (seller@example.invalid)');
+ await api('shipping/quotes','POST',request,'buyer');assert.equal(quotes.length,1,'Short cache avoids identical provider requests');
+ const customer={name:'Fixture buyer',email:'buyer@example.invalid',postal_code:'01001-000',address:'Fixture street',number:'1',district:'Fixture',city:'Fixture city',state:'SP',complement:''},purchase={product_id:p.id,quantity:2,accepted:true,customer,shipping_token:quote.token};
+ assert.equal((await api('checkout','POST',{...purchase,shipping_token:undefined},'buyer')).status,422);
+ const parts=quote.token.split('.');parts[1]=(parts[1][0]==='A'?'B':'A')+parts[1].slice(1);
+ assert.equal((await api('checkout','POST',{...purchase,shipping_token:parts.join('.')},'buyer')).status,422);
+ assert.equal((await api('checkout','POST',{...purchase,quantity:1},'buyer')).status,409);
+ assert.equal((await api('checkout','POST',{...purchase,customer:{...customer,postal_code:'02002000'}},'buyer')).status,409);
+ assert.equal((await api('checkout','POST',purchase,'other')).status,409);assert.equal(links.length,0);
+ r=await api('checkout','POST',{...purchase,total_cents:1,shipping_cents:0},'buyer');assert.equal(r.status,201);const orderId=r.data.order_id;
+ let o=await shop.order(orderId);assert.equal(Number(o.shipping_cents),2190);assert.equal(Number(o.total_cents),12190);assert.equal(links[0].items[1].price,2190);assert.equal(JSON.parse(o.shipping_json).preparation_days,3);
+ const fulfil='admin/orders/'+orderId+'/shipping';assert.equal((await api(fulfil,'POST',{fulfillment:'preparing'})).status,409,'Unpaid order cannot be accepted');
+ await shop.query("UPDATE kt_store_orders SET payment_status='approved' WHERE id=$1",[orderId]);
+ assert.equal((await api(fulfil,'POST',{fulfillment:'shipped',tracking:'TEST123BR'})).status,409);
+ assert.equal((await api(fulfil,'POST',{fulfillment:'preparing',tracking:''})).status,200);await api(fulfil,'POST',{fulfillment:'preparing',tracking:''});
+ assert.equal((await shop.notices([orderId])).length,1);assert.equal(emails.length,0);
+ assert.equal((await api(fulfil,'POST',{fulfillment:'shipped',tracking:''})).status,422);
+ const duplicated=await Promise.all([1,2].map(()=>api(fulfil,'POST',{fulfillment:'shipped',tracking:'TEST123BR'})));assert.ok(duplicated.every(r=>[200,409].includes(r.status)));
+ const notices=await shop.notices([orderId]);assert.equal(notices.length,2);assert.deepEqual(notices.map(n=>n.kind),['accepted','shipped']);assert.match(notices[1].message,/TEST123BR/);assert.equal(emails.length,0);
+ assert.equal((await api('me','GET',null,'other')).data.orders.length,0);assert.equal((await api('me','GET',null,'buyer')).data.orders[0].notices.length,2);
+ const emailSettings={password:'local-test-password',enabled:true,api_key:'email-fixture-secret-only',sender_email:'verified@example.invalid',sender_name:'Fixture store',free_plan_confirmed:true};
+ assert.equal((await api('admin/notifications','POST',{...emailSettings,free_plan_confirmed:false})).status,422);assert.equal((await api('admin/notifications','POST',emailSettings)).status,200);
+ assert.ok(!JSON.stringify(await shop.setting('order_email')).includes(emailSettings.api_key));assert.ok(!JSON.stringify((await api('admin/status')).data).includes(emailSettings.api_key));
+ const retry='admin/orders/'+orderId+'/notifications/retry';await Promise.all([api(retry,'POST',{}),api(retry,'POST',{})]);assert.equal(emails.length,2,'Repeated/concurrent admin actions do not send sent notices again');assert.ok(emails.every(e=>e.to[0].email===customer.email&&e.headers.IdempotencyKey));
+ emailOutage=true;r=await api(fulfil,'POST',{fulfillment:'delivered',tracking:'TEST123BR'});assert.equal(r.status,200);assert.equal((await shop.order(orderId)).fulfillment,'delivered');assert.equal((await shop.notices([orderId])).at(-1).email_status,'failed','An email outage cannot undo the saved fulfilment or in-account notice');
+ const day=new Date().toISOString().slice(0,10);await shop.query('UPDATE kt_store_email_days SET sends=250 WHERE day=$1',[day]);const sentBefore=emails.length;await api(retry,'POST',{});assert.equal(emails.length,sentBefore,'The local daily cap stops extra provider calls');
+ await shop.query('UPDATE kt_store_email_days SET sends=0 WHERE day=$1',[day]);emailOutage=false;await api(retry,'POST',{});assert.equal((await shop.notices([orderId])).at(-1).email_status,'sent');
+ let clock=Date.now();const engine=createShipping({store:shop,fetcher,env,encrypt,decrypt,now:()=>clock}),stored=await shop.product(p.id),fresh=await engine.quote(stored,1,request.postal_code,users.buyer.id);
+ await assert.rejects(engine.quote({...stored,active:0},1,request.postal_code,users.buyer.id),e=>e.status===404);assert.ok((await engine.quote({...stored,active:0},1,request.postal_code,users.owner.id,true)).options.length,'Administrator can quote a complete draft without publishing it');
+ clock+=QUOTE_TTL+1;await assert.rejects(engine.verify(fresh.options[0].token,stored,1,request.postal_code,users.buyer.id),e=>e.status===409);
+ clock=Date.now();const current=await engine.quote(stored,1,request.postal_code,users.buyer.id);await shop.saveProduct({...stored,price_cents:6000,updated_ms:Date.now()+1});await assert.rejects(engine.verify(current.options[0].token,await shop.product(p.id),1,request.postal_code,users.buyer.id),e=>e.status===409);
+ unavailable=true;assert.equal((await api('shipping/quotes','POST',{...request,quantity:3},'buyer')).status,422);assert.equal(links.length,1,'Failed or empty quotes never fall back to free shipping or create a payment');
+ shop.close();shop=new ShopStore({pool:null,file});shop.persistent=true;commerce=createCommerce({auth,store:shop,fetcher,env});r=await api('me','GET',null,'buyer');assert.equal(r.data.orders[0].notices.length,3);assert.equal(r.data.orders[0].shipping_cents,2190);assert.equal((await api('catalog','GET',null,null)).data.shipping.email_enabled,true);
+ assert.equal((await api('admin/notifications','POST',{...emailSettings,enabled:false,api_key:''})).status,200);assert.equal((await api('catalog','GET',null,null)).data.shipping.email_enabled,false);
+ console.log('Shipping OK: authoritative rates and packages, custom prices and delivery windows, signed expiring quotes bound to account/product/CEP/quantity, unavailable services, private credentials, paid-order acceptance, tracking-required dispatch, durable in-account notices, concurrent deduplication, optional email failures/retry/daily cap and restart persistence. No real label, payment or message.');
+}finally{await new Promise(r=>server.close(r));shop.close();fs.rmSync(temp,{recursive:true,force:true});}})().catch(e=>{console.error(e.stack);process.exitCode=1;});

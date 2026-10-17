@@ -1,12 +1,12 @@
 # Khar Tall — orçamento e limites
 
-Atualizado em 16/10/2026 para a versão 3.7.0. A restrição do criador é **R$ 0 de novas cobranças de desenvolvimento e infraestrutura**, agora e nos próximos meses. Esta atualização reutiliza os serviços existentes, compila o Android localmente e não contrata planos, créditos, domínios, anúncios ou APIs de IA.
+Atualizado em 17/10/2026 para a versão 3.8.0. A restrição do criador é **R$ 0 de novas cobranças de desenvolvimento e infraestrutura**, agora e nos próximos meses. Esta atualização reutiliza os serviços existentes, compila o Android localmente e não contrata planos, créditos, domínios, anúncios ou APIs de IA.
 
 ## Infraestrutura
 
 | Componente | Verificação | Controle |
 | --- | --- | --- |
-| Render `khar-tall-online` | Instância `free`, uma instância, sem disco e sem previews; relido em 16/10 | `render.yaml` exige `plan: free`; build rejeita planos pagos, discos e autoscaling |
+| Render `khar-tall-online` | Instância `free`, uma instância, sem disco e sem previews; relido em 17/10 | `render.yaml` exige `plan: free`; build rejeita planos pagos, discos e autoscaling |
 | Neon `khar-tall-contas` | Free (`free_v3`), confirmado na revisão de 15/10; não alterado nesta versão | Compute 0,25 CU; limites de consumo de 360.000 compute-seconds (100 CU-h) e 5 GB de transferência por ciclo |
 | Branch Neon `release-check-20261015` | Compute desativado na revisão de 15/10 | Não foi reativado para esta entrega; testes atuais usam dados temporários locais |
 | Mídia e oponente de IA | Artes/áudios versionados; IA executada no dispositivo | Sem geração de mídia nem API paga por jogada |
@@ -49,3 +49,12 @@ O APK mantém a assinatura original. Para atualizar, instalar sobre a versão an
 - https://neon.com/docs/guides/consumption-limits
 - https://www.infinitepay.io/checkout
 - https://www.infinitepay.io/desenvolvedores
+
+## Frete e avisos — 17/10/2026
+
+- API de cálculo do Melhor Envio: a documentação oficial informa integração sem taxas ou mensalidade. A cotação não compra etiquetas nem adiciona saldo. Cada frete real continua sendo pago por envio, com o valor mostrado ao comprador antes do pagamento.
+- SuperFrete foi pesquisada como alternativa sem mensalidade; o código desta versão conecta Melhor Envio, inicialmente com PAC e SEDEX, conforme disponibilidade. Não há duas contas de frete contratadas.
+- Avisos em Meus pedidos: usam o mesmo banco e servidor. O aceite da loja e o envio são eventos distintos, com histórico privado e rastreamento.
+- E-mail Brevo: opcional e inicialmente desligado. O plano gratuito informa 300 envios/dia; a aplicação limita a 250 tentativas por dia UTC, mantém os avisos na conta e permite ao administrador tentar pendências. Não compra créditos, não contrata plano e não habilita SMS/WhatsApp. O administrador deve confirmar uma conta gratuita sem recarga automática; uso em outros sistemas compartilha a cota do provedor.
+- Ainda é necessário conectar o token de frete, informar o CEP real de postagem e cadastrar peso/medidas/preparação reais antes de abrir produtos físicos. E-mail adicional exige chave e remetente verificado. Nenhum CEP ou dado de embalagem foi inventado em produção.
+- Android 3.8.0 é compilado localmente com a assinatura existente. APIs privadas continuam fora do cache offline; não há nova infraestrutura.

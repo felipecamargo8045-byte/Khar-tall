@@ -6,9 +6,10 @@ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'kt-infinitepay-')),file=path.jo
 const env={STORE_PAYMENT_PROVIDER:'infinitepay',INFINITEPAY_HANDLE:'merchant_fixture',STORE_ADMIN_USERNAMES:'owner',STORE_SETTINGS_KEY:crypto.randomBytes(32).toString('hex')};
 const users=Object.fromEntries(['owner','buyer','other'].map(username=>[username,{id:crypto.randomUUID(),username}]));
 const auth={current:async req=>users[req.headers['x-test-user']]||null,reauthenticate:async(req,password)=>req.headers['x-test-user']==='owner'&&password==='local-test-password'};
+let shippingTokens={};
 const links=[],checks=[],verified=new Map();let badURL=false,unavailable=false;
 const key=p=>[p.handle,p.order_nsu,p.transaction_nsu,p.slug].join('|');
-const provider=async(url,options)=>{
+const provider=async(url,options)=>{if(url==='https://melhorenvio.com.br/api/v2/me/shipment/calculate')return {ok:true,json:async()=>[{id:1,name:'PAC',company:{name:'Correios'},custom_price:'4.50',custom_delivery_time:5}]};
  assert.equal(options.method,'POST');assert.equal(options.redirect,'error');assert.equal(options.headers.Authorization,undefined);
  const p=JSON.parse(options.body);
  if(url==='https://api.checkout.infinitepay.io/links'){
@@ -21,7 +22,7 @@ const provider=async(url,options)=>{
 let shop=new ShopStore({pool:null,file});shop.persistent=true;let commerce=createCommerce({auth,store:shop,fetcher:provider,env});
 const server=http.createServer((req,res)=>commerce.process(req,res,new URL(req.url,'http://test').pathname));let base;
 async function api(route,method='GET',data,user='owner',extra={}){
- const r=await fetch(base+'/api/store/'+route,{method,headers:{...(user?{'X-Test-User':user}:{}),...(data?{'Content-Type':'application/json',Origin:base,'X-Kt-Csrf':'1'}:{}),...extra},body:data?JSON.stringify(data):undefined});return {status:r.status,data:await r.json()};
+ const r=await fetch(base+'/api/store/'+route,{method,headers:{...(user?{'X-Test-User':user}:{}),...(data?{'Content-Type':'application/json',Origin:base,'X-Kt-Csrf':'1'}:{}),...extra},body:data?JSON.stringify(route==='checkout'&&data.customer?{...data,shipping_token:shippingTokens[data.quantity]}:data):undefined});return {status:r.status,data:await r.json()};
 }
 const references=o=>({order_nsu:o.id,invoice_slug:'invoice-'+o.id,transaction_nsu:crypto.randomUUID()});
 function proof(o,refs,change={}){const p={handle:o.merchant_id.slice(12),order_nsu:o.id,transaction_nsu:refs.transaction_nsu,slug:refs.invoice_slug};verified.set(key(p),{success:true,paid:true,amount:Number(o.total_cents),paid_amount:Number(o.total_cents),capture_method:'pix',installments:1,...change});return p;}
@@ -36,11 +37,13 @@ async function notify(o,refs,token){const link=links.find(l=>l.order_nsu===o.id)
  assert.equal((await api('admin/connect','POST',{handle:'merchant_fixture',password:'wrong'})).status,401);
  assert.equal((await api('admin/connect','POST',{handle:'http://bad.invalid',password:'local-test-password'})).status,422);
  assert.equal((await api('admin/settings','POST',{seller_name:'Fixture store',support_contact:'store@example.invalid',policy:'Fixture delivery and refund terms',enabled:true})).status,200);
- const template={title:'Fixture item',description:'One-time purchase',kind:'physical',price_cents:1599,shipping_cents:450,image:'/assets/tutorial_focus.webp',active:true};
+ const template={title:'Fixture item',description:'One-time purchase',kind:'physical',price_cents:1599,shipping_cents:450,image:'/assets/tutorial_focus.webp',active:true,package:{weight_g:300,width_cm:16,height_cm:4,length_cm:20,preparation_days:2}};
  const physical=(await api('admin/products','POST',template)).data.product;
  const digital=(await api('admin/products','POST',{...template,title:'Fixture cosmetic',kind:'digital',price_cents:500,reward:'ember',delivery_url:'https://example.invalid/private-file'})).data.product;
  assert.ok(!JSON.stringify((await api('catalog','GET',null,null)).data).includes('private-file'));
+ await shop.setSetting('shipping',require('../store-server.js').encrypt({enabled:true,token:'shipping-fixture-token-only',origin_postal_code:'13400000',contact_email:'store@example.invalid',services:'1,2',revision:'fixture'},env));
  const customer={name:'Buyer fixture',email:'buyer@example.invalid',postal_code:'12345-678',address:'Fixture street',number:'1',district:'Fixture',city:'Fixture city',state:'SP',complement:''};
+ for(const quantity of [1,2]){const quote=await api('shipping/quotes','POST',{product_id:physical.id,quantity,postal_code:'12345678'},'buyer');assert.equal(quote.status,200);shippingTokens[quantity]=quote.data.options[0].token;}
  assert.equal((await api('checkout','POST',{product_id:physical.id,quantity:2,accepted:true,customer},null)).status,401);
  assert.equal((await api('checkout','POST',{product_id:physical.id,quantity:2,accepted:true,customer},'buyer',{Origin:'https://attacker.invalid'})).status,403);
  r=await api('checkout','POST',{product_id:physical.id,quantity:2,accepted:true,customer,total_cents:1,handle:'attacker'},'buyer');assert.equal(r.status,201);const order=await shop.order(r.data.order_id),refs=references(order),sent=links[0];

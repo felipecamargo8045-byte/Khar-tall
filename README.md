@@ -114,13 +114,21 @@ Documentação oficial: https://www.infinitepay.io/checkout-documentacao
 
 Inclui as variações coral, vinho, azul-gelo e azul-noite, mantendo os IDs das compras. O instalador assinado está preservado em partes Base64 em `android-releases/3.6.1`. `node scripts/restore-android.js` recompõe os bytes e confere tamanho e SHA-256 antes dos testes e da publicação. A chave privada de assinatura permanece fora do repositório.
 
-## Versão atual — 3.7.0
+## Versão atual — 3.8.0
 
 - `learning.js` define seis exercícios com o mesmo motor: preparação, movimento, Arqueiro, linha de cinco casas do Guardião, duas vidas do Rei e condição final de vitória. Exercícios não substituem o salvamento; o retorno restaura a partida anterior.
 - Local e IA oferecem treino sem tempo ou preparação/turnos de 60 segundos. O ritmo é salvo com a partida. O online continua autoritativo e com 60 segundos.
 - O cronômetro local pausa em segundo plano; a IA é interrompida e retomada com a página. A condição de vitória e a perseguição de três turnos ficam acima do tabuleiro nos dois modos de interface.
 - O contador informa peças presentes (16 iniciais, até 20 por invocação). O Guardião original mantém borda dourada e símbolo independente das skins.
 - O menu prioriza aprender/jogar e reúne prévias de som nas configurações. O tutorial apresenta regras antes da ilustração opcional. O portal exibe a posição inicial a partir do motor e identifica InfinitePay consistentemente.
-- O APK 3.7.0 preserva assinatura, conta e arquivos de mídia; o aviso de atualização é opcional, sem instalação automática. O cache completo da PWA abre o jogo preparado sem esperar o servidor e exclui APIs privadas.
+- O APK 3.8.0 preserva assinatura, conta e arquivos de mídia; o aviso de atualização é opcional, sem instalação automática. O cache completo da PWA abre o jogo preparado sem esperar o servidor e exclui APIs privadas.
 - Desenvolvimento e infraestrutura desta entrega: R$ 0 de novas contratações. As tarifas por venda da loja continuam conforme autorização do criador. Limites e pendências: `CUSTOS_E_LIMITES.md`.
 - Verificação: `node scripts/check.js` e `ACCOUNTS_DATABASE_URL= DATABASE_URL= node tests/run.js`. O teste em celular físico, usabilidade com novos jogadores e equilíbrio real não são comprovados por essa suíte; roteiro em `VALIDACAO_MANUAL.md`.
+
+## Frete e avisos dos pedidos físicos — 17/10/2026
+
+A integração de cotações pelo Melhor Envio substitui o frete fixo. Há seleção de modalidade por CEP, preço e prazo no checkout, com preparação separada do transporte. O servidor confere uma cotação assinada, válida por 15 minutos e vinculada ao produto, quantidade, CEP e conta. Sem cotação válida, nenhum pagamento físico é criado. Produtos digitais continuam independentes do frete.
+
+O painel registra o aceite e o envio, exige rastreamento para enviar e mantém mensagens privadas em Meus pedidos. O e-mail transacional Brevo é opcional, com credencial criptografada, confirmação de plano gratuito, limite local de 250 tentativas/dia e reenvio de pendências pelo administrador. Nenhuma etiqueta ou saldo é comprado automaticamente.
+
+Configuração, limites e fontes: [FRETE_E_AVISOS.md](FRETE_E_AVISOS.md). `tests/test_shipping.js` cobre cotações adulteradas/vencidas, falhas do provedor, regras de aceite/envio, avisos privados, concorrência, limite de e-mail e persistência, sem transação ou mensagem real.

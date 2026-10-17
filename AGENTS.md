@@ -28,3 +28,12 @@ A chave de assinatura Android e sua senha ficam fora do repositório; preserve o
 - Em 16/10/2026, o usuário aceitou explicitamente abrir as vendas com Pix e cartão de crédito sem restrição por valor no Checkout Integrado da InfinitePay. Pediu que não haja aviso sobre valor mínimo. Não anuncie débito, que não é documentado para este checkout.
 - A venda das skins segue o controle geral de abertura da loja, com recebimento conectado, banco persistente e informações de atendimento preenchidas. Não gere cobrança para depois negar a skin por causa do meio de pagamento. Testes usam apenas respostas simuladas, sem cobrança real.
 - A propriedade e a skin equipada são verificadas no servidor; reembolso revoga o uso. Preferências de skin e tabuleiro são separadas. Dados públicos do multiplayer incluem somente nome e skin verificada, sem identificadores privados.
+
+## Frete e avisos (17/10/2026)
+
+- O usuário autorizou pesquisar e integrar o cálculo de frete antes do catálogo físico. Não cadastre produtos físicos sem a aprovação dele.
+- Cotações usam Melhor Envio, inicialmente PAC/SEDEX, com CEP real de postagem e token configurados no painel. Nunca invente CEP, peso, medidas ou prazo de preparação. Não compre etiquetas, adicione saldo ou ative pacotes automaticamente.
+- O frete mostrado antes do pagamento vem de cotação assinada, vinculada ao CEP, quantidade, produto e conta, válida por 15 minutos. Falha de cotação deve impedir pagamento físico, sem fallback para frete grátis. Preserve as skins sem frete.
+- Aceite da loja e postagem são eventos separados do pagamento. Registrar envio exige aceite anterior e rastreamento. Ambos geram mensagens privadas em Meus pedidos. Não prometa e-mail sem a conexão ativa.
+- Brevo é opcional e deve permanecer em plano gratuito sem recarga ou contratação. Use remetente verificado e limite local de 250 tentativas/dia; falhas não apagam os avisos da conta. Nenhum SMS, WhatsApp pago, cron ou novo serviço foi contratado.
+- O Android inclui a interface da loja: atualizações desta interface precisam de novo APK com a mesma assinatura e novo cache da PWA. A versão publicada no download deve corresponder ao package.json.

@@ -1,0 +1,10 @@
+{
+  "file": "khar-tall-3.8.0.apk",
+  "size": 8604695,
+  "sha256": "2589ba65d2147dc238b1bae88ae27cea6d676e1c34dc55bef91d2898a094b3c7",
+  "format": "delta-v1",
+  "base_version": "3.7.0",
+  "base_sha256": "28842349f67e952d2ab17acc6c685703ac23e94dc080ceb513edf21b0437f597",
+  "patch": "patch.json.gz.b64",
+  "patch_sha256": "275fdd8a90772eb9bfae782f37477e10e8a0907379e8fb51f1169b9e7a4985dc"
+}
