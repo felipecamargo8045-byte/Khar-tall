@@ -670,7 +670,7 @@ function handlePicker(x,y){const s=game.s;
  if(picker.kind==='area'){
   const p=game.piece(picker.action.p),t=game.pieceAt(x,y);
   if(!p||!t||t.side===p.side||!game.guardianTargets(p).some(q=>q.id===t.id))return;
-  if(areaChosen.includes(t.id)){if(areaChosen.length>1)areaChosen=areaChosen.filter(id=>id!==t.id);}
+  if(areaChosen.includes(t.id)){if(t.id!==picker.action.target)areaChosen=areaChosen.filter(id=>id!==t.id);}
   else if(areaChosen.length<3)areaChosen.push(t.id);
   render();return;
  }

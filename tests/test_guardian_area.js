@@ -49,6 +49,20 @@ function checkDistant(pieces,f){
 for(const copied of [false,true]){
  const f=groupFixture(copied);assert.equal(f.game.act(distantInput(f)),true);checkDistant(f.game.s.pieces,f);
 }
+// The local selection must keep the mandatory first target highlighted, just as online does.
+for(const copied of [false,true]){
+ const f=groupFixture(copied),view=require('./test_trap_visibility.js').ui(f.game.snapshot());
+ view.clickText('Continuar partida');view.clickText('Estou pronto');
+ const cell=p=>view.get('board').children[p.y*10+p.x];
+ cell(f.actor).click();cell(f.target).click();if(!copied)view.clickText('Ataque ao redor');
+ cell(f.extras[0]).click();cell(f.extras[1]).click();cell(f.target).click();
+ assert.equal(cell(f.target).classList.contains('targetChosen'),true,'O alvo inicial permanece selecionado');
+ cell(f.extras[2]).click();cell(f.extras[3]).click();
+ assert.equal(cell(f.extras[2]).classList.contains('targetChosen'),false,'A seleção não aceita um quarto alvo');
+ assert.equal(cell(f.extras[3]).classList.contains('areaHint'),false,'A quarta casa não é destacada para o ataque ao redor');
+ const confirm=view.get('selectionActions').querySelectorAll('button').find(b=>b.textContent.startsWith('Confirmar ataque'));
+ assert.ok(confirm);confirm.click();checkGroup(view.api.getGame().s.pieces,f);
+}
 async function online(){
  assert.equal(process.env.NODE_ENV,'test','Fixtures online somente no servidor de teste');
  const base=process.env.KT_URL,{RoomStore}=require('../room-store.js'),store=new RoomStore();await store.init();
