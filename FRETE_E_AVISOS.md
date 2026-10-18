@@ -1,6 +1,6 @@
 # Frete e avisos de pedidos físicos
 
-Atualizado em 17/10/2026. Integração sem mensalidade, no servidor e banco existentes. Não foram cadastrados produtos físicos, geradas etiquetas ou enviadas mensagens reais durante o desenvolvimento.
+Atualizado em 18/10/2026. Integração sem mensalidade, no servidor e banco existentes. Não foram cadastrados produtos físicos, geradas etiquetas ou enviadas mensagens reais durante o desenvolvimento.
 
 ## Pesquisa e escolha
 
@@ -34,6 +34,14 @@ Fontes oficiais consultadas:
 Credenciais são criptografadas com a chave de configuração existente. Não são retornadas ao navegador nem incluídas no APK ou no Git. Token ou chave em branco preserva o segredo salvo; mudanças de conexão exigem a senha do jogo. O token Melhor Envio precisa ser substituído caso expire ou seja revogado.
 
 O CEP fornecido durante a preparação pode ser guardado separadamente em `kt_store_settings`, na chave `shipping_origin_postal_code`, como uma string JSON com oito dígitos. Ele preenche o painel antes da conexão, sem ativar cotações. A configuração completa salva posteriormente no painel tem prioridade. Nenhuma credencial é lida desse cadastro inicial.
+
+### Alternativa pelo servidor existente
+
+O proprietário também pode conectar a cotação pelos segredos do serviço Render existente: `MELHOR_ENVIO_TOKEN`, `MELHOR_ENVIO_CONTACT_EMAIL`, `MELHOR_ENVIO_ORIGIN_POSTAL_CODE` e `MELHOR_ENVIO_ENABLED=true`. O token deve ter apenas `shipping-calculate`. Esses valores ficam fora de Git, APK e arquivos publicados. Use a mesclagem de variáveis, preservando banco, criptografia e recebimentos; não substitua a coleção inteira.
+
+O CEP já cadastrado no banco é usado quando a variável de origem fica vazia. Sem token, contato válido, CEP válido e ativação explícita, a compra física continua bloqueada. As cotações são invalidadas quando essa configuração muda. A configuração criptografada do painel, quando existir, tem prioridade sobre as variáveis; salvar pelo painel com o token em branco preserva a chave já conectada e passa a guardá-la criptografada no banco. O login e a confirmação de senha do painel permanecem obrigatórios para alterações pelo navegador.
+
+Essa alternativa não exige nova hospedagem, plano, compra de etiquetas ou mudança nas contas de jogador. O frete é incluído no total pago pelo cliente; o vendedor usa o valor recebido para pagar a etiqueta na postagem. Não há débito automático de saldo pela integração de cotação.
 
 ## Compra e envio
 

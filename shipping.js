@@ -26,8 +26,10 @@ function createShipping({store,fetcher=fetch,env=process.env,decrypt,encrypt,now
   const value=await store.setting('shipping');if(value)return decrypt(value,env);
   // Keep the origin supplied during setup before credentials are connected.
   // A complete configuration saved by the administrator takes precedence.
-  const origin=await store.setting('shipping_origin_postal_code');
-  return {enabled:false,services:'1,2',revision:'',origin_postal_code:typeof origin==='string'&&/^\d{8}$/.test(origin)&&origin!=='00000000'?origin:''};
+  const origin=String(env.MELHOR_ENVIO_ORIGIN_POSTAL_CODE||await store.setting('shipping_origin_postal_code')||'').trim(),token=String(env.MELHOR_ENVIO_TOKEN||'').trim();
+  const c={enabled:env.MELHOR_ENVIO_ENABLED==='true',services:'1,2',origin_postal_code:/^\d{8}$/.test(origin)&&origin!=='00000000'?origin:'',contact_email:String(env.MELHOR_ENVIO_CONTACT_EMAIL||'').trim(),token:/^[A-Za-z0-9._~+/=-]{20,6000}$/.test(token)?token:''};
+  // Hosting secrets provide an owner-operated setup path. Panel settings win.
+  return {...c,revision:digest(c)};
  }
  function ready(c){return c.enabled===true&&!!c.token&&/^\d{8}$/.test(c.origin_postal_code||'')&&email(c.contact_email);}
  async function status(){const c=await configuration();return {provider:'melhorenvio',enabled:c.enabled===true,configured:ready(c),token_saved:!!c.token,origin_postal_code:c.origin_postal_code||'',contact_email:c.contact_email||'',services:c.services||'1,2',quote_minutes:15,monthly_fee:0};}
