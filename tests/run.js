@@ -24,7 +24,7 @@ async function boot(){
 async function halt(){if(!child||child.exitCode!==null)return;const p=child;await new Promise(resolve=>{p.once('exit',resolve);p.kill('SIGTERM');});child=null;}
 (async()=>{
  try{
-  await script('test_skins.js');await script('test_store.js');await script('test_infinitepay.js');await script('test_shipping.js');await script('test_audio.js');await script('test_trap_visibility.js');await script('test_learning.js');await script('test_offline.js');await script('test_rules.js');await boot();await script('test_static.js',{KT_URL:origin});await script('test_multiplayer.js',{KT_URL:origin});await script('test_portal.js',{KT_URL:origin});await script('test_guardian_line.js',{KT_URL:origin});
+  await script('test_skins.js');await script('test_store.js');await script('test_infinitepay.js');await script('test_shipping.js');await script('test_audio.js');await script('test_trap_visibility.js');await script('test_learning.js');await script('test_offline.js');await script('test_rules.js');await boot();await script('test_static.js',{KT_URL:origin});await script('test_multiplayer.js',{KT_URL:origin});await script('test_portal.js',{KT_URL:origin});await script('test_guardian_line.js',{KT_URL:origin});await script('test_guardian_area.js',{KT_URL:origin});
   for(const route of ['/server.js','/.env','/data/khar_tall.sqlite3','/database.js'])assert.equal((await api(route)).status,404);
   assert.equal((await api('/api/online/rooms','POST',null)).status,400);
   assert.equal((await api('/api/accounts','POST',{})).status,410);

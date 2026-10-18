@@ -37,3 +37,9 @@ A chave de assinatura Android e sua senha ficam fora do repositório; preserve o
 - Aceite da loja e postagem são eventos separados do pagamento. Registrar envio exige aceite anterior e rastreamento. Ambos geram mensagens privadas em Meus pedidos. Não prometa e-mail sem a conexão ativa.
 - Brevo é opcional e deve permanecer em plano gratuito sem recarga ou contratação. Use remetente verificado e limite local de 250 tentativas/dia; falhas não apagam os avisos da conta. Nenhum SMS, WhatsApp pago, cron ou novo serviço foi contratado.
 - O Android inclui a interface da loja: atualizações desta interface precisam de novo APK com a mesma assinatura e novo cache da PWA. A versão publicada no download deve corresponder ao package.json.
+
+## Guardião — confirmação de 18/10/2026
+
+- O ataque ao redor alcança até 3 casas a partir da posição da peça, incluindo diagonais, com bloqueio por aliados. Mantém o limite de até 3 inimigos por ação.
+- O ataque em linha continua a até 5 casas na horizontal ou vertical, parando na primeira peça. O movimento do Guardião permanece livre nas 8 direções, sem atravessar peças.
+- A Cópia Real usa os mesmos alcances e limites da técnica copiada. As indicações de alcance devem ser claras no jogo local, IA, online e Android.

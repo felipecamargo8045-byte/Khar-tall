@@ -8,6 +8,7 @@ const DIR8=[[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]];
 const DIR4=[[1,0],[-1,0],[0,1],[0,-1]];
 const VDIR={up:[[-1,-1],[1,-1]],down:[[-1,1],[1,1]],left:[[-1,-1],[-1,1]],right:[[1,-1],[1,1]]};
 const VALUE={king:1000,guardian:90,colossus:55,wolf:42,scout:65,soldier:12,archer:12};
+const GUARDIAN_AREA_RANGE=3,GUARDIAN_AREA_TARGETS=3;
 const other=s=>1-s, inside=(x,y)=>x>=0&&y>=0&&x<N&&y<N;
 const square=(x,y)=>'ABCDEFGHIJ'[x]+(10-y);
 const dist=(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y));
@@ -87,7 +88,7 @@ class KharTall{
   for(let [dx,dy] of dirs){for(let i=1;i<=4;i++){let x=p.x+dx*i,y=p.y+dy*i;if(!inside(x,y))break;let q=this.pieceAt(x,y);if(q){if(q.side!==p.side&&!targets.some(t=>t.id===q.id))targets.push(q);break;}}}
   return targets;
  }
- guardianTargets(p){return this.s.pieces.filter(q=>q.side!==p.side&&dist(p,q)<=3&&!this.blockedByAllyArea(p,q));}
+ guardianTargets(p){return this.s.pieces.filter(q=>q.side!==p.side&&dist(p,q)<=GUARDIAN_AREA_RANGE&&!this.blockedByAllyArea(p,q));}
  guardianLineTargets(p){let out=[];for(const [dx,dy] of DIR4){for(let i=1;i<=5;i++){let x=p.x+dx*i,y=p.y+dy*i;if(!inside(x,y))break;let t=this.pieceAt(x,y);if(t){if(t.side!==p.side)out.push(t);break;}}}return out;}
  statusActive(p,k){return !!(p[k]&&p[k].n>0);}
  canPieceAct(p){if(p.type==='king')return true;return !(this.statusActive(p,'stun')||this.statusActive(p,'freeze')||this.statusActive(p,'rest'));}
@@ -329,8 +330,7 @@ class KharTall{
    case 'mark':case 'execute':this.hitScout(p,opponent);break;
    case 'area':case 'copyArea':{
     const eligible=this.guardianTargets(p).map(q=>q.id);
-    let targets=(input.targets||[a.target]).filter((id,i,ar)=>eligible.includes(id)&&ar.indexOf(id)===i).slice(0,3);
-    if(!targets.includes(a.target))targets.unshift(a.target);
+    const targets=[a.target,...(Array.isArray(input.targets)?input.targets:[])].filter((id,i,ar)=>eligible.includes(id)&&ar.indexOf(id)===i).slice(0,GUARDIAN_AREA_TARGETS);
     this.note(`Ataque em área: ${targets.length} alvo(s) selecionados.`);
     for(const tid of targets){const q=this.piece(tid);if(q)this.attack(p,q,'guardianArea');if(s.phase==='over')break;}
     break;
