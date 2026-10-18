@@ -22,7 +22,13 @@ function deliveryRange(row){const range=row.custom_delivery_range||row.delivery_
 function quotedPackages(row){return (Array.isArray(row.packages)?row.packages:[]).slice(0,10).map(p=>({width_cm:Number(p.dimensions?.width),height_cm:Number(p.dimensions?.height),length_cm:Number(p.dimensions?.length),weight_kg:Number(p.weight)})).filter(p=>Object.values(p).every(n=>Number.isFinite(n)&&n>0&&n<=1000));}
 function createShipping({store,fetcher=fetch,env=process.env,decrypt,encrypt,now=Date.now}={}){
  const requests=new Map();
- async function configuration(){const value=await store.setting('shipping');return value?decrypt(value,env):{enabled:false,services:'1,2',revision:''};}
+ async function configuration(){
+  const value=await store.setting('shipping');if(value)return decrypt(value,env);
+  // Keep the origin supplied during setup before credentials are connected.
+  // A complete configuration saved by the administrator takes precedence.
+  const origin=await store.setting('shipping_origin_postal_code');
+  return {enabled:false,services:'1,2',revision:'',origin_postal_code:typeof origin==='string'&&/^\d{8}$/.test(origin)&&origin!=='00000000'?origin:''};
+ }
  function ready(c){return c.enabled===true&&!!c.token&&/^\d{8}$/.test(c.origin_postal_code||'')&&email(c.contact_email);}
  async function status(){const c=await configuration();return {provider:'melhorenvio',enabled:c.enabled===true,configured:ready(c),token_saved:!!c.token,origin_postal_code:c.origin_postal_code||'',contact_email:c.contact_email||'',services:c.services||'1,2',quote_minutes:15,monthly_fee:0};}
  async function save(input){

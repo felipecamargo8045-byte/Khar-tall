@@ -33,6 +33,8 @@ Fontes oficiais consultadas:
 
 Credenciais são criptografadas com a chave de configuração existente. Não são retornadas ao navegador nem incluídas no APK ou no Git. Token ou chave em branco preserva o segredo salvo; mudanças de conexão exigem a senha do jogo. O token Melhor Envio precisa ser substituído caso expire ou seja revogado.
 
+O CEP fornecido durante a preparação pode ser guardado separadamente em `kt_store_settings`, na chave `shipping_origin_postal_code`, como uma string JSON com oito dígitos. Ele preenche o painel antes da conexão, sem ativar cotações. A configuração completa salva posteriormente no painel tem prioridade. Nenhuma credencial é lida desse cadastro inicial.
+
 ## Compra e envio
 
 - O cliente informa CEP e quantidade, calcula e escolhe a modalidade. Valor e prazo de transporte vêm do provedor; a preparação é apresentada separadamente.

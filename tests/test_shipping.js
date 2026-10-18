@@ -21,6 +21,8 @@ async function api(route,method='GET',data,user='owner',extra={}){const r=await 
 (async()=>{try{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));base='http://127.0.0.1:'+server.address().port;
  await api('admin/settings','POST',{seller_name:'Fixture store',support_contact:'seller@example.invalid',policy:'Fixture delivery terms',enabled:true});
+ await shop.setSetting('shipping_origin_postal_code','13050000');
+ let setup=(await api('admin/status')).data.shipping;assert.equal(setup.origin_postal_code,'13050000');assert.equal(setup.configured,false);assert.equal(setup.enabled,false);assert.equal(setup.token_saved,false,'Saving the origin alone never enables shipping');
  let r=await api('catalog','GET',null,null);assert.equal(r.data.checkout_enabled,true);assert.equal(r.data.physical_checkout_enabled,false,'Digital sales remain available before shipping configuration');
  const product={title:'Physical fixture',description:'Test only',kind:'physical',price_cents:5000,image:'/assets/tutorial_focus.webp',active:true,package:{weight_g:350,width_cm:20,height_cm:8,length_cm:25,preparation_days:3}};
  assert.equal((await api('admin/products','POST',{...product,package:{}})).status,422);
@@ -34,6 +36,7 @@ async function api(route,method='GET',data,user='owner',extra={}){const r=await 
  assert.equal((await api('admin/shipping','POST',{...shippingSettings,password:'wrong'})).status,401);
  assert.equal((await api('admin/shipping','POST',{...shippingSettings,origin_postal_code:'00000-000'})).status,422);
  assert.equal((await api('admin/shipping','POST',shippingSettings)).status,200);
+ assert.equal((await api('admin/status')).data.shipping.origin_postal_code,'13400000','The origin subsequently saved in the panel supersedes the setup origin');
  assert.ok(!JSON.stringify(await shop.setting('shipping')).includes(shippingSettings.token));
  for(const route of ['catalog','admin/status','me'])assert.ok(!JSON.stringify((await api(route)).data).includes(shippingSettings.token));
  assert.equal((await api('shipping/quotes','POST',{...request,product_id:draft.data.product.id},'buyer')).status,404);
