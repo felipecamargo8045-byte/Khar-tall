@@ -69,6 +69,12 @@ Com e-mail adicional ativado:
 
 Não se promete e-mail quando a conexão está desativada. A política de privacidade informa o compartilhamento necessário à cotação, à entrega e ao envio dos avisos.
 
+## Estado da conexão em 18/10/2026
+
+A chave de consulta foi salva nos segredos do serviço Render existente e a implantação foi concluída. A API confirmou a autenticação em uma verificação sem dados de encomenda: retornou validação de campos obrigatórios, enquanto o controle sem credencial retornou não autorizado. O catálogo público confirmou a conexão configurada, sem expor a chave. O token atual declara somente `shipping-calculate` e vence em 18/10/2027.
+
+Origem confirmada: CEP 13402-770. Não foi criada cotação real de produto, etiqueta ou cobrança. Os produtos físicos continuam fora do catálogo até a aprovação do criador, com peso, medidas e preparação reais. O e-mail adicional não está conectado; os avisos ficam na conta do cliente. A atualização 3.8.1 sincroniza as telas e o instalador Android com essa configuração.
+
 ## Verificação
 
 `tests/test_shipping.js` cobre preço e prazo personalizados, quantidade e embalagem, cotação assinada, adulteração e vencimento, mudança de CEP/conta/produto, falha sem frete grátis, credenciais privadas, restrições de aceite e envio, histórico, concorrência, e-mail opcional, limite diário e reinício. Os testes existentes de pagamentos, skins e jogo permanecem obrigatórios.
