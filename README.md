@@ -114,16 +114,24 @@ Documentação oficial: https://www.infinitepay.io/checkout-documentacao
 
 Inclui as variações coral, vinho, azul-gelo e azul-noite, mantendo os IDs das compras. O instalador assinado está preservado em partes Base64 em `android-releases/3.6.1`. `node scripts/restore-android.js` recompõe os bytes e confere tamanho e SHA-256 antes dos testes e da publicação. A chave privada de assinatura permanece fora do repositório.
 
-## Versão atual — 3.9.1
+## Versão atual — 3.10.0
 
-- `learning.js` define seis exercícios com o mesmo motor: preparação, movimento, Arqueiro, linha de cinco casas do Guardião, duas vidas do Rei e condição final de vitória. Exercícios não substituem o salvamento; o retorno restaura a partida anterior.
+- `learning.js` define 58 exercícios jogáveis com o mesmo motor: movimentos dos sete personagens, todos os tipos de ataques, resgates, reações, cópias do Rei, campos e vitória. Exercícios não substituem o salvamento; o retorno restaura a partida anterior.
 - Local e IA oferecem treino sem tempo ou preparação/turnos de 60 segundos. O ritmo é salvo com a partida. O online continua autoritativo e com 60 segundos.
 - O cronômetro local pausa em segundo plano; a IA é interrompida e retomada com a página. A condição de vitória e a perseguição de três turnos ficam acima do tabuleiro nos dois modos de interface.
 - O contador informa peças presentes (16 iniciais, até 20 por invocação). O Guardião original mantém borda dourada e símbolo independente das skins.
 - O menu prioriza aprender/jogar e reúne prévias de som nas configurações. O tutorial abre no índice dos sete personagens e separa cada habilidade. As artes dos personagens aparecem abertas. O portal exibe a posição inicial a partir do motor e identifica InfinitePay consistentemente.
-- O APK 3.9.1 preserva assinatura, conta e arquivos de mídia; o aviso de atualização é opcional, sem instalação automática. O cache completo da PWA abre o jogo preparado sem esperar o servidor e exclui APIs privadas.
+- O APK 3.10.0 preserva assinatura, conta e arquivos de mídia; o aviso de atualização é opcional, sem instalação automática. O cache completo da PWA abre o jogo preparado sem esperar o servidor e exclui APIs privadas.
 - Desenvolvimento e infraestrutura desta entrega: R$ 0 de novas contratações. As tarifas por venda da loja continuam conforme autorização do criador. Limites e pendências: `CUSTOS_E_LIMITES.md`.
 - Verificação: `node scripts/check.js` e `ACCOUNTS_DATABASE_URL= DATABASE_URL= node tests/run.js`. O teste em celular físico, usabilidade com novos jogadores e equilíbrio real não são comprovados por essa suíte; roteiro em `VALIDACAO_MANUAL.md`.
+
+## Atualização 3.10.0 — tutorial jogável completo
+
+O modo **Aprender jogando** reúne 58 exercícios e começa cada cenário com as peças posicionadas. O movimento de cada um dos sete personagens destaca todos os destinos legais: basta escolher um, sem percorrer todas as casas. Os ataques e especiais têm exercícios separados, repetindo o personagem quando necessário. Um contorno tracejado mostra o alcance da técnica; as cores fortes indicam opções reais na posição, calculadas pelo motor.
+
+O percurso inclui espada com e sem avanço, flechas a uma e duas casas, evoluções, marcação, execução, execução contra Rei, combinação do Batedor, salto e mordida do Lobo, repouso, armadilhas, resgates comuns e de emergência pelos dois aliados, Investida, Esmagamento, interrupções, Investida defensiva, dois ataques do Guardião, explosão do Rei e dez exercícios de técnicas copiadas. Reação Real oferece prática de movimento, contra-ataque, magia durante paralisia e interposição. Os campos ensinam cura, sacrifício do Guardião original, as duas invocações, seis escolhas de transformação, reunião e recusa do poder. Evolução e ativação adicional no destino usam os fluxos reais.
+
+O tabuleiro permanece visível após a ação, permitindo ver animação e resultado. Os controles permitem repetir, voltar, avançar e escolher pelo índice de personagens. `/jogar?abrir=aprender&licao=colossus-smash` abre a sequência de Investida e Esmagamento. Os cenários e salvamentos são isolados; sair restaura a partida anterior. Não foram alteradas regras do motor, contas, loja ou serviços. Os seis temas práticos originais e o tutorial de referência permanecem. Os testes executam todos os 58 exercícios pela interface, verificam efeitos reais, escolhas, índices, links, limites, salvamentos e cronômetros. APK/PWA 3.10.0 usam a assinatura original e a infraestrutura existente.
 
 ## Atualização 3.9.1 — habilidades de cada personagem
 

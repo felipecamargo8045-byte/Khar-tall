@@ -46,7 +46,13 @@ A chave de assinatura Android e sua senha ficam fora do repositório; preserve o
 
 ## Tutorial de ações especiais — 18/10/2026
 
-- Cada ação especial deve ter explicação de condição, uso, efeito e limites, acessível pelo índice do tutorial. Preservar os seis exercícios práticos e o salvamento real.
+- Cada ação especial deve ter explicação de condição, uso, efeito e limites, acessível pelo índice do tutorial. Preservar os temas dos seis exercícios práticos originais e o salvamento real ao ampliar o tutorial.
 - Consultar o tutorial ou o índice pausa somente o cronômetro local; não prometer pausa de uma sala online autoritativa.
 
 - Em 18/10/2026, o usuário pediu que todos os personagens, incluindo o Colosso, apareçam e que cada habilidade seja mostrada individualmente. O tutorial tem índice por personagem, etapas separadas, oito cópias do Rei e artes originais abertas. Preserve o acesso pelo menu, o percurso sequencial, os links diretos e o retorno dos exercícios sem sobrescrever a partida.
+
+## Tutorial jogável completo — 18/10/2026
+
+- O usuário esclareceu que deseja o tutorial **jogável**, com todos os personagens, destinos de movimento destacados e todos os ataques/especiais praticados separadamente, repetindo personagens quando necessário. Basta realizar um movimento, sem visitar todas as casas.
+- `learning.js` reúne 58 cenários com o motor real, incluindo cópias, reações, resgates e campos. Preserve resultado e animação visíveis, índice, repetição, navegação e restauração da partida. Nenhum atalho do tutorial pode alterar as regras de partidas reais.
+- Cores fortes representam ações legais do motor. O contorno tracejado é alcance da técnica, podendo incluir casas sem alvo. Passagens automáticas do oponente só existem nos exercícios que explicam essa espera. Fluxos de área, captura e campos usam os seletores reais.

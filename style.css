@@ -269,3 +269,7 @@ footer strong{color:#e2be86}footer cite{font-style:italic;color:#eed0a3}
 @media(max-width:600px){.topActions .actionBtn,.topActions summary{min-height:42px;display:flex;align-items:center;justify-content:center;font-size:12px}.gameExtras>div{left:0;right:auto;width:min(270px,85vw)}.victoryGoal{font-size:12px;padding:10px}.learningPanel{padding:11px}.learningPanel p{font-size:14px}.unit .unitName{font-size:clamp(6px,1.6vw,9px)}.tutorialModal .modalFooter{bottom:-14px}}
 
 /* V2.15 · Ritual de abertura antes do primeiro turno: escudos, lanças, vozes. */
+
+.learningActions{display:flex;flex-wrap:wrap;gap:8px}.learningActions .actionBtn{min-height:42px}.learningPanel.completed{border-color:#d7c084;background:#293e31}
+
+.sq.attackRangeHint{outline:1px dashed #edca83bb;outline-offset:-5px}
