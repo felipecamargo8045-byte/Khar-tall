@@ -15,7 +15,7 @@ for(let i=1;i<guide.lessons.length;i++){
 }
 assert.equal(v.api.getGame().s.winner,0,'Last exercise actually satisfies victory conditions');
 v.key('Escape');assert.match(v.get('modalRoot').textContent,/Você concluiu/,'Completion keeps its next/menu controls accessible');
-v.clickText('Voltar ao menu');assert.equal(JSON.stringify(v.api.getGame().snapshot()),original,'Original game restored after completion');
+v.clickText('Ver personagens e todas as habilidades');assert.match(v.get('modalRoot').textContent,/Personagens e habilidades · índice/,'Após os exercícios, todas as habilidades ficam acessíveis');v.clickText('Fechar');assert.equal(JSON.stringify(v.api.getGame().snapshot()),original,'Original game restored after completion');
 const resumed=ui(JSON.parse(original));resumed.clickText('Continuar partida');resumed.advance(180000);assert.equal(resumed.api.getGame().s.phase,'setup');assert.equal(resumed.get('timer').textContent,'SEM TEMPO');
 resumed.get('finishSetup').click();resumed.get('passTurn').click();resumed.get('settingsButton').click();resumed.advance(180000);resumed.clickText('Fechar');resumed.aiStep();assert.equal(resumed.api.getGame().s.side,0,'Untimed AI resumes after reading settings');
 const timed=ui();timed.api.launch('ai',1);timed.advance(61000);assert.equal(timed.api.getGame().s.phase,'play','Timed preparation still expires');timed.advance(61000);assert.equal(timed.api.getGame().s.side,1,'Timed turns still expire');

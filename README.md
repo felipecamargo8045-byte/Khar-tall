@@ -114,16 +114,22 @@ Documentação oficial: https://www.infinitepay.io/checkout-documentacao
 
 Inclui as variações coral, vinho, azul-gelo e azul-noite, mantendo os IDs das compras. O instalador assinado está preservado em partes Base64 em `android-releases/3.6.1`. `node scripts/restore-android.js` recompõe os bytes e confere tamanho e SHA-256 antes dos testes e da publicação. A chave privada de assinatura permanece fora do repositório.
 
-## Versão atual — 3.9.0
+## Versão atual — 3.9.1
 
 - `learning.js` define seis exercícios com o mesmo motor: preparação, movimento, Arqueiro, linha de cinco casas do Guardião, duas vidas do Rei e condição final de vitória. Exercícios não substituem o salvamento; o retorno restaura a partida anterior.
 - Local e IA oferecem treino sem tempo ou preparação/turnos de 60 segundos. O ritmo é salvo com a partida. O online continua autoritativo e com 60 segundos.
 - O cronômetro local pausa em segundo plano; a IA é interrompida e retomada com a página. A condição de vitória e a perseguição de três turnos ficam acima do tabuleiro nos dois modos de interface.
 - O contador informa peças presentes (16 iniciais, até 20 por invocação). O Guardião original mantém borda dourada e símbolo independente das skins.
-- O menu prioriza aprender/jogar e reúne prévias de som nas configurações. O tutorial apresenta regras antes da ilustração opcional. O portal exibe a posição inicial a partir do motor e identifica InfinitePay consistentemente.
-- O APK 3.9.0 preserva assinatura, conta e arquivos de mídia; o aviso de atualização é opcional, sem instalação automática. O cache completo da PWA abre o jogo preparado sem esperar o servidor e exclui APIs privadas.
+- O menu prioriza aprender/jogar e reúne prévias de som nas configurações. O tutorial abre no índice dos sete personagens e separa cada habilidade. As artes dos personagens aparecem abertas. O portal exibe a posição inicial a partir do motor e identifica InfinitePay consistentemente.
+- O APK 3.9.1 preserva assinatura, conta e arquivos de mídia; o aviso de atualização é opcional, sem instalação automática. O cache completo da PWA abre o jogo preparado sem esperar o servidor e exclui APIs privadas.
 - Desenvolvimento e infraestrutura desta entrega: R$ 0 de novas contratações. As tarifas por venda da loja continuam conforme autorização do criador. Limites e pendências: `CUSTOS_E_LIMITES.md`.
 - Verificação: `node scripts/check.js` e `ACCOUNTS_DATABASE_URL= DATABASE_URL= node tests/run.js`. O teste em celular físico, usabilidade com novos jogadores e equilíbrio real não são comprovados por essa suíte; roteiro em `VALIDACAO_MANUAL.md`.
+
+## Atualização 3.9.1 — habilidades de cada personagem
+
+O tutorial abre com acesso direto aos sete personagens, inclusive o Colosso, e mostra 39 explicações individuais de movimento, ataques e poderes. Cada personagem tem seu próprio índice e navegação sequencial. O Rei apresenta separadamente as oito técnicas copiáveis, além de movimento, explosão, vidas, Cópia Real, Reação Real, impedimentos e resgate. As artes originais aparecem abertas; os esquemas temáticos gerais continuam opcionais.
+
+O percurso completo tem 60 etapas e preserva as 21 explicações anteriores. Os seis exercícios práticos continuam disponíveis; ao terminá-los, há um acesso ao tutorial de todos os personagens. O link `/jogar?abrir=tutorial&personagem=colossus` abre diretamente o Colosso sem substituir a partida salva. Os testes conferem cada personagem e habilidade por índice e em sequência, a visibilidade da arte, os links, o relógio local e os salvamentos. APK 3.9.1 e cache PWA sincronizados, com o certificado original e a infraestrutura existente.
 
 ## Atualização 3.9.0 — Guardião e ações especiais
 

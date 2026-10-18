@@ -48,3 +48,5 @@ A chave de assinatura Android e sua senha ficam fora do repositório; preserve o
 
 - Cada ação especial deve ter explicação de condição, uso, efeito e limites, acessível pelo índice do tutorial. Preservar os seis exercícios práticos e o salvamento real.
 - Consultar o tutorial ou o índice pausa somente o cronômetro local; não prometer pausa de uma sala online autoritativa.
+
+- Em 18/10/2026, o usuário pediu que todos os personagens, incluindo o Colosso, apareçam e que cada habilidade seja mostrada individualmente. O tutorial tem índice por personagem, etapas separadas, oito cópias do Rei e artes originais abertas. Preserve o acesso pelo menu, o percurso sequencial, os links diretos e o retorno dos exercícios sem sobrescrever a partida.

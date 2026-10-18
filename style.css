@@ -153,7 +153,8 @@ body{
 .tutorialBookKicker{display:block;color:#7d2f2c;letter-spacing:1.5px;font:800 10px system-ui,sans-serif}
 .tutorialBookLine{margin:7px 0 5px!important;color:#332520!important;font:600 15px/1.5 Georgia,serif!important}
 .tutorialBookQuote{margin:8px 0 0;padding-left:10px;border-left:3px solid #a15738;color:#893e2d;font:italic 17px Georgia,serif}
-.tutorialProgress{display:flex;gap:7px;justify-content:center;margin:6px 0 14px}
+.tutorialProgress{display:flex;height:4px;overflow:hidden;border-radius:6px;background:#59413b;margin:6px 0 14px}
+.tutorialProgressFill{display:block;height:100%;background:#d9a067;border-radius:6px}
 .tutorialDot{width:33px;height:4px;border-radius:6px;background:#59413b}
 .tutorialDot.passed{background:#d9a067}
 footer{color:#c3a88e;border-top:1px solid #674538;margin-top:17px}
