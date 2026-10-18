@@ -104,7 +104,7 @@ async function handler(req,res){try{const u=new URL(req.url,'http://local'),path
     case 'move': if(game.s.phase!=='play'||game.s.side!==side)fail(403,'Não é seu turno.');if(!a.input||typeof a.input!=='object')fail(400,'Ação ausente.');
      if(!Number.isInteger(a.input.p)||!Number.isInteger(a.input.x)||!Number.isInteger(a.input.y)||typeof a.input.kind!=='string'||a.input.kind.length>35)fail(422,'Jogada com parâmetros inválidos.');
      if('target' in a.input&&!Number.isInteger(a.input.target))fail(422,'Alvo inválido.');
-     if('targets' in a.input&&(!Array.isArray(a.input.targets)||a.input.targets.length>3||!a.input.targets.every(Number.isInteger)))fail(422,'Lista de alvos inválida.');
+     if('targets' in a.input&&(!Array.isArray(a.input.targets)||a.input.targets.length>2||!a.input.targets.every(Number.isInteger)))fail(422,'Lista de alvos inválida.');
      if('orient' in a.input&&a.input.orient!==null&&!['up','down','left','right'].includes(a.input.orient))fail(422,'Orientação inválida.');
      if('advance' in a.input&&typeof a.input.advance!=='boolean')fail(422,'Avanço inválido.');
      accepted=game.act(a.input);break;

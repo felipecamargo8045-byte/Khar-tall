@@ -6,7 +6,7 @@ const aliases={king:'Rei',guardian:'Guardião',colossus:'Colosso',wolf:'Lobo',sc
 const tokens={king:'token_king.webp',guardian:'token_guardian.webp',colossus:'token_colossus.webp',wolf:'token_wolf.webp',scout:'token_scout.webp',soldier:'token_soldier.webp',archer:'token_archer.webp'};
 const guides={
  king:'Movimento e ataque: até 2 casas nas oito direções. Possui 2 vidas e copia o último ataque recebido, uma vez no próximo turno. Seu ataque próprio causa uma explosão.',
- guardian:'Move quantas casas quiser nas oito direções, sem atravessar peças. Ataca até 3 inimigos a até 3 casas ao redor ou o primeiro inimigo a até 5 casas em linha horizontal ou vertical, sem atravessar peças. Somente o original conta para vitória.',
+ guardian:'Move quantas casas quiser nas oito direções, sem atravessar peças. Ataca até 2 inimigos a até 2 casas ao redor ou o primeiro inimigo a até 5 casas em linha horizontal ou vertical, sem atravessar peças. Somente o original conta para vitória.',
  colossus:'Move 1 casa. Investe exatamente 3 casas em linha cardinal, atingindo o trajeto; depois pode avançar 1 e esmagar até 8 vizinhos na sua próxima ação. Armadilhas interrompem a Investida.',
  wolf:'Salta em L de 3×2 ou 2×3, podendo atacar no destino. Após atacar fica 1 turno parado. Pode trocar de lugar com o Rei em resgates permitidos.',
  scout:'Move 1 casa. Magia em V até 4 casas nas diagonais orientáveis; primeiro ataque marca e paralisa, segundo executa marca ativa. Dois ataques no turno quando permitido.',
@@ -61,14 +61,14 @@ function boardClick(x,y){if(!game||!room)return;const p=pieceAt(x,y);if(game.s.p
   else useAction(choices[0]);return;}
  if(p){audioPlayer.ui('tap');selected=p.id;paint();}else{selected=null;paint();}
 }
-function actionLabel(k){return ({move:'Mover',hit:'Ataque normal',charge:'Investida do Colosso',fieldCharge:'Investida ao campo',smash:'Esmagamento',rescue:'Resgate Real',wolfHit:'Salto de ataque',area:'Ataque ao redor (3 casas · até 3 alvos)',line:'Ataque em linha (até 5 casas)',mark:'Marcar e paralisar',execute:'Executar marca',copyMove:'Salto copiado',copyWolfHit:'Ataque copiado do Lobo',copyCharge:'Investida copiada',copyHit:'Ataque copiado',copyArea:'Ataque ao redor copiado (3 casas)',copyLine:'Linha copiada (até 5 casas)'})[k]||k;}
+function actionLabel(k){return ({move:'Mover',hit:'Ataque normal',charge:'Investida do Colosso',fieldCharge:'Investida ao campo',smash:'Esmagamento',rescue:'Resgate Real',wolfHit:'Salto de ataque',area:'Ataque ao redor (2 casas · até 2 alvos)',line:'Ataque em linha (até 5 casas)',mark:'Marcar e paralisar',execute:'Executar marca',copyMove:'Salto copiado',copyWolfHit:'Ataque copiado do Lobo',copyCharge:'Investida copiada',copyHit:'Ataque copiado',copyArea:'Ataque ao redor copiado (2 casas)',copyLine:'Linha copiada (até 5 casas)'})[k]||k;}
 function useAction(a){if(['area','copyArea'].includes(a.kind)){
  const p=game.piece(a.p),candidates=game.guardianTargets(p);
  const overlay=$('choiceOverlay'),title=$('choiceTitle'),help=$('choiceHelp'),root=$('choiceButtons');
- title.textContent='Ataque ao redor · até 3 casas';help.textContent='Marque até 3 inimigos a até 3 casas ao redor da peça. O alvo inicial já está selecionado.';root.replaceChildren();
- const selectedTargets=new Set([a.target]);const counter=document.createElement('p');counter.className='small';counter.textContent='1 de 3 alvos selecionados';root.append(counter);
+ title.textContent='Ataque ao redor · até 2 casas';help.textContent='Marque até 2 inimigos a até 2 casas ao redor da peça. O alvo inicial já está selecionado.';root.replaceChildren();
+ const selectedTargets=new Set([a.target]);const counter=document.createElement('p');counter.className='small';counter.textContent='1 de 2 alvos selecionados';root.append(counter);
  for(const q of candidates){const label=document.createElement('label');label.className='area-target';const check=document.createElement('input');check.type='checkbox';check.checked=selectedTargets.has(q.id);label.append(check,document.createTextNode(`${aliases[q.type]} em ${'ABCDEFGHIJ'[q.x]}${10-q.y}`));
- check.addEventListener('change',()=>{if(check.checked){if(selectedTargets.size===3){check.checked=false;toast('O Guardião atinge no máximo três alvos.');return;}selectedTargets.add(q.id);}else{if(q.id===a.target){check.checked=true;return;}selectedTargets.delete(q.id);}counter.textContent=`${selectedTargets.size} de 3 alvos selecionados`;});root.append(label);
+ check.addEventListener('change',()=>{if(check.checked){if(selectedTargets.size===2){check.checked=false;toast('O Guardião atinge no máximo dois alvos.');return;}selectedTargets.add(q.id);}else{if(q.id===a.target){check.checked=true;return;}selectedTargets.delete(q.id);}counter.textContent=`${selectedTargets.size} de 2 alvos selecionados`;});root.append(label);
  }
  root.append(button('Confirmar ataque',()=>{closeOptions();submit('move',{input:{...a,targets:[...selectedTargets]}});},true));overlay.hidden=false;return;}
  if(['hit','copyHit'].includes(a.kind)){const p=game.piece(a.p),t=game.piece(a.target);if(t&&t.type!=='king'){

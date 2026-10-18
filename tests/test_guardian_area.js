@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const {KharTall}=require('../engine.js');
 
-function fixture(dx=1,dy=0,distance=3,copied=false){
+function fixture(dx=1,dy=0,distance=2,copied=false){
  const game=new KharTall({random:()=>0}),king=game.king(0),guardian=game.guardian(0),enemyKing=game.king(1),target=game.s.pieces.find(p=>p.side===1&&p.type==='soldier');
  const actor=copied?king:guardian;actor.x=4;actor.y=4;
  target.x=actor.x+dx*distance;target.y=actor.y+dy*distance;
@@ -13,34 +13,34 @@ function fixture(dx=1,dy=0,distance=3,copied=false){
  return {game,actor,target,kind:copied?'copyArea':'area'};
 }
 function input(f,targets){return {p:f.actor.id,kind:f.kind,x:f.target.x,y:f.target.y,target:f.target.id,tech:'guardianArea',...(targets===undefined?{}:{targets})};}
-for(const copied of [false,true])for(const [dx,dy]of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]])for(const distance of [1,3,4]){
- const f=fixture(dx,dy,distance,copied),before=f.game.snapshot(),allowed=distance<=3;
+for(const copied of [false,true])for(const [dx,dy]of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]])for(const distance of [1,2,3]){
+ const f=fixture(dx,dy,distance,copied),before=f.game.snapshot(),allowed=distance<=2;
  assert.equal(f.game.actionsFor(f.actor.id).some(a=>a.kind===f.kind&&a.target===f.target.id),allowed,`${f.kind}: ${distance} casas na direção ${dx},${dy}`);
  assert.equal(f.game.act(input(f)),allowed);
  if(allowed){assert.equal(f.game.piece(f.target.id),null);assert.deepEqual([f.actor.x,f.actor.y],[4,4]);if(copied)assert.equal(f.actor.copy,null);}
- else assert.deepEqual(f.game.snapshot(),before,'Alvo a quatro casas não altera a partida nem consome a cópia');
+ else assert.deepEqual(f.game.snapshot(),before,'Alvo a três casas não altera a partida nem consome a cópia');
 }
 for(const copied of [false,true]){
- const f=fixture(1,0,3,copied),blocker={...f.target,id:999,side:0,x:5,y:4};f.game.s.pieces.push(blocker);
+ const f=fixture(1,0,2,copied),blocker={...f.target,id:999,side:0,x:5,y:4};f.game.s.pieces.push(blocker);
  assert.equal(f.game.act(input(f)),false,'Aliados no caminho continuam protegendo o alvo');
 }
 function groupFixture(copied){
- const f=fixture(1,0,3,copied);
- f.extras=[[4,1],[1,4],[4,7],[8,5]].map(([x,y],i)=>({...f.target,id:1000+i,x,y}));
+ const f=fixture(1,0,2,copied);
+ f.extras=[[4,2],[2,4],[4,6],[7,5]].map(([x,y],i)=>({...f.target,id:1000+i,x,y}));
  f.game.s.pieces.push(...f.extras);return f;
 }
-function groupInput(f){return input(f,f.extras.slice(0,3).map(p=>p.id));}
+function groupInput(f){return input(f,f.extras.slice(0,2).map(p=>p.id));}
 function checkGroup(pieces,f){
  assert.equal(pieces.some(p=>p.id===f.target.id),false,'O alvo inicial sempre está incluído');
  assert.equal(pieces.some(p=>p.id===f.extras[0].id),false);
- assert.equal(pieces.some(p=>p.id===f.extras[1].id),false);
- assert.equal(pieces.some(p=>p.id===f.extras[2].id),true,'No máximo três inimigos, mesmo omitindo o alvo inicial da lista');
- assert.equal(pieces.some(p=>p.id===f.extras[3].id),true,'Uma lista enviada manualmente não atinge a quarta casa');
+ assert.equal(pieces.some(p=>p.id===f.extras[1].id),true,'No máximo dois inimigos, incluindo o alvo inicial');
+ assert.equal(pieces.some(p=>p.id===f.extras[2].id),true,'Outros alvos próximos são preservados');
+ assert.equal(pieces.some(p=>p.id===f.extras[3].id),true,'Uma lista enviada manualmente não atinge a terceira casa');
 }
 for(const copied of [false,true]){
  const f=groupFixture(copied);assert.equal(f.game.act(groupInput(f)),true);checkGroup(f.game.s.pieces,f);
 }
-function distantInput(f){return input(f,[f.extras[3].id,f.extras[0].id,f.extras[0].id]);}
+function distantInput(f){return input(f,[f.extras[3].id,f.extras[0].id]);}
 function checkDistant(pieces,f){
  assert.equal(pieces.some(p=>p.id===f.target.id),false);
  assert.equal(pieces.some(p=>p.id===f.extras[0].id),false);
@@ -48,20 +48,32 @@ function checkDistant(pieces,f){
 }
 for(const copied of [false,true]){
  const f=groupFixture(copied);assert.equal(f.game.act(distantInput(f)),true);checkDistant(f.game.s.pieces,f);
+ const duplicate=groupFixture(copied);assert.equal(duplicate.game.act(input(duplicate,[duplicate.extras[0].id,duplicate.extras[0].id])),true);checkDistant(duplicate.game.s.pieces,duplicate);
 }
 // The local selection must keep the mandatory first target highlighted, just as online does.
 for(const copied of [false,true]){
  const f=groupFixture(copied),view=require('./test_trap_visibility.js').ui(f.game.snapshot());
  view.clickText('Continuar partida');view.clickText('Estou pronto');
  const cell=p=>view.get('board').children[p.y*10+p.x];
- cell(f.actor).click();cell(f.target).click();if(!copied)view.clickText('Ataque ao redor');
+ cell(f.actor).click();cell(f.target).click();view.clickText('Ataque ao redor');
  cell(f.extras[0]).click();cell(f.extras[1]).click();cell(f.target).click();
  assert.equal(cell(f.target).classList.contains('targetChosen'),true,'O alvo inicial permanece selecionado');
  cell(f.extras[2]).click();cell(f.extras[3]).click();
- assert.equal(cell(f.extras[2]).classList.contains('targetChosen'),false,'A seleção não aceita um quarto alvo');
- assert.equal(cell(f.extras[3]).classList.contains('areaHint'),false,'A quarta casa não é destacada para o ataque ao redor');
+ assert.equal(cell(f.extras[1]).classList.contains('targetChosen'),false,'O terceiro inimigo não entra na seleção');
+ assert.equal(cell(f.extras[2]).classList.contains('targetChosen'),false,'A seleção não aceita um terceiro alvo');
+ assert.equal(cell(f.extras[3]).classList.contains('areaHint'),false,'A terceira casa não é destacada para o ataque ao redor');
  const confirm=view.get('selectionActions').querySelectorAll('button').find(b=>b.textContent.startsWith('Confirmar ataque'));
  assert.ok(confirm);confirm.click();checkGroup(view.api.getGame().s.pieces,f);
+}
+{
+ const f=groupFixture(false);for(const p of f.game.s.pieces)p.side=1-p.side;
+ for(const p of [f.target,...f.extras])p.type='scout';
+ f.game.s.side=1;f.game.s.mode='ai';f.game.s.difficulty=5;
+ const view=require('./test_trap_visibility.js').ui(f.game.snapshot());view.clickText('Continuar partida');
+ const game=view.api.getGame(),act=game.act;let chosen;
+ game.act=function(action){chosen=action;return act.call(this,action);};view.aiStep();
+ assert.equal(chosen?.kind,'area','A IA usa o ataque ao redor na formação preparada');
+ assert.equal(chosen.targets.length,2,'A IA seleciona apenas dois inimigos');
 }
 async function online(){
  assert.equal(process.env.NODE_ENV,'test','Fixtures online somente no servidor de teste');
@@ -70,21 +82,21 @@ async function online(){
  try{for(const copied of [false,true]){
   const created=await api('/api/online/rooms',{});assert.equal(created.status,201);const code=created.data.code,cookie=created.cookie;assert.equal((await api('/api/online/rooms/'+code+'/join',{})).status,200);
   async function set(f){await store.mutate(code,r=>{r.state_json=JSON.stringify(f.game.snapshot());r.status='active';r.deadline_ms=Date.now()+60000;return true;});return (await api('/api/online/rooms/'+code,undefined,cookie)).data;}
-  for(const [dx,dy]of [[1,0],[-1,-1]])for(const distance of [4,3]){
+  for(const [dx,dy]of [[1,0],[-1,-1]])for(const distance of [3,2]){
    const f=fixture(dx,dy,distance,copied),before=await set(f);
-   const response=await api('/api/online/rooms/'+code+'/action',{op:'move',revision:before.revision,input:input(f)},cookie);assert.equal(response.status,distance===3?200:422);
+   const response=await api('/api/online/rooms/'+code+'/action',{op:'move',revision:before.revision,input:input(f)},cookie);assert.equal(response.status,distance===2?200:422);
    const after=(await api('/api/online/rooms/'+code,undefined,cookie)).data;
-   if(distance===4){assert.deepEqual(after.state,before.state);assert.equal(after.revision,before.revision);}
+   if(distance===3){assert.deepEqual(after.state,before.state);assert.equal(after.revision,before.revision);}
    else{assert.equal(after.state.pieces.some(p=>p.id===f.target.id),false);if(copied)assert.equal(after.state.pieces.find(p=>p.id===f.actor.id).copy,null);}
   }
-  for(const variant of ['limit','distant','too_many']){
-   const f=groupFixture(copied),before=await set(f),action=variant==='limit'?groupInput(f):variant==='distant'?distantInput(f):input(f,f.extras.map(p=>p.id));
+  for(const variant of ['limit','distant','duplicate','too_many']){
+   const f=groupFixture(copied),before=await set(f),action=variant==='limit'?groupInput(f):variant==='distant'?distantInput(f):variant==='duplicate'?input(f,[f.extras[0].id,f.extras[0].id]):input(f,f.extras.slice(0,3).map(p=>p.id));
    assert.equal((await api('/api/online/rooms/'+code+'/action',{op:'move',revision:before.revision,input:action},cookie)).status,variant==='too_many'?422:200);
    const after=(await api('/api/online/rooms/'+code,undefined,cookie)).data;
    if(variant==='limit')checkGroup(after.state.pieces,f);
-   else if(variant==='distant')checkDistant(after.state.pieces,f);
+   else if(['distant','duplicate'].includes(variant))checkDistant(after.state.pieces,f);
    else{assert.deepEqual(after.state,before.state);assert.equal(after.revision,before.revision);}
   }
  }}finally{await store.close();await require('../database.js').closePool();}
 }
-(async()=>{if(process.env.KT_URL)await online();console.log('Guardian area OK: radius 3 in eight directions, rejection at 4, royal copy, ally blocking, three-target limit and authoritative HTTP validation.');})().catch(e=>{console.error(e.stack);process.exitCode=1;});
+(async()=>{if(process.env.KT_URL)await online();console.log('Guardian area OK: radius 2 in eight directions, rejection at 3, royal copy, ally blocking, two-target limit and authoritative HTTP validation.');})().catch(e=>{console.error(e.stack);process.exitCode=1;});

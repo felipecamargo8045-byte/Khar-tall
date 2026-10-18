@@ -25,8 +25,8 @@ for(const copied of [false,true])for(const side of [0,1]){
  const lines=f.game.actionsFor(f.actor.id).filter(a=>a.kind===f.kind);assert.deepEqual(lines.map(a=>a.target),side===1?[999]:[],'Para na primeira peça da linha');
 }
 {
- const f=fixture();f.target.x=3;f.target.y=7;assert.equal(f.game.actionsFor(f.actor.id).some(a=>a.kind==='line'),false,'Sem ataque em linha diagonal');
- assert.ok(f.game.guardianTargets(f.actor).some(p=>p.id===f.target.id),'Área de 3 casas preservada');f.target.y=8;assert.equal(f.game.guardianTargets(f.actor).some(p=>p.id===f.target.id),false);
+ const f=fixture();f.target.x=2;f.target.y=6;assert.equal(f.game.actionsFor(f.actor.id).some(a=>a.kind==='line'),false,'Sem ataque em linha diagonal');
+ assert.ok(f.game.guardianTargets(f.actor).some(p=>p.id===f.target.id),'Área de 2 casas');f.target.y=7;assert.equal(f.game.guardianTargets(f.actor).some(p=>p.id===f.target.id),false);
  f.actor.x=0;f.actor.y=0;f.game.s.pieces=f.game.s.pieces.filter(p=>p!==f.target);
  assert.ok(f.game.actionsFor(f.actor.id).some(a=>a.kind==='move'&&a.x===0&&a.y===9),'Movimento livre continua além de 5 casas');
  assert.ok(f.game.actionsFor(f.actor.id).some(a=>a.kind==='move'&&a.x===7&&a.y===7),'Movimento diagonal preservado');

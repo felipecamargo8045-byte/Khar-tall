@@ -8,7 +8,7 @@ const DIR8=[[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]];
 const DIR4=[[1,0],[-1,0],[0,1],[0,-1]];
 const VDIR={up:[[-1,-1],[1,-1]],down:[[-1,1],[1,1]],left:[[-1,-1],[-1,1]],right:[[1,-1],[1,1]]};
 const VALUE={king:1000,guardian:90,colossus:55,wolf:42,scout:65,soldier:12,archer:12};
-const GUARDIAN_AREA_RANGE=3,GUARDIAN_AREA_TARGETS=3;
+const GUARDIAN_AREA_RANGE=2,GUARDIAN_AREA_TARGETS=2;
 const other=s=>1-s, inside=(x,y)=>x>=0&&y>=0&&x<N&&y<N;
 const square=(x,y)=>'ABCDEFGHIJ'[x]+(10-y);
 const dist=(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y));

@@ -114,16 +114,24 @@ Documentação oficial: https://www.infinitepay.io/checkout-documentacao
 
 Inclui as variações coral, vinho, azul-gelo e azul-noite, mantendo os IDs das compras. O instalador assinado está preservado em partes Base64 em `android-releases/3.6.1`. `node scripts/restore-android.js` recompõe os bytes e confere tamanho e SHA-256 antes dos testes e da publicação. A chave privada de assinatura permanece fora do repositório.
 
-## Versão atual — 3.8.3
+## Versão atual — 3.9.0
 
 - `learning.js` define seis exercícios com o mesmo motor: preparação, movimento, Arqueiro, linha de cinco casas do Guardião, duas vidas do Rei e condição final de vitória. Exercícios não substituem o salvamento; o retorno restaura a partida anterior.
 - Local e IA oferecem treino sem tempo ou preparação/turnos de 60 segundos. O ritmo é salvo com a partida. O online continua autoritativo e com 60 segundos.
 - O cronômetro local pausa em segundo plano; a IA é interrompida e retomada com a página. A condição de vitória e a perseguição de três turnos ficam acima do tabuleiro nos dois modos de interface.
 - O contador informa peças presentes (16 iniciais, até 20 por invocação). O Guardião original mantém borda dourada e símbolo independente das skins.
 - O menu prioriza aprender/jogar e reúne prévias de som nas configurações. O tutorial apresenta regras antes da ilustração opcional. O portal exibe a posição inicial a partir do motor e identifica InfinitePay consistentemente.
-- O APK 3.8.3 preserva assinatura, conta e arquivos de mídia; o aviso de atualização é opcional, sem instalação automática. O cache completo da PWA abre o jogo preparado sem esperar o servidor e exclui APIs privadas.
+- O APK 3.9.0 preserva assinatura, conta e arquivos de mídia; o aviso de atualização é opcional, sem instalação automática. O cache completo da PWA abre o jogo preparado sem esperar o servidor e exclui APIs privadas.
 - Desenvolvimento e infraestrutura desta entrega: R$ 0 de novas contratações. As tarifas por venda da loja continuam conforme autorização do criador. Limites e pendências: `CUSTOS_E_LIMITES.md`.
 - Verificação: `node scripts/check.js` e `ACCOUNTS_DATABASE_URL= DATABASE_URL= node tests/run.js`. O teste em celular físico, usabilidade com novos jogadores e equilíbrio real não são comprovados por essa suíte; roteiro em `VALIDACAO_MANUAL.md`.
+
+## Atualização 3.9.0 — Guardião e ações especiais
+
+A regra atual do ataque ao redor do Guardião é alcance de até 2 casas, inclusive diagonais, e no máximo 2 alvos por ação. A cópia do Rei, seleção local/online, IA e validação do servidor seguem os mesmos limites. O ataque em reta mantém 5 casas e o movimento da unidade permanece livre. O índice do tutorial reúne 21 explicações de ações especiais com condições, uso e limites, além das dez páginas básicas. Os seis exercícios práticos continuam disponíveis.
+
+O tutorial explica armadilhas, campos e recarga, evolução, Cura Real por sacrifício, invocação, transformação, reunião, Investida, Esmagamento, Investida defensiva, salto do Lobo, Resgate Real, marcação, execução, segundo ataque, dois ataques do Guardião, Cópia Real, Reação Real, avanço após ataque e encerramento do turno. O índice permite acesso direto e pausa o cronômetro local sem alterar o salvamento. `tests/test_tutorial.js` exercita a navegação e preservação da partida; `tests/test_guardian_area.js` cobre 2/3 casas, dois alvos, IA, cópia, seleção e servidor.
+
+APK 3.9.0 e cache PWA sincronizados com certificado original, mantendo a infraestrutura existente.
 
 ## Atualização 3.8.3 — seleção do ataque ao redor
 

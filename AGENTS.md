@@ -40,6 +40,11 @@ A chave de assinatura Android e sua senha ficam fora do repositório; preserve o
 
 ## Guardião — confirmação de 18/10/2026
 
-- O ataque ao redor alcança até 3 casas a partir da posição da peça, incluindo diagonais, com bloqueio por aliados. Mantém o limite de até 3 inimigos por ação.
+- O ataque ao redor alcança até 2 casas a partir da posição da peça, incluindo diagonais, com bloqueio por aliados. Pode atingir no máximo 2 inimigos por ação.
 - O ataque em linha continua a até 5 casas na horizontal ou vertical, parando na primeira peça. O movimento do Guardião permanece livre nas 8 direções, sem atravessar peças.
 - A Cópia Real usa os mesmos alcances e limites da técnica copiada. As indicações de alcance devem ser claras no jogo local, IA, online e Android.
+
+## Tutorial de ações especiais — 18/10/2026
+
+- Cada ação especial deve ter explicação de condição, uso, efeito e limites, acessível pelo índice do tutorial. Preservar os seis exercícios práticos e o salvamento real.
+- Consultar o tutorial ou o índice pausa somente o cronômetro local; não prometer pausa de uma sala online autoritativa.

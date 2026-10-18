@@ -1,5 +1,5 @@
 'use strict';
-const CACHE='khar-tall-3.8.3-guardian-selection';
+const CACHE='khar-tall-3.9.0-special-actions';
 const CORE=['/skin-catalog.js','/skins.js','/skins.css','/portal','/portal.css','/portal.js','/portal-nav.js','/portal-nav.css','/jogar','/','/index.html','/style.css','/account.css','/online.css','/engine.js','/learning.js','/app.js','/audio.js','/game-ui.js','/account.js','/app-shell.js','/app-shell.css','/online','/online.js','/conta','/auth-client.js','/loja','/store.css','/store-client.js','/instalar','/install.js','/manifest.webmanifest','/icons/icon-192.png','/icons/icon-512.png','/privacidade.html'];
 const PATHS=new Set(CORE);
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
