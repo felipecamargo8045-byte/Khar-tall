@@ -24,16 +24,37 @@ function validWebhookToken(value,order,env){
  return typeof value==='string'&&/^[a-f0-9]{64}$/.test(value)&&crypto.timingSafeEqual(Buffer.from(value,'hex'),Buffer.from(webhookToken(order,env),'hex'));
 }
 function createInfinitePay({fetcher=fetch,env=process.env,base}={}){
+ function providerError(status,code){
+  let reason='api_rejected',message='A InfinitePay não conseguiu gerar o checkout. Tente novamente ou contate o atendimento da loja.';
+  if(status===401||status===403){reason='integration_disabled';message='O Checkout Integrado não está autorizado na InfinitePay. A loja precisa habilitá-lo nas configurações da conta.';}
+  else if(status===400||status===422){reason='invalid_checkout';message='A InfinitePay recusou os dados do pagamento. O administrador deve conferir a configuração do checkout.';}
+  else if(status===429){reason='rate_limited';message='A InfinitePay está limitando novas tentativas. Tente novamente mais tarde.';}
+  else if(status>=500){reason='provider_unavailable';message='A InfinitePay está temporariamente indisponível. Tente novamente mais tarde.';}
+  const e=new Error(message);e.status=502;e.providerStatus=status||0;e.providerReason=reason;
+  if(typeof code==='string'&&/^[A-Za-z0-9_-]{1,50}$/.test(code))e.providerCode=code;
+  throw e;
+ }
  async function request(route,payload){
-  let r;try{r=await fetcher('https://api.checkout.infinitepay.io/'+route,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(12000),redirect:'error'});}catch{fail(502,'A InfinitePay não respondeu. Tente novamente em instantes.');}
+  const apiKey=typeof env.INFINITEPAY_API_KEY==='string'?env.INFINITEPAY_API_KEY.trim():'';
+  if(apiKey&&!/^inchk_[A-Za-z0-9_-]{6,}$/.test(apiKey))fail(503,'A chave de integração da InfinitePay foi configurada incorretamente.');
+  const headers={'Content-Type':'application/json',Accept:'application/json',...(apiKey?{'X-Api-Key':apiKey}:{})};
+  let r;
+  try{r=await fetcher('https://api.checkout.infinitepay.io/'+route,{method:'POST',headers,body:JSON.stringify(payload),signal:AbortSignal.timeout(12000),redirect:'error'});}
+  catch{providerError(0);}
   const data=await r.json().catch(()=>null);
-  if(!r.ok||!data||typeof data!=='object'||Array.isArray(data)||data.success===false)fail(502,'Não foi possível confirmar a operação na InfinitePay. Confira a InfiniteTag no painel.');
+  if(!r.ok||!data||typeof data!=='object'||Array.isArray(data)||data.success===false)providerError(Number(r.status)||0,data?.code||data?.error_code);
   return data;
  }
  async function createLink(order){
   const customer=JSON.parse(order.customer_json),items=[{quantity:order.quantity,price:order.unit_cents,description:order.title}];
   if(order.shipping_cents)items.push({quantity:1,price:order.shipping_cents,description:'Entrega'});
-  const payload={handle:handle(order.merchant_id.slice(12)),order_nsu:order.id,items,redirect_url:base+'/loja?pedido='+order.id,webhook_url:base+'/api/store/infinitepay/webhook?token='+webhookToken(order,env)};
+  const payload={handle:handle(order.merchant_id.slice(12)),order_nsu:order.id,items,redirect_url:base+'/loja?pedido='+order.id};
+  // Em modo básico (sem API Key), enviar somente campos do checkout simples.
+  // O webhook moderno e opções avançadas só são enviados com a chave habilitada pelo vendedor.
+  if(env.INFINITEPAY_API_KEY?.trim()){
+   payload.options={single_payment:true,payment_methods_enabled:['pix','credit_card']};
+   payload.webhook={url:base+'/api/store/infinitepay/webhook?token='+webhookToken(order,env),events:['paid']};
+  }
   if(customer.email)payload.customer={name:customer.name,email:customer.email};
   if(customer.postal_code)payload.address={cep:customer.postal_code,street:customer.address,number:customer.number,neighborhood:customer.district,complement:customer.complement};
   return checkoutURL((await request('links',payload)).url);
