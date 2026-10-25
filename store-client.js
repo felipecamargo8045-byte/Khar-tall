@@ -59,6 +59,7 @@ $('supportForm').addEventListener('submit',async e=>{
  catch(err){$('supportNotice').textContent=err.message;}
  finally{button.disabled=false;}
 });
+setInterval(async()=>{if(!me?.authenticated||document.hidden||$('supportView').hidden)return;try{await refreshSupport();}catch{}},60000);
 $('refreshSupport').addEventListener('click',async e=>{e.currentTarget.disabled=true;try{await refreshSupport();$('supportNotice').textContent='Conversas atualizadas.';}catch(err){$('supportNotice').textContent=err.message;}finally{e.currentTarget.disabled=false;}});
 
 async function refreshMe(){me=await api('me');renderOwned();renderOrders();renderCatalog();}
