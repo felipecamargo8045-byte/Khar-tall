@@ -1,0 +1,50 @@
+'use strict';
+// Checkout-independent tests for private, free, account-linked support.
+const assert=require('node:assert/strict');
+const crypto=require('node:crypto'),http=require('node:http'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const {ShopStore}=require('../store-db.js'),{createCommerce}=require('../store-server.js');
+const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'kt-support-')),file=path.join(tmp,'support.sqlite3');
+const users={owner:{id:crypto.randomUUID(),username:'owner'},buyer:{id:crypto.randomUUID(),username:'buyer'},other:{id:crypto.randomUUID(),username:'other'}};
+const auth={current:async req=>users[req.headers['x-test-user']]||null,reauthenticate:async()=>false};
+const env={STORE_ADMIN_USERNAMES:'owner',STORE_PAYMENT_PROVIDER:'infinitepay',INFINITEPAY_HANDLE:'fixture',STORE_SETTINGS_KEY:crypto.randomBytes(32).toString('hex')};
+let store=new ShopStore({pool:null,file});store.persistent=true;
+let commerce=createCommerce({auth,store,env,fetcher:async()=>{throw Error('Support requires no paid external service');}});
+const server=http.createServer((req,res)=>commerce.process(req,res,new URL(req.url,'http://localhost').pathname));let base;
+async function api(route,method='GET',data,actor='buyer'){
+ const headers={...(actor?{'X-Test-User':actor}:{}),...(data?{'Content-Type':'application/json','Origin':base,'X-Kt-Csrf':'1'}:{})};
+ const r=await fetch(base+'/api/store/'+route,{method,headers,body:data?JSON.stringify(data):undefined});
+ return {status:r.status,data:await r.json()};
+}
+(async()=>{try{
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ base='http://127.0.0.1:'+server.address().port;
+ await store.init();
+ await store.setSetting('shop',{seller_name:'Khar Tall',support_contact:'private@example.invalid',policy:'Para atendimento, cancelamento ou reembolso, escreva para private@example.invalid e informe o número do pedido.',enabled:true});
+ let r=await api('catalog','GET',undefined,null);
+ assert.equal(r.status,200);assert.ok(!JSON.stringify(r.data.shop).includes('private@example.invalid'));
+ assert.ok(r.data.shop.policy.includes('aba Atendimento'));
+ assert.equal((await api('support','GET',undefined,null)).status,401);
+ assert.equal((await api('admin/support','GET',undefined,'buyer')).status,403);
+ assert.equal((await api('support','POST',{subject:'Ajuda',message:'curta'})).status,422);
+ r=await api('support','POST',{subject:'Pagamento recusado',message:'Não consigo concluir a compra da skin.'});
+ assert.equal(r.status,201);const id=r.data.ticket_id;
+ assert.match(id,/^[a-f0-9-]{36}$/);
+ let own=await api('support');assert.equal(own.data.tickets.length,1);
+ assert.equal(own.data.tickets[0].messages.length,2);
+ assert.equal(own.data.tickets[0].messages[1].sender,'automatic');
+ assert.equal((await api('support','GET',undefined,'other')).data.tickets.length,0);
+ assert.equal((await api('support/'+id+'/reply','POST',{message:'Quero acessar outra conta'},'other')).status,404);
+ assert.equal((await api('admin/support','GET',undefined,'buyer')).status,403);
+ assert.equal((await api('admin/support','GET',undefined,'owner')).data.tickets[0].username,'buyer');
+ assert.equal((await api('support/'+id+'/reply','POST',{message:'Olá! Estamos verificando seu pedido.'},'owner')).status,200);
+ own=await api('support');assert.equal(own.data.tickets[0].messages.at(-1).sender,'admin');
+ assert.equal((await api('admin/support/'+id+'/status','POST',{status:'closed'},'buyer')).status,403);
+ assert.equal((await api('admin/support/'+id+'/status','POST',{status:'closed'},'owner')).status,200);
+ assert.equal((await api('support/'+id+'/reply','POST',{message:'Ainda preciso de ajuda'})).status,409);
+ assert.equal((await api('admin/support/'+id+'/status','POST',{status:'open'},'owner')).status,200);
+ assert.equal((await api('support/'+id+'/reply','POST',{message:'Obrigado pela resposta!'})).status,200);
+ store.close();store=new ShopStore({pool:null,file});store.persistent=true;commerce=createCommerce({auth,store,env,fetcher:async()=>{throw Error('No provider needed');}});
+ own=await api('support');assert.equal(own.data.tickets[0].messages.length,4);
+ assert.equal((await api('support','GET',undefined,'other')).data.tickets.length,0);
+ console.log('Support OK: private inbox, auto confirmation, manual admin reply, rate/ownership protections, closure/reopen, persistence and no exposed email or paid API.');
+ }finally{await new Promise(resolve=>server.close(resolve));store.close();fs.rmSync(tmp,{recursive:true,force:true});}})().catch(e=>{console.error(e.stack);process.exitCode=1;});

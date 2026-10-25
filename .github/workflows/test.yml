@@ -1,0 +1,27 @@
+name: Testes gratuitos
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+      - name: Instalar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependências
+        run: npm ci
+      - name: Testar atendimento, loja e pagamentos
+        run: |
+          node tests/test_support.js
+          node tests/test_store.js
+          node tests/test_infinitepay.js
+      - name: Restaurar recursos e validar release
+        run: node deploy-restore.js
