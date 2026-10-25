@@ -23,6 +23,11 @@ class ShopStore{
    CREATE INDEX IF NOT EXISTS kt_store_notices_order ON kt_store_notices(order_id,created_ms);
    CREATE TABLE IF NOT EXISTS kt_store_email_days(day text PRIMARY KEY,sends integer NOT NULL DEFAULT 0);`;
   if(this.pool)await this.pool.query(noticesSQL);else this.db.exec(noticesSQL);
+  const supportSQL=`CREATE TABLE IF NOT EXISTS kt_store_support_tickets(id text PRIMARY KEY,user_id ${userType} NOT NULL${prefFK},username text NOT NULL,subject text NOT NULL,status text NOT NULL DEFAULT 'open',created_ms bigint NOT NULL,updated_ms bigint NOT NULL);
+   CREATE INDEX IF NOT EXISTS kt_store_support_tickets_user ON kt_store_support_tickets(user_id,updated_ms);
+   CREATE TABLE IF NOT EXISTS kt_store_support_messages(id text PRIMARY KEY,ticket_id text NOT NULL REFERENCES kt_store_support_tickets(id) ON DELETE CASCADE,sender text NOT NULL,body text NOT NULL,created_ms bigint NOT NULL);
+   CREATE INDEX IF NOT EXISTS kt_store_support_messages_ticket ON kt_store_support_messages(ticket_id,created_ms);`;
+  if(this.pool)await this.pool.query(supportSQL);else this.db.exec(supportSQL);
   // Stable product IDs make this safe on restarts; preserve any archive decision.
   const seedSQL=`INSERT INTO kt_store_products(id,title,description,kind,price_cents,shipping_cents,image,reward,delivery_url,active,created_ms,updated_ms) VALUES($1,$2,$3,'digital',$4,0,$5,$6,'',1,$7,$8) ON CONFLICT(id) DO UPDATE SET price_cents=excluded.price_cents,shipping_cents=0,reward=excluded.reward,kind='digital',title=CASE WHEN kt_store_products.title=$9 THEN excluded.title ELSE kt_store_products.title END,description=CASE WHEN kt_store_products.title=$10 THEN excluded.description ELSE kt_store_products.description END`;
   for(const skin of SKINS){const oldTitle=LEGACY_NAMES[skin.id]?'Skin '+LEGACY_NAMES[skin.id]:'',params=[skin.product_id,'Skin '+skin.name,skin.description,PRICE_CENTS,'/assets/token_king.webp',skin.id,Date.now(),Date.now(),oldTitle,oldTitle];if(this.pool)await this.pool.query(seedSQL,params);else this.db.prepare(seedSQL.replace(/\$\d+/g,'?')).run(...params);}
@@ -47,6 +52,28 @@ class ShopStore{
   if(this.pool){const client=await this.pool.connect();try{await client.query('BEGIN');if((await client.query(update,params)).rowCount!==1)conflict();for(const n of notices)await client.query(insert,values(n));await client.query('COMMIT');}catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}}
   else{this.db.exec('BEGIN IMMEDIATE');try{if(this.db.prepare(update.replace(/\$\d+/g,'?')).run(...params).changes!==1)conflict();for(const n of notices)this.db.prepare(insert.replace(/\$\d+/g,'?')).run(...values(n));this.db.exec('COMMIT');}catch(e){this.db.exec('ROLLBACK');throw e;}}
  }
+
+ async supportTicket(id){return this.one('SELECT * FROM kt_store_support_tickets WHERE id=$1',[id]);}
+ async supportThreads(userId=null){
+  const tickets=(await this.query('SELECT * FROM kt_store_support_tickets'+(userId?' WHERE user_id=$1':'')+' ORDER BY updated_ms DESC LIMIT 100',userId?[userId]:[])).rows;
+  if(!tickets.length)return [];
+  const ids=tickets.map(t=>t.id);
+  const params=ids.map((_,i)=>'$'+(i+1)).join(',');
+  const messages=(await this.query('SELECT id,ticket_id,sender,body,created_ms FROM kt_store_support_messages WHERE ticket_id IN ('+params+') ORDER BY created_ms ASC',ids)).rows;
+  return tickets.map(t=>({...t,created_ms:Number(t.created_ms),updated_ms:Number(t.updated_ms),messages:messages.filter(m=>m.ticket_id===t.id).map(m=>({...m,created_ms:Number(m.created_ms)}))}));
+ }
+ async openSupportTicket({id,user_id,username,subject,message,auto_message}){
+  const now=Date.now();
+  await this.query('INSERT INTO kt_store_support_tickets(id,user_id,username,subject,created_ms,updated_ms) VALUES($1,$2,$3,$4,$5,$6)',[id,user_id,username,subject,now,now]);
+  await this.query('INSERT INTO kt_store_support_messages(id,ticket_id,sender,body,created_ms) VALUES($1,$2,$3,$4,$5)',[require('node:crypto').randomUUID(),id,'customer',message,now]);
+  await this.query('INSERT INTO kt_store_support_messages(id,ticket_id,sender,body,created_ms) VALUES($1,$2,$3,$4,$5)',[require('node:crypto').randomUUID(),id,'automatic',auto_message,now+1]);
+ }
+ async replySupportTicket(id,sender,message){
+  const now=Date.now();
+  await this.query('INSERT INTO kt_store_support_messages(id,ticket_id,sender,body,created_ms) VALUES($1,$2,$3,$4,$5)',[require('node:crypto').randomUUID(),id,sender,message,now]);
+  await this.query('UPDATE kt_store_support_tickets SET updated_ms=$1 WHERE id=$2',[now,id]);
+ }
+ async setSupportStatus(id,status){await this.query('UPDATE kt_store_support_tickets SET status=$1,updated_ms=$2 WHERE id=$3',[status,Date.now(),id]);}
  async owned(userId){return (await this.query("SELECT DISTINCT reward FROM kt_store_orders WHERE user_id=$1 AND kind='digital' AND payment_status='approved' AND reward<>''",[userId])).rows.map(r=>r.reward);}
  async theme(userId){return (await this.one('SELECT theme FROM kt_store_preferences WHERE user_id=$1',[userId]))?.theme||'classic';}
  async setTheme(userId,theme){await this.query('INSERT INTO kt_store_preferences(user_id,theme) VALUES($1,$2) ON CONFLICT(user_id) DO UPDATE SET theme=excluded.theme',[userId,theme]);}
