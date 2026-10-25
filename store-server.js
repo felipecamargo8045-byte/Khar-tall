@@ -136,7 +136,7 @@ function createCommerce({auth,store=new ShopStore(),fetcher=fetch,env=process.en
   }
 
   if(req.method==='POST'){origin(req);rate(req,'store-write');}
-  if(req.method==='GET'&&pathname==='/api/store/admin/status'){const c=await config();return out(res,200,{connected:!!c.s,provider:c.s?.provider||env.STORE_PAYMENT_PROVIDER||'mercadopago',handle:c.s?.handle||'',mode:c.s?.mode||'production',merchant:c.s?.merchant_name||'',encryption_ready:!!env.STORE_SETTINGS_KEY,persistent:store.persistent,enabled:c.enabled,shop:publicShop(c.info),shipping:await shipping.status(),notifications:await notifications.status(),webhook_url:c.s?.provider==='infinitepay'?'':base+'/api/store/webhook',products:(await store.products(true)).map(p=>({...publicProduct(p),delivery_url:p.delivery_url})),orders:await publicOrders(await store.orders())});}
+  if(req.method==='GET'&&pathname==='/api/store/admin/status'){const c=await config();return out(res,200,{connected:!!c.s,provider:c.s?.provider||env.STORE_PAYMENT_PROVIDER||'mercadopago',handle:c.s?.handle||'',mode:c.s?.mode||'production',merchant:c.s?.merchant_name||'',encryption_ready:!!env.STORE_SETTINGS_KEY,persistent:store.persistent,enabled:c.enabled,shop:publicShop(c.info),shipping:await shipping.status(),notifications:await notifications.status(),webhook_url:c.s?.provider==='infinitepay'?'':base+'/api/store/webhook',infinitepay_diagnostics:await store.setting('infinitepay_checkout_diagnostic'),infinitepay_api_key_configured:!!env.INFINITEPAY_API_KEY,products:(await store.products(true)).map(p=>({...publicProduct(p),delivery_url:p.delivery_url})),orders:await publicOrders(await store.orders())});}
   if(req.method==='POST'&&['/api/store/admin/shipping','/api/store/admin/notifications'].includes(pathname)){const b=await body(req);if(!await auth.reauthenticate(req,b.password))fail(401,'Confirme sua senha de jogador.');return out(res,200,{ok:true,...(pathname.endsWith('/shipping')?{shipping:await shipping.save(b)}:{notifications:await notifications.save(b)})});}
   if(req.method==='POST'&&pathname==='/api/store/admin/connect'){
    const b=await body(req);if(!await auth.reauthenticate(req,b.password))fail(401,'Confirme sua senha de jogador.');
@@ -173,7 +173,15 @@ function createCommerce({auth,store=new ShopStore(),fetcher=fetch,env=process.en
    const id=crypto.randomUUID(),now=Date.now(),total=Number(p.price_cents)*quantity+shippingCents;money(total);
    const order={id,user_id:user.id,product_id:p.id,title:p.title,kind:p.kind,reward:p.reward,delivery_url:p.delivery_url,quantity,unit_cents:Number(p.price_cents),shipping_cents:shippingCents,shipping_json:JSON.stringify(shipment),total_cents:total,customer_json:JSON.stringify(customer),merchant_id:c.s.merchant_id,live_mode:c.s.mode==='production'?1:0,created_ms:now,updated_ms:now};await store.addOrder(order);
    if(c.s.provider==='infinitepay'){
-    const target=await infinitepay.createLink(order);await store.query('UPDATE kt_store_orders SET checkout_url=$1,payment_status=$2 WHERE id=$3',[target,'pending',id]);
+    let target;
+    try{target=await infinitepay.createLink(order);}
+    catch(e){
+     const reason=['integration_disabled','invalid_checkout','rate_limited','provider_unavailable','api_rejected'].includes(e.providerReason)?e.providerReason:'local_configuration';
+     await store.setSetting('infinitepay_checkout_diagnostic',{ok:false,reason,provider_http_status:Number(e.providerStatus)||0,provider_code:e.providerCode||'',at_ms:Date.now()});
+     throw e;
+    }
+    await store.query('UPDATE kt_store_orders SET checkout_url=$1,payment_status=$2 WHERE id=$3',[target,'pending',id]);
+    await store.setSetting('infinitepay_checkout_diagnostic',{ok:true,reason:'checkout_link_created',provider_http_status:0,provider_code:'',at_ms:Date.now()});
     return out(res,201,{order_id:id,checkout_url:target});
    }
    const preference={items:[{id:p.id,title:p.title,quantity,unit_price:Number(p.price_cents)/100,currency_id:'BRL'}],external_reference:id,metadata:{kt_order_id:id},back_urls:{success:base+'/loja?pedido='+id,pending:base+'/loja?pedido='+id,failure:base+'/loja?pedido='+id},notification_url:base+'/api/store/webhook',auto_return:'approved',statement_descriptor:'KHAR TALL',payment_methods:{excluded_payment_types:[{id:'ticket'},{id:'atm'}]}};
