@@ -3,17 +3,17 @@ const assert=require('node:assert/strict'),crypto=require('node:crypto'),http=re
 const {ShopStore}=require('../store-db.js'),{createCommerce}=require('../store-server.js');
 const {checkoutURL,handle}=require('../payments-infinitepay.js');
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'kt-infinitepay-')),file=path.join(temp,'store.sqlite3');
-const env={STORE_PAYMENT_PROVIDER:'infinitepay',INFINITEPAY_HANDLE:'merchant_fixture',STORE_ADMIN_USERNAMES:'owner',STORE_SETTINGS_KEY:crypto.randomBytes(32).toString('hex')};
+const env={STORE_PAYMENT_PROVIDER:'infinitepay',INFINITEPAY_HANDLE:'merchant_fixture',INFINITEPAY_API_KEY:'inchk_test_fixture_12345678',STORE_ADMIN_USERNAMES:'owner',STORE_SETTINGS_KEY:crypto.randomBytes(32).toString('hex')};
 const users=Object.fromEntries(['owner','buyer','other'].map(username=>[username,{id:crypto.randomUUID(),username}]));
 const auth={current:async req=>users[req.headers['x-test-user']]||null,reauthenticate:async(req,password)=>req.headers['x-test-user']==='owner'&&password==='local-test-password'};
 let shippingTokens={};
-const links=[],checks=[],verified=new Map();let badURL=false,unavailable=false;
+const links=[],checks=[],verified=new Map();let badURL=false,unavailable=false,providerFailure=0;
 const key=p=>[p.handle,p.order_nsu,p.transaction_nsu,p.slug].join('|');
 const provider=async(url,options)=>{if(url==='https://melhorenvio.com.br/api/v2/me/shipment/calculate')return {ok:true,json:async()=>[{id:1,name:'PAC',company:{name:'Correios'},custom_price:'4.50',custom_delivery_time:5}]};
- assert.equal(options.method,'POST');assert.equal(options.redirect,'error');assert.equal(options.headers.Authorization,undefined);
+ assert.equal(options.method,'POST');assert.equal(options.redirect,'error');assert.equal(options.headers.Authorization,undefined);assert.equal(options.headers['X-Api-Key'],'inchk_test_fixture_12345678');
  const p=JSON.parse(options.body);
  if(url==='https://api.checkout.infinitepay.io/links'){
-  links.push(p);return {ok:true,json:async()=>({url:badURL?'https://checkout.infinitepay.io.attacker.invalid/pay':'https://checkout.infinitepay.io/'+p.handle+'/invoice-'+p.order_nsu})};
+  links.push(p);if(providerFailure)return {ok:false,status:providerFailure,json:async()=>({error:'hidden provider response'})};return {ok:true,json:async()=>({url:badURL?'https://checkout.infinitepay.io.attacker.invalid/pay':'https://checkout.infinitepay.io/'+p.handle+'/invoice-'+p.order_nsu})};
  }
  assert.equal(url,'https://api.checkout.infinitepay.io/payment_check');checks.push(p);
  if(unavailable)throw Error('Simulated outage');
@@ -26,7 +26,7 @@ async function api(route,method='GET',data,user='owner',extra={}){
 }
 const references=o=>({order_nsu:o.id,invoice_slug:'invoice-'+o.id,transaction_nsu:crypto.randomUUID()});
 function proof(o,refs,change={}){const p={handle:o.merchant_id.slice(12),order_nsu:o.id,transaction_nsu:refs.transaction_nsu,slug:refs.invoice_slug};verified.set(key(p),{success:true,paid:true,amount:Number(o.total_cents),paid_amount:Number(o.total_cents),capture_method:'pix',installments:1,...change});return p;}
-async function notify(o,refs,token){const link=links.find(l=>l.order_nsu===o.id),u=new URL(link.webhook_url);return api('infinitepay/webhook?token='+(token===undefined?u.searchParams.get('token'):token),'POST',{...refs,paid:true,amount:1},null);}
+async function notify(o,refs,token){const link=links.find(l=>l.order_nsu===o.id),u=new URL(link.webhook.url);return api('infinitepay/webhook?token='+(token===undefined?u.searchParams.get('token'):token),'POST',{...refs,paid:true,amount:1},null);}
 (async()=>{try{
  assert.equal(handle('$Merchant_Fixture'),'merchant_fixture');for(const bad of ['https://attacker.invalid','with spaces','<script>'])assert.throws(()=>handle(bad));
  for(const bad of ['http://checkout.infinitepay.io/x','https://checkout.infinitepay.io.attacker.invalid/x','https://user:pass@checkout.infinitepay.io/x','https://checkout.infinitepay.io:8443/x'])assert.throws(()=>checkoutURL(bad));
@@ -47,7 +47,7 @@ async function notify(o,refs,token){const link=links.find(l=>l.order_nsu===o.id)
  assert.equal((await api('checkout','POST',{product_id:physical.id,quantity:2,accepted:true,customer},null)).status,401);
  assert.equal((await api('checkout','POST',{product_id:physical.id,quantity:2,accepted:true,customer},'buyer',{Origin:'https://attacker.invalid'})).status,403);
  r=await api('checkout','POST',{product_id:physical.id,quantity:2,accepted:true,customer,total_cents:1,handle:'attacker'},'buyer');assert.equal(r.status,201);const order=await shop.order(r.data.order_id),refs=references(order),sent=links[0];
- assert.equal(Number(order.total_cents),3648);assert.equal(sent.handle,'merchant_fixture');assert.deepEqual(sent.items,[{quantity:2,price:1599,description:'Fixture item'},{quantity:1,price:450,description:'Entrega'}]);assert.equal(sent.address.cep,'12345678');assert.equal(sent.customer.email,customer.email);assert.equal(sent.order_nsu,order.id);
+ assert.equal(Number(order.total_cents),3648);assert.equal(sent.handle,'merchant_fixture');assert.deepEqual(sent.items,[{quantity:2,price:1599,description:'Fixture item'},{quantity:1,price:450,description:'Entrega'}]);assert.equal(sent.address.cep,'12345678');assert.equal(sent.customer.email,customer.email);assert.equal(sent.order_nsu,order.id);assert.equal(sent.webhook.events[0],'paid');assert.equal(sent.webhook_url,undefined);assert.equal(sent.options.single_payment,true);
  assert.equal((await notify(order,refs,'0'.repeat(64))).status,400);assert.equal(checks.length,0,'Forged webhook never queries provider');
  assert.equal((await notify(order,refs)).status,400);assert.equal((await shop.order(order.id)).payment_status,'pending','Browser/webhook paid=true never grants access');
  for(const change of [{amount:1},{amount:'3648'},{paid_amount:1},{capture_method:'cash'},{installments:2},{order_nsu:crypto.randomUUID()},{handle:'attacker'}]){proof(order,refs,change);assert.equal((await notify(order,refs)).status,400);assert.equal((await shop.order(order.id)).payment_status,'pending');}
@@ -70,6 +70,17 @@ async function notify(o,refs,token){const link=links.find(l=>l.order_nsu===o.id)
  assert.equal((await notify(d,dr)).status,200);assert.equal((await shop.order(d.id)).payment_status,'refunded','Delayed notification cannot restore refunded access');
  r=await api('me','GET',null,'buyer');assert.deepEqual(r.data.owned,[]);assert.equal(r.data.theme,'classic');assert.equal(r.data.orders.find(o=>o.id===d.id).delivery_url,'');
  badURL=true;r=await api('checkout','POST',{product_id:physical.id,quantity:1,accepted:true,customer},'buyer');assert.equal(r.status,502);badURL=false;
+ providerFailure=403;r=await api('checkout','POST',{product_id:physical.id,quantity:1,accepted:true,customer},'buyer');assert.equal(r.status,502);assert.match(r.data.error,/Checkout Integrado/);let diag=(await api('admin/status')).data.infinitepay_diagnostics;assert.equal(diag.provider_http_status,403);assert.equal(diag.reason,'integration_disabled');assert.ok(!JSON.stringify(diag).includes('hidden provider response'));
+ providerFailure=422;r=await api('checkout','POST',{product_id:physical.id,quantity:1,accepted:true,customer},'buyer');assert.equal(r.status,502);diag=(await api('admin/status')).data.infinitepay_diagnostics;assert.equal(diag.provider_http_status,422);assert.equal(diag.reason,'invalid_checkout');providerFailure=0;
+ const {createInfinitePay}=require('../payments-infinitepay.js');
+ const plainLinks=[];
+ const basic=createInfinitePay({env:{STORE_SETTINGS_KEY:env.STORE_SETTINGS_KEY},base:'https://khar-tall-online.onrender.com',fetcher:async(url,opts)=>{
+   assert.equal(opts.headers['X-Api-Key'],undefined);
+   const p=JSON.parse(opts.body);plainLinks.push(p);assert.equal(p.webhook,undefined);assert.equal(p.webhook_url,undefined);assert.equal(p.options,undefined);
+   assert.equal(p.items[0].price,250);return {ok:true,status:200,json:async()=>({url:'https://checkout.infinitepay.com.br/teste?lenc=abc'})};
+ }});
+ assert.ok((await basic.createLink({...order,merchant_id:'infinitepay:merchant_fixture',unit_cents:250,quantity:1,shipping_cents:0,customer_json:'{}'})).startsWith('https://checkout.infinitepay.com.br/'));
+ assert.equal(plainLinks.length,1);
  shop.close();shop=new ShopStore({pool:null,file});shop.persistent=true;commerce=createCommerce({auth,store:shop,fetcher:provider,env});assert.equal((await api('admin/status')).data.handle,'second_fixture');assert.equal((await shop.order(order.id)).payment_status,'approved');assert.equal((await shop.order(d.id)).payment_status,'refunded');
  console.log('InfinitePay OK: server-side prices/account, shipping, HMAC notifications, independent API approval, forged/underpaid/replayed payments, concurrent duplicates, private delivery, account changes, refund revocation, restart and allowed checkout origins. No real API or payment.');
  }finally{await new Promise(resolve=>server.close(resolve));shop.close();fs.rmSync(temp,{recursive:true,force:true});}
