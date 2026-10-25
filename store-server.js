@@ -15,6 +15,15 @@ function publicPolicy(value){return String(value||'')
  .replace(/Para atendimento, cancelamento ou reembolso, escreva para\s+[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'Para atendimento, cancelamento ou reembolso, utilize a aba Atendimento da loja')
  .replace(EMAIL_RE,'a aba Atendimento da loja');}
 function publicShop(info){return {seller_name:'Khar Tall · Victoryno',support_contact:CONTACT_CHANNEL,policy:publicPolicy(info.policy)};}
+function automaticSupportResponse(subject,message){
+ const query=(subject+' '+message).toLowerCase();
+ const received='Recebemos sua mensagem no atendimento do Khar Tall. Esta é uma resposta automática; caso sua dúvida continue, nossa equipe poderá responder nesta conversa. ';
+ if(/reembolso|cancelamento|estorno|arrependimento/.test(query))return received+'Para solicitar cancelamento ou reembolso, informe o número do pedido e descreva a situação. Nenhum estorno é realizado automaticamente por esta conversa.';
+ if(/pagamento|pagar|pix|cart[aã]o|checkout|infinitepay/.test(query))return received+'Consulte a situação em Meus pedidos e use Conferir pagamento. Se o pagamento não abrir ou houver erro, informe aqui o número do pedido e o que apareceu na tela. Não envie dados do cartão ou senhas.';
+ if(/skin|roupa|cor|cole[çc][aã]o/.test(query))return received+'A skin fica vinculada à conta usada na compra e aparece em Minha coleção após a confirmação do pagamento. Você poderá equipá-la para as partidas.';
+ if(/entrega|frete|rastrei|envio/.test(query))return received+'Acompanhe o pedido na aba Meus pedidos. Após a postagem, a loja registra o código de rastreamento. Para ajudar com um envio específico, informe o número do pedido.';
+ return received+'A resposta e o histórico deste chamado ficam disponíveis na aba Atendimento da sua conta. Confira esta conversa novamente quando desejar.';
+}
 const fail=(status,message)=>{const e=new Error(message);e.status=status;throw e;};
 function text(v,max,required=false){if(typeof v!=='string'||v.length>max||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(v))fail(422,'Texto inválido.');v=v.trim();if(required&&!v)fail(422,'Preencha os campos obrigatórios.');return v;}
 function money(v,max=100000000){if(!Number.isSafeInteger(v)||v<0||v>max)fail(422,'Preço inválido.');return v;}
@@ -98,7 +107,7 @@ function createCommerce({auth,store=new ShopStore(),fetcher=fetch,env=process.en
    const current=await store.supportThreads(user.id);
    if(current.filter(t=>t.status==='open').length>=5)fail(429,'Você já possui cinco atendimentos abertos. Responda em uma conversa existente.');
    const id=crypto.randomUUID();
-   await store.openSupportTicket({id,user_id:user.id,username:user.username,subject,message:content,auto_message:'Recebemos sua mensagem! Ela foi registrada no atendimento do Khar Tall. Nossa equipe responderá nesta conversa. Volte à aba Atendimento para consultar a resposta.'});
+   await store.openSupportTicket({id,user_id:user.id,username:user.username,subject,message:content,auto_message:automaticSupportResponse(subject,content)});
    return out(res,201,{ok:true,ticket_id:id});
   }
   const supportReply=pathname.match(new RegExp('^/api/store/support/([a-f0-9-]{36})/reply$'));
