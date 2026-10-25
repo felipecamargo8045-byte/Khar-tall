@@ -18,7 +18,10 @@ jobs:
           node-version: '22'
       - name: Instalar dependências
         run: npm ci
-      - name: Conferir versão de build
-        run: npm run build
-      - name: Executar testes
-        run: npm test
+      - name: Testar atendimento, loja e pagamentos
+        run: |
+          node tests/test_support.js
+          node tests/test_store.js
+          node tests/test_infinitepay.js
+      - name: Restaurar recursos e validar release
+        run: node deploy-restore.js
