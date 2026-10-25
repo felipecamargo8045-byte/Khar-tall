@@ -57,7 +57,13 @@ function createCommerce({auth,store=new ShopStore(),fetcher=fetch,env=process.en
   }
   const s=await store.setting('payments');return s?{...decrypt(s,env),provider:'mercadopago'}:null;
  }
- async function config(){const s=await settings(),info=await store.setting('shop')||{};return {s,info,enabled:!!s&&info.enabled===true&&!!info.seller_name&&!!info.support_contact&&store.persistent};}
+ async function config(){
+  const s=await settings(),info=await store.setting('shop')||{};
+  // Eliminar os contatos pessoais já salvos na configuração anterior, além de ocultá-los na API.
+  const safe={...info,support_contact:CONTACT_CHANNEL,policy:publicPolicy(info.policy)};
+  if(info.seller_name&&(info.support_contact!==safe.support_contact||info.policy!==safe.policy))await store.setSetting('shop',safe);
+  return {s,info:safe,enabled:!!s&&safe.enabled===true&&!!safe.seller_name&&!!safe.support_contact&&store.persistent};
+ }
  async function mp(route,s,method='GET',payload,idempotency){let r;try{r=await fetcher('https://api.mercadopago.com'+route,{method,headers:{Authorization:'Bearer '+s.token,...(payload?{'Content-Type':'application/json'}:{}),...(idempotency?{'X-Idempotency-Key':idempotency}:{})},body:payload?JSON.stringify(payload):undefined,signal:AbortSignal.timeout(12000),redirect:'error'});}catch{fail(502,'O Mercado Pago não respondeu. Tente novamente em instantes.');}const data=await r.json().catch(()=>null);if(!r.ok||!data)fail(502,'Não foi possível confirmar a operação no Mercado Pago. Confira a conexão no painel.');return data;}
  async function reconcile(payment,s){
   if(!UUID.test(payment.external_reference||''))return false;const o=await store.order(payment.external_reference);if(!o)return false;
