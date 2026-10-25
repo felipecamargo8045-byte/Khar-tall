@@ -9,6 +9,12 @@ const {createOrderNotifications}=require('./order-notifications.js');
 const THEMES=['ember','frost','obsidian'];
 const {SKINS,PRICE_CENTS,findSkin,PAYMENT_NOTICE}=require('./skin-catalog.js');
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const CONTACT_CHANNEL='Atendimento pelo site, na aba Atendimento';
+const EMAIL_RE=/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi;
+function publicPolicy(value){return String(value||'')
+ .replace(/Para atendimento, cancelamento ou reembolso, escreva para\\s+[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi,'Para atendimento, cancelamento ou reembolso, utilize a aba Atendimento da loja')
+ .replace(EMAIL_RE,'a aba Atendimento da loja');}
+function publicShop(info){return {seller_name:'Khar Tall · Victoryno',support_contact:CONTACT_CHANNEL,policy:publicPolicy(info.policy)};}
 const fail=(status,message)=>{const e=new Error(message);e.status=status;throw e;};
 function text(v,max,required=false){if(typeof v!=='string'||v.length>max||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(v))fail(422,'Texto inválido.');v=v.trim();if(required&&!v)fail(422,'Preencha os campos obrigatórios.');return v;}
 function money(v,max=100000000){if(!Number.isSafeInteger(v)||v<0||v>max)fail(422,'Preço inválido.');return v;}
@@ -77,13 +83,45 @@ function createCommerce({auth,store=new ShopStore(),fetcher=fetch,env=process.en
   }
   if(webhook){if(req.method!=='POST')fail(405,'Método não permitido.');rate(req,'webhook',180);let s=await settings();if(s?.provider==='infinitepay'){const old=await store.setting('payments');s=old?decrypt(old,env):null;}if(!s||!validSignature(req,url,s.webhook_secret))fail(401,'Notificação sem assinatura válida.');const b=await body(req),id=url.searchParams.get('data.id');if(b.type!=='payment')return out(res,200,{received:true});if(String(b.data?.id)!==id)fail(400,'Referência divergente.');await reconcile(await mp('/v1/payments/'+id,s),s);return out(res,200,{received:true});}
   const user=await auth.current(req),admin=isAdmin(user);
-  if(req.method==='GET'&&pathname==='/api/store/catalog'){const c=await config(),checkoutEnabled=c.enabled&&(c.s?.mode==='production'||admin),freight=await shipping.status(),notices=await notifications.status();return out(res,200,{products:(await store.products()).map(publicProduct),skins:SKINS,skin_checkout_enabled:checkoutEnabled,skin_payment_notice:PAYMENT_NOTICE,checkout_enabled:checkoutEnabled,physical_checkout_enabled:checkoutEnabled&&freight.configured,shipping:{provider:'melhorenvio',configured:freight.configured,notice:SHIPPING_NOTICE,email_enabled:notices.email_enabled},test_mode:!!admin&&c.s?.mode==='test',payment_provider:c.s?.provider||env.STORE_PAYMENT_PROVIDER||'mercadopago',shop:{seller_name:c.info.seller_name||'Khar Tall',support_contact:c.info.support_contact||'',policy:c.info.policy||''},payment_methods:['Pix','Cartão de crédito'],monthly_fee:0});}
+  if(req.method==='GET'&&pathname==='/api/store/catalog'){const c=await config(),checkoutEnabled=c.enabled&&(c.s?.mode==='production'||admin),freight=await shipping.status(),notices=await notifications.status();return out(res,200,{products:(await store.products()).map(publicProduct),skins:SKINS,skin_checkout_enabled:checkoutEnabled,skin_payment_notice:PAYMENT_NOTICE,checkout_enabled:checkoutEnabled,physical_checkout_enabled:checkoutEnabled&&freight.configured,shipping:{provider:'melhorenvio',configured:freight.configured,notice:SHIPPING_NOTICE,email_enabled:notices.email_enabled},test_mode:!!admin&&c.s?.mode==='test',payment_provider:c.s?.provider||env.STORE_PAYMENT_PROVIDER||'mercadopago',shop:publicShop(c.info),payment_methods:['Pix','Cartão de crédito'],monthly_fee:0});}
   if(req.method==='GET'&&pathname==='/api/store/me'){if(!user)return out(res,200,{authenticated:false,admin:false,orders:[],owned:[],theme:'classic',skin:'classic'});const owned=await store.owned(user.id),selected=await store.theme(user.id),skin=await store.skin(user.id);return out(res,200,{authenticated:true,admin,user:{id:user.id,username:user.username},orders:await publicOrders(await store.orders(user.id)),owned,theme:THEMES.includes(selected)&&owned.includes(selected)?selected:'classic',skin:findSkin(skin)&&owned.includes(skin)?skin:'classic'});}
   if(req.method==='POST'&&pathname==='/api/store/shipping/quotes'){origin(req);rate(req,'shipping-quotes',15);const b=await body(req);if(!UUID.test(b.product_id||''))fail(422,'Produto inválido.');const p=await store.product(b.product_id);if(!p)fail(404,'Produto indisponível.');return out(res,200,await shipping.quote(p,b.quantity,b.postal_code,user?.id||'',admin));}
   if(!user)fail(401,'Entre na sua conta para continuar.');
   if(pathname.startsWith('/api/store/admin/')&&!admin)fail(403,'Painel exclusivo da administração da loja.');
+  // Atendimento sem cobrança adicional, ligado à conta do jogador.
+  if(req.method==='GET'&&pathname==='/api/store/support')return out(res,200,{tickets:await store.supportThreads(user.id)});
+  if(req.method==='GET'&&pathname==='/api/store/admin/support')return out(res,200,{tickets:await store.supportThreads()});
+  if(req.method==='POST'&&pathname==='/api/store/support'){
+   origin(req);rate(req,'support-new',5,3600000);const b=await body(req);
+   const subject=text(b.subject,120,true),content=text(b.message,2000,true);
+   if(subject.length<4||content.length<10)fail(422,'Escreva o assunto e uma mensagem com pelo menos 10 caracteres.');
+   const current=await store.supportThreads(user.id);
+   if(current.filter(t=>t.status==='open').length>=5)fail(429,'Você já possui cinco atendimentos abertos. Responda em uma conversa existente.');
+   const id=crypto.randomUUID();
+   await store.openSupportTicket({id,user_id:user.id,username:user.username,subject,message:content,auto_message:'Recebemos sua mensagem! Ela foi registrada no atendimento do Khar Tall. Nossa equipe responderá nesta conversa. Volte à aba Atendimento para consultar a resposta.'});
+   return out(res,201,{ok:true,ticket_id:id});
+  }
+  const supportReply=pathname.match(new RegExp('^/api/store/support/([a-f0-9-]{36})/reply$'));
+  const adminSupportStatus=pathname.match(new RegExp('^/api/store/admin/support/([a-f0-9-]{36})/status$'));
+  if(req.method==='POST'&&supportReply){
+   origin(req);rate(req,'support-reply',15,60000);
+   const b=await body(req),ticket=await store.supportTicket(supportReply[1]);
+   if(!ticket||(!admin&&ticket.user_id!==user.id))fail(404,'Atendimento não encontrado.');
+   if(ticket.status!=='open')fail(409,'Este atendimento está encerrado.');
+   const content=text(b.message,2000,true);if(content.length<2)fail(422,'Escreva uma resposta.');
+   await store.replySupportTicket(ticket.id,admin?'admin':'customer',content);
+   return out(res,200,{ok:true});
+  }
+  if(req.method==='POST'&&adminSupportStatus){
+   origin(req);if(!admin)fail(403,'Acesso reservado ao administrador.');rate(req,'support-status',20,60000);
+   const b=await body(req),ticket=await store.supportTicket(adminSupportStatus[1]);
+   if(!ticket)fail(404,'Atendimento não encontrado.');
+   if(!['open','closed'].includes(b.status))fail(422,'Situação inválida.');
+   await store.setSupportStatus(ticket.id,b.status);return out(res,200,{ok:true});
+  }
+
   if(req.method==='POST'){origin(req);rate(req,'store-write');}
-  if(req.method==='GET'&&pathname==='/api/store/admin/status'){const c=await config();return out(res,200,{connected:!!c.s,provider:c.s?.provider||env.STORE_PAYMENT_PROVIDER||'mercadopago',handle:c.s?.handle||'',mode:c.s?.mode||'production',merchant:c.s?.merchant_name||'',encryption_ready:!!env.STORE_SETTINGS_KEY,persistent:store.persistent,enabled:c.enabled,shop:c.info,shipping:await shipping.status(),notifications:await notifications.status(),webhook_url:c.s?.provider==='infinitepay'?'':base+'/api/store/webhook',products:(await store.products(true)).map(p=>({...publicProduct(p),delivery_url:p.delivery_url})),orders:await publicOrders(await store.orders())});}
+  if(req.method==='GET'&&pathname==='/api/store/admin/status'){const c=await config();return out(res,200,{connected:!!c.s,provider:c.s?.provider||env.STORE_PAYMENT_PROVIDER||'mercadopago',handle:c.s?.handle||'',mode:c.s?.mode||'production',merchant:c.s?.merchant_name||'',encryption_ready:!!env.STORE_SETTINGS_KEY,persistent:store.persistent,enabled:c.enabled,shop:publicShop(c.info),shipping:await shipping.status(),notifications:await notifications.status(),webhook_url:c.s?.provider==='infinitepay'?'':base+'/api/store/webhook',products:(await store.products(true)).map(p=>({...publicProduct(p),delivery_url:p.delivery_url})),orders:await publicOrders(await store.orders())});}
   if(req.method==='POST'&&['/api/store/admin/shipping','/api/store/admin/notifications'].includes(pathname)){const b=await body(req);if(!await auth.reauthenticate(req,b.password))fail(401,'Confirme sua senha de jogador.');return out(res,200,{ok:true,...(pathname.endsWith('/shipping')?{shipping:await shipping.save(b)}:{notifications:await notifications.save(b)})});}
   if(req.method==='POST'&&pathname==='/api/store/admin/connect'){
    const b=await body(req);if(!await auth.reauthenticate(req,b.password))fail(401,'Confirme sua senha de jogador.');
@@ -93,7 +131,7 @@ function createCommerce({auth,store=new ShopStore(),fetcher=fetch,env=process.en
    }
    const token=text(b.access_token,500,true),webhook_secret=text(b.webhook_secret,500,true);if(!['test','production'].includes(b.mode)||/\s/.test(token))fail(422,'Credenciais inválidas.');secretKey(env);const account=await mp('/users/me',{token});if(!account.id||account.site_id!=='MLB')fail(422,'Conecte uma conta Mercado Pago do Brasil.');await store.setSetting('payments',encrypt({token,webhook_secret,mode:b.mode,merchant_id:String(account.id),merchant_name:account.nickname||String(account.id)},env));return out(res,200,{ok:true,merchant:account.nickname||'Conta conectada'});
   }
-  if(req.method==='POST'&&pathname==='/api/store/admin/settings'){const b=await body(req),c=await config();const info={seller_name:text(b.seller_name,100,true),support_contact:text(b.support_contact,200,true),policy:text(b.policy,4000,true),enabled:b.enabled===true};if(info.enabled&&(!c.s||!store.persistent))fail(422,'Conecte o recebimento e o banco persistente antes de abrir as vendas.');await store.setSetting('shop',info);return out(res,200,{ok:true});}
+  if(req.method==='POST'&&pathname==='/api/store/admin/settings'){const b=await body(req),c=await config();const info={seller_name:text(b.seller_name,100,true),support_contact:CONTACT_CHANNEL,policy:publicPolicy(text(b.policy,4000,true)),enabled:b.enabled===true};if(info.enabled&&(!c.s||!store.persistent))fail(422,'Conecte o recebimento e o banco persistente antes de abrir as vendas.');await store.setSetting('shop',info);return out(res,200,{ok:true});}
   if(req.method==='POST'&&pathname==='/api/store/admin/products'){const b=await body(req);if(b.id&&!UUID.test(b.id))fail(422,'Produto inválido.');const previous=b.id?await store.product(b.id):null;if(b.id&&!previous)fail(404,'Produto não encontrado.');if(!['physical','digital'].includes(b.kind))fail(422,'Escolha produto físico ou digital.');const reward=text(b.reward||'',30),delivery=safeURL(text(b.delivery_url||'',1000));if(b.kind==='digital'&&!THEMES.includes(reward)&&!findSkin(reward)&&!delivery)fail(422,'Escolha um visual ou um arquivo digital para entrega.');const reservedSkin=SKINS.find(s=>s.product_id===b.id),skin=findSkin(reward);if(reservedSkin&&reward!==reservedSkin.id)fail(422,'Preserve a skin deste produto.');if(skin&&(b.kind!=='digital'||b.price_cents!==PRICE_CENTS||Number(b.shipping_cents||0)!==0||delivery))fail(422,'Cada skin tem preço fixo de R$ 2,50, sem frete ou arquivo adicional.');const price=money(b.price_cents);if(price<1)fail(422,'Informe um preço maior que zero.');const pack=b.kind==='physical'?packageInfo(b.package??JSON.parse(previous?.package_json||'{}'),b.active===true):{};const p={id:previous?.id||crypto.randomUUID(),title:text(b.title,120,true),description:text(b.description,3000,true),kind:b.kind,price_cents:price,shipping_cents:0,package_json:JSON.stringify(pack),image:safeURL(text(b.image||'/assets/tutorial_focus.webp',1000),true),reward:b.kind==='digital'&&(THEMES.includes(reward)||findSkin(reward))?reward:'',delivery_url:b.kind==='digital'?delivery:'',active:b.active===true?1:0,created_ms:previous?Number(previous.created_ms):Date.now(),updated_ms:Date.now()};await store.saveProduct(p);return out(res,previous?200:201,{product:publicProduct(p)});}
   const fulfillment=pathname.match(/^\/api\/store\/admin\/orders\/([a-f0-9-]{36})\/shipping$/);
   if(req.method==='POST'&&fulfillment){
