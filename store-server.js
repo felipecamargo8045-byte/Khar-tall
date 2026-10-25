@@ -10,9 +10,9 @@ const THEMES=['ember','frost','obsidian'];
 const {SKINS,PRICE_CENTS,findSkin,PAYMENT_NOTICE}=require('./skin-catalog.js');
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const CONTACT_CHANNEL='Atendimento pelo site, na aba Atendimento';
-const EMAIL_RE=/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi;
+const EMAIL_RE=/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 function publicPolicy(value){return String(value||'')
- .replace(/Para atendimento, cancelamento ou reembolso, escreva para\\s+[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi,'Para atendimento, cancelamento ou reembolso, utilize a aba Atendimento da loja')
+ .replace(/Para atendimento, cancelamento ou reembolso, escreva para\s+[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'Para atendimento, cancelamento ou reembolso, utilize a aba Atendimento da loja')
  .replace(EMAIL_RE,'a aba Atendimento da loja');}
 function publicShop(info){return {seller_name:'Khar Tall · Victoryno',support_contact:CONTACT_CHANNEL,policy:publicPolicy(info.policy)};}
 const fail=(status,message)=>{const e=new Error(message);e.status=status;throw e;};
