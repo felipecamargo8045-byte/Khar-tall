@@ -8,7 +8,7 @@
 <title>Cerco dos Reis · Khar Thal</title>
 <link rel="icon" href="./origem-apk/assets/emblem.svg">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="stylesheet" href="./game-ui.css?v=4">
+<link rel="stylesheet" href="./game-ui.css?v=7">
 </head>
 <body>
 <div class="aurora" aria-hidden="true"></div>
@@ -25,7 +25,7 @@
 </nav>
 <main class="game-body">
 <section class="page active" data-page="arena">
- <div class="arena-topline"><div><small class="overline">BATALHA DE CASTELOS</small><h1>ARENA REAL</h1></div><div class="rank-seal">⚔<span> IA </span></div></div>
+ <div class="arena-topline"><div><small class="overline">BATALHA DE CASTELOS <span id="sceneBadge" class="scene-badge">CARREGANDO 3D</span></small><h1>ARENA REAL</h1></div><div class="rank-seal">⚔<span> IA </span></div></div>
  <div class="arena-layout">
   <aside class="commander panel">
    <img class="commander-art" src="./origem-apk/assets/portrait_rei.webp" alt="Rei">
@@ -38,6 +38,7 @@
     <div class="side ally-side"><div><small>AZUL</small><strong id="allyCastle">2.600 PV</strong></div><span class="side-emblem">♜</span></div>
    </div>
    <div class="canvas-box">
+    <div id="arena3d" hidden aria-label="Campo tridimensional com personagens e castelos modelados"></div>
     <canvas id="arena" width="420" height="560" tabindex="0" aria-label="Arena de batalha: escolha uma carta e toque em qualquer ponto para invocar; os personagens definem o caminho conforme os inimigos"></canvas>
     <div id="overlay" class="overlay">
      <div class="overlay-glyph"><img src="./origem-apk/assets/emblem.svg" alt=""></div>
@@ -101,7 +102,8 @@
  </div>
 </section>
 </main>
-<script src="./app.js?v=6" defer></script>
+<script src="./app.js?v=7" defer></script>
 <script src="./realm-ui.js?v=3" defer></script>
+<script type="module" src="./arena3d.js?v=1"></script>
 </body>
 </html>
