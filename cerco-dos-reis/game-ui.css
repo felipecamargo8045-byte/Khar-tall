@@ -229,3 +229,152 @@ select{width:100%;background:#101d2f;color:#f0e5cb;border:1px solid #6c7f9c;padd
 #soundVolume{width:70px;max-width:80px;accent-color:#e5c080;height:18px;cursor:pointer}
 @media(max-width:700px){.sound-controls{gap:2px;padding:2px 4px}.sound-button{height:26px;width:25px;font-size:18px}#soundVolume{width:44px}.header-right{gap:5px}}
 @media(max-width:400px){#soundVolume{width:36px}.mode-token{display:none}}
+
+
+/* BATALHA EM TELA INTEIRA: HUD flutuante, arena principal e baralho.
+   Respeita recortes/notch do celular e permanece jogável se a API Fullscreen
+   não estiver disponível no navegador. */
+.battle-hud-button{display:none}
+html.battle-mode-root,html.battle-mode-root body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+body.battle-mode{position:fixed;inset:0;margin:0;background:#071828;touch-action:pan-x pan-y}
+body.battle-mode>.aurora,body.battle-mode>.game-header,
+body.battle-mode>.game-nav,body.battle-mode>.game-body>.page[data-page="arena"]>.arena-topline,
+body.battle-mode .arena-layout>.commander,body.battle-mode .arena-layout>.info{display:none!important}
+body.battle-mode>.game-body{display:contents;padding:0;margin:0;min-height:0}
+body.battle-mode .page[data-page="arena"]{display:contents!important;animation:none}
+body.battle-mode .arena-layout{display:contents!important}
+body.battle-mode .battle,
+.battle:fullscreen{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr);
+ grid-template-rows:auto minmax(0,1fr) auto;
+ position:fixed!important;
+ inset:0!important;
+ width:100vw!important;
+ height:100vh!important;
+ height:100dvh!important;
+ max-width:none!important;
+ max-height:none!important;
+ margin:0!important;
+ padding:0!important;
+ border:0!important;
+ border-radius:0!important;
+ background:#091d2b;
+ z-index:200!important;
+ overflow:hidden!important;
+ box-shadow:none!important;
+ isolation:isolate;
+}
+body.battle-mode .battle .scoreboard,.battle:fullscreen .scoreboard{
+ grid-row:1;
+ display:flex!important;
+ align-items:center;
+ justify-content:space-between;
+ gap:clamp(2px,1vw,8px);
+ min-height:56px;
+ margin:0;
+ padding:calc(env(safe-area-inset-top,0px) + 6px) max(7px,env(safe-area-inset-right,0px)) 7px max(7px,env(safe-area-inset-left,0px));
+ border:0!important;
+ border-bottom:2px solid #d1aa71!important;
+ border-radius:0!important;
+ background:linear-gradient(180deg,#233f57,#102636)!important;
+ box-shadow:0 5px 15px #06162655;
+ z-index:3;
+}
+body.battle-mode .battle .scoreboard .side,.battle:fullscreen .scoreboard .side{
+ min-width:0;flex:1 1 0;justify-content:center;gap:3px
+}
+body.battle-mode .battle .side-emblem,.battle:fullscreen .side-emblem{font-size:15px}
+body.battle-mode .battle .scoreboard small,.battle:fullscreen .scoreboard small{
+ font-size:clamp(7px,1.6vw,9px);line-height:1.2;letter-spacing:.035em
+}
+body.battle-mode .battle .scoreboard strong,.battle:fullscreen .scoreboard strong{
+ font-size:clamp(10px,2.7vw,16px);margin:0;line-height:1.15
+}
+body.battle-mode .battle .scoreboard .clock,.battle:fullscreen .scoreboard .clock{
+ flex:0 0 auto;min-width:60px
+}
+body.battle-mode .battle .scoreboard .clock b,.battle:fullscreen .scoreboard .clock b{
+ font-size:clamp(20px,5.3vw,28px);line-height:1.2;font-variant-numeric:tabular-nums
+}
+body.battle-mode .battle .battle-hud-button,.battle:fullscreen .battle-hud-button{
+ display:grid!important;flex:0 0 auto;place-items:center;min-width:30px;width:32px;height:38px;
+ border:1px solid #cba96d;border-radius:9px;background:#243f59;
+ color:#f5ddaa;font:900 22px/1 system-ui;cursor:pointer;padding:0;
+}
+body.battle-mode .battle .battle-hud-button:active{background:#395c78}
+body.battle-mode .battle .canvas-box,.battle:fullscreen .canvas-box{
+ grid-row:2;position:relative!important;min-height:0!important;height:100%!important;
+ max-height:100%!important;width:100%!important;max-width:none!important;
+ margin:0!important;padding:0!important;border:0!important;border-radius:0!important;
+ box-shadow:none!important;background:#336e79!important;overflow:hidden!important;
+}
+body.battle-mode .battle .canvas-box #arena,.battle:fullscreen .canvas-box #arena{
+ position:absolute!important;inset:0!important;display:block!important;
+ width:100%!important;height:100%!important;
+ margin:0!important;padding:0!important;cursor:crosshair;touch-action:manipulation;
+}
+body.battle-mode .battle .canvas-box #arena3d,.battle:fullscreen .canvas-box #arena3d{
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+}
+body.battle-mode .battle .hand-box,.battle:fullscreen .hand-box{
+ grid-row:3;min-width:0;max-width:none;width:100%;
+ margin:0!important;
+ border:0!important;border-top:2px solid #d4b77c!important;
+ border-radius:0!important;box-shadow:0 -8px 23px #07182b99;
+ background:linear-gradient(180deg,#253d56,#132a40)!important;
+ padding:6px max(8px,env(safe-area-inset-right,0px)) calc(7px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))!important;
+ z-index:3;
+}
+body.battle-mode .battle .hand-head,.battle:fullscreen .hand-head{
+ display:flex;align-items:center;margin:0 0 4px;gap:8px;line-height:1.2
+}
+body.battle-mode .battle .hand-head b,.battle:fullscreen .hand-head b{font-size:clamp(9px,2.7vw,12px)}
+body.battle-mode .battle .hand-head>span,.battle:fullscreen .hand-head>span{font-size:clamp(10px,3vw,14px);white-space:nowrap}
+body.battle-mode .battle .energybar,.battle:fullscreen .energybar{
+ height:7px;margin:4px 0 7px
+}
+body.battle-mode .battle .hand,.battle:fullscreen .hand{
+ display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+ gap:clamp(4px,1.5vw,9px);align-items:stretch
+}
+body.battle-mode .battle .hand button,.battle:fullscreen .hand button{
+ min-width:0!important;height:auto!important;padding:2px!important;
+ border-radius:9px;display:flex;flex-direction:column;align-items:stretch;
+}
+body.battle-mode .battle .hand img,.battle:fullscreen .hand img{
+ width:100%;height:clamp(62px,11dvh,103px);aspect-ratio:auto;object-fit:cover;
+ background:#0e1825;border-radius:6px 6px 3px 3px
+}
+body.battle-mode .battle .hand b,.battle:fullscreen .hand b{
+ font-size:clamp(9px,2.4vw,12px);padding:3px 0 1px;text-align:center;line-height:1.15;
+}
+body.battle-mode .battle .hand small,.battle:fullscreen .hand small{
+ font-size:11px;padding:1px 5px;top:2px;left:3px
+}
+body.battle-mode .battle .battle-buttons,.battle:fullscreen .battle-buttons{display:none!important}
+body.battle-mode .battle .overlay,.battle:fullscreen .overlay{
+ z-index:8;inset:0;overflow:auto;padding:16px 15px;
+ background:linear-gradient(180deg,#0b1e2ddb,#091422f2);
+}
+body.battle-mode .battle .overlay .gold{margin:5px 0}
+body.battle-mode .battle .overlay .secondary-btn,.battle:fullscreen .overlay .secondary-btn{
+ display:block;padding:11px 22px;color:#f7e2b6;background:#2b4259;
+ border:1px solid #c7a977;border-radius:11px;font-weight:800;min-width:180px
+}
+body.battle-mode .battle #arena3d canvas{width:100%!important;height:100%!important}
+@media (max-height:690px){
+ body.battle-mode .battle .scoreboard{min-height:45px;padding-top:calc(env(safe-area-inset-top,0px) + 3px);padding-bottom:3px}
+ body.battle-mode .battle .hand-box{padding-top:3px!important;padding-bottom:calc(3px + env(safe-area-inset-bottom,0px))!important}
+ body.battle-mode .battle .hand img{height:clamp(49px,10dvh,73px)}
+ body.battle-mode .battle .hand-head{margin-bottom:2px}
+ body.battle-mode .battle .energybar{margin:2px 0 4px}
+}
+@media (orientation:landscape) and (max-height:500px){
+ body.battle-mode .battle{grid-template-columns:minmax(0,1fr) clamp(175px,31vw,270px);grid-template-rows:auto minmax(0,1fr)!important}
+ body.battle-mode .battle .scoreboard{grid-column:1/-1;grid-row:1}
+ body.battle-mode .battle .canvas-box{grid-column:1;grid-row:2}
+ body.battle-mode .battle .hand-box{grid-column:2;grid-row:2;overflow-y:auto;border-top:0!important;border-left:2px solid #d4b77c!important}
+ body.battle-mode .battle .hand{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body.battle-mode .battle .hand img{height:clamp(42px,16vh,75px)}
+}
