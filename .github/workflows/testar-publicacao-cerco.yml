@@ -17,6 +17,7 @@ jobs:
         run: |
           set -e
           node --check cerco-dos-reis/app.js
+          node --check cerco-dos-reis/sfx.js
           node --check cerco-dos-reis/realm-ui.js
           node --check cerco-dos-reis/sw.js
           python3 - <<'PY'
@@ -27,9 +28,9 @@ jobs:
           for name in ['#shopGrid','#featuredCards','#cardGrid','#arena']:
               assert name[1:] in html, name
           assert 'https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/' not in html
-          assert 'src="./app.js?v=12"' in html
+          assert 'src="./app.js?v=13"' in html
           assert 'src="./realm-ui.js?v=3"' in html
-          for name in ['game-ui.css','app.js','arena3d.js','vendor/three.module.js','realm-ui.js','sw.js']:
+          for name in ['game-ui.css','app.js','arena3d.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js']:
               assert Path('cerco-dos-reis',name).is_file(),name
           print('Cinco ambientes, arquivos, navegacao e scripts: OK')
           PY
@@ -55,6 +56,12 @@ jobs:
             const threeInfo=await page.evaluate(()=>window.Cerco3D.info());
             assert.ok(threeInfo.ready && threeInfo.meshes>30,'3D real nao iniciado: '+JSON.stringify(threeInfo));
             assert.equal(await page.locator('#sceneBadge').innerText(),'3D ATIVO');
+            const sounds=await page.evaluate(()=>window.CercoAudio?.getSettings());
+            assert.ok(sounds && typeof sounds.volume==='number','Audio local nao inicializou');
+            await page.locator('#soundToggle').click();
+            const muted=await page.evaluate(()=>window.CercoAudio.getSettings());
+            assert.equal(muted.on,false,'Botao nao silencia som');
+            await page.locator('#soundToggle').click();
 
             assert.equal(await page.locator('.game-nav button').count(),5);
             const tabs=['arena','cards','shop','clans','profile'];
@@ -193,6 +200,17 @@ jobs:
             });
             assert.ok(fighter && fighter.attacks>=1,'Tropa nao realizou ataque');
 
+            // Torres devem detectar um inimigo da equipe oposta,
+            // emitir projéteis e descontar vida ao acertar.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            await page.evaluate(()=>window.__cercoTest.createEnemy('colosso',110,452));
+            await page.waitForFunction(()=>window.__cercoTest.towers().hits>0,{timeout:12000});
+            const towerState=await page.evaluate(()=>window.__cercoTest.towers());
+            assert.ok(towerState.shots.some(s=>s.side==='ally'&&s.slot===0),'Torre aliada nao disparou');
+            assert.ok(towerState.hits>0,'Projetil nao causou dano');
+            const targetHealth=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='enemy').map(u=>u.hp));
+            assert.ok(targetHealth.some(hp=>hp>0),'Alvo desapareceu antes do teste de torre');
             await page.waitForTimeout(1200);
             await page.screenshot({path:'/tmp/cerco-arena-mobile.png'});
             assert.equal(await page.locator('#overlay').isVisible(),false);
@@ -216,7 +234,7 @@ jobs:
         run: |
           set -e
           base=https://cerco-dos-reis-teste.onrender.com
-          for file in / /game-ui.css /app.js /realm-ui.js /origem-apk/assets/khar_tall_guardiao.png; do
+          for file in / /game-ui.css /app.js /arena3d.js /sfx.js /realm-ui.js /origem-apk/assets/khar_tall_guardiao.png; do
             for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
               if curl -fsSL --max-time 15 "$base$file" >/tmp/cerco-publicado; then break; fi
               if [ "$attempt" = 12 ]; then exit 1; fi
