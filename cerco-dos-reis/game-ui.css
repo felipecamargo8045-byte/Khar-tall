@@ -170,3 +170,17 @@ select{width:100%;background:#101d2f;color:#f0e5cb;border:1px solid #6c7f9c;padd
 .profile-actions{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-top:13px}
 .profile-safety{font:700 10px system-ui;color:#9db0c9;max-width:380px}
 @media(max-width:700px){.clan-interface,.profile-layout{grid-template-columns:1fr;gap:10px}.clan-crest-panel{min-height:165px;padding:12px;display:grid;grid-template-columns:125px 1fr;text-align:left;column-gap:10px;justify-content:start}.clan-crest{grid-row:span 4;width:115px;height:131px;margin:0}.clan-crest img{width:65px;height:75px}.clan-crest-panel h2{font-size:22px;text-align:left}.clan-crest-panel>p{text-align:left;margin:0}.clan-status-chip{justify-self:start}.profile-identity{display:grid;grid-template-columns:125px 1fr;align-items:center}.profile-banner{height:155px}.profile-content{padding:10px}.profile-kpi{padding:12px 4px}.profile-kpi small{font-size:8px}.profile-kpi strong{font-size:22px}.profile-cards{gap:5px}.profile-card{padding:4px}.profile-card strong{font-size:10px}}
+
+/* Acabamento final do painel de forja no telefone */
+.shop-feature{padding-top:12px;padding-bottom:12px}
+.shop-feature .overline{display:block;margin-bottom:7px}
+.shop-feature h2{margin-top:5px;margin-bottom:9px}
+.shop-feature p{margin-top:6px;margin-bottom:11px}
+@media(max-width:700px){
+ .shop-feature{align-items:center;padding:12px 11px 12px 0;gap:12px}
+ .shop-feature-art{height:180px;align-self:center}
+ .shop-feature h2{font-size:19px;line-height:1.15}
+ .shop-feature .overline{font-size:9px;margin-bottom:3px}
+ .shop-feature p{font-size:11px;line-height:1.4;margin:7px 0}
+ .forge-note{font-size:9px;padding:6px}
+}
