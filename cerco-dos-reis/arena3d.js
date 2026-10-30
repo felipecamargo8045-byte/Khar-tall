@@ -36,8 +36,8 @@ const hit=new THREE.Vector3();
 const actors=new Map(),forts=[];
 function createRenderer(){
  const r=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'low-power'});
- r.setPixelRatio(Math.min(1.5,window.devicePixelRatio||1));
- r.shadowMap.enabled=true;
+ r.setPixelRatio(Math.min(1,window.devicePixelRatio||1));
+ r.shadowMap.enabled=false;
  r.shadowMap.type=THREE.PCFSoftShadowMap;
  r.outputColorSpace=THREE.SRGBColorSpace;
  r.toneMapping=THREE.ACESFilmicToneMapping;
@@ -379,7 +379,7 @@ function init(){
   camera.lookAt(0,0,0);
   const hemi=new THREE.HemisphereLight(0xd4e9ff,0x3a3041,2.2);scene.add(hemi);
   const sun=new THREE.DirectionalLight(0xffe1aa,3.1);
-  sun.position.set(-4,12,-5);sun.castShadow=true;
+  sun.position.set(-4,12,-5);sun.castShadow=false;
   sun.shadow.mapSize.set(1024,1024);
   sun.shadow.camera.left=-9;sun.shadow.camera.right=9;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;
   scene.add(sun);
@@ -401,6 +401,10 @@ function init(){
 }
 function render(game){
  if(!ready||!game)return;
+ const now=performance.now();
+ // Uma cadência de 24 fps para 3D preserva CPU para o motor da batalha.
+ if(now-lastTime<41 && lastTime!==0)return;
+ lastTime=now;
  syncForts(game);syncActors(game);
  renderer.render(scene,camera);
 }
