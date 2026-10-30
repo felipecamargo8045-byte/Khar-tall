@@ -1,0 +1,33 @@
+name: Recuperar os efeitos sonoros originais do Khar Tall
+on:
+  push:
+    branches: [cerco-dos-reis-migracao-2026-10]
+    paths:
+      - '.github/workflows/recuperar-audio-khar.yml'
+      - 'cerco-dos-reis/restore-original-audio.js'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  restore-recordings:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cerco-dos-reis-migracao-2026-10
+          persist-credentials: true
+      - name: Recuperar originais, sem usar serviços externos
+        run: |
+          node cerco-dos-reis/restore-original-audio.js
+          test -s cerco-dos-reis/original-audio/arqueiro_disparo.wav
+          test -s cerco-dos-reis/original-audio/rei_ataque_explosao.wav
+          test -s cerco-dos-reis/original-audio/lobo_uivo_real.wav
+      - name: Publicar as gravações originais junto ao jogo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cerco-dos-reis/original-audio/
+          if ! git diff --cached --quiet; then
+            git commit -m "assets(cerco): arquivos originais do Khar Tall recuperados e verificados"
+            git push origin HEAD:cerco-dos-reis-migracao-2026-10
+          fi
