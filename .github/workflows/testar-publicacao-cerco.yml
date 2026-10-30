@@ -102,7 +102,7 @@ jobs:
             assert.ok(voiceAudit.clips.length>=20,'Poucas falas gravadas');
             const unique=new Set(Object.entries(voiceAudit.manifest.characters).map(([id,c])=>c.style));
             assert.equal(unique.size,7,'Personagens não têm direção vocal única');
-            assert.ok(voiceAudit.clips.every(c=>/\\.ogg$/.test(c.file)),'Formato da dublagem não é OGG');
+            assert.ok(voiceAudit.clips.every(c=>c.file.endsWith('.ogg')),'Formato da dublagem não é OGG');
             // A ativação precisa partir de um clique real no navegador, como no jogo.
             await page.locator('#voiceToggle').click();
             assert.equal(await page.evaluate(()=>window.CercoVoices.enabled()),false,'Falha ao silenciar dublagem');
