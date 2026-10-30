@@ -1,4 +1,4 @@
-name: Verificar Cerco dos Reis - restauracao da arena
+name: Testar as cinco telas do Cerco dos Reis
 on:
   push:
     branches: [cerco-dos-reis-migracao-2026-10]
@@ -7,33 +7,98 @@ on:
       - '.github/workflows/testar-publicacao-cerco.yml'
   workflow_dispatch:
 jobs:
-  verificar:
+  testar-jogo:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: cerco-dos-reis-migracao-2026-10
-      - name: Sintaxe, origem da arena e componentes recuperados
+      - name: Validar scripts e estrutura das telas
         run: |
           set -e
-          node --check cerco-dos-reis/cards.js
-          node -e "const fs=require('fs');let html=fs.readFileSync('cerco-dos-reis/index.html','utf8'); if(!html.includes('href=\"https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/game/\"'))throw Error('Arena original nao vinculada'); if(html.includes('<canvas id=\"arena\"')) throw Error('Arena substituta ainda exibida'); if(!html.includes('src=\"./cards.js\"'))throw Error('Cartas sem script'); let js=fs.readFileSync('cerco-dos-reis/cards.js','utf8');if(js.includes('const canvas='))throw Error('Motor substituto carregado'); console.log('Estrutura restaurada OK')"
-          for p in cerco-dos-reis/origem-apk/assets/khar_tall_rei.png cerco-dos-reis/origem-apk/assets/khar_tall_guardiao.png cerco-dos-reis/origem-apk/assets/portrait_lilith_ruiva.webp;do test -s "$p";done
-      - name: Verificar nova publicacao da Render
+          node --check cerco-dos-reis/app.js
+          node --check cerco-dos-reis/realm-ui.js
+          node --check cerco-dos-reis/sw.js
+          python3 - <<'PY'
+          from pathlib import Path
+          html=Path('cerco-dos-reis/index.html').read_text()
+          for tab in ['arena','cards','shop','clans','profile']:
+              assert 'data-page="'+tab+'"' in html, tab
+          for name in ['#shopGrid','#featuredCards','#cardGrid','#arena']:
+              assert name[1:] in html, name
+          assert 'https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/' not in html
+          assert 'src="./app.js?v=3"' in html
+          assert 'src="./realm-ui.js?v=3"' in html
+          for name in ['game-ui.css','app.js','realm-ui.js','sw.js']:
+              assert Path('cerco-dos-reis',name).is_file(),name
+          print('Cinco ambientes, arquivos, navegacao e scripts: OK')
+          PY
+      - name: Instalar navegador de teste
+        run: |
+          npm install --prefix /tmp/cerco-tests --no-audit --no-fund playwright@1.56.1
+          /tmp/cerco-tests/node_modules/.bin/playwright install chromium
+      - name: Verificar navegacao, cartas, loja, arena e perfil no Android
         shell: bash
         run: |
           set -euo pipefail
-          base="https://cerco-dos-reis-teste.onrender.com"
-          for i in {1..12};do
-            if curl --fail --location --max-time 15 -s "$base/" -o /tmp/home;then
-              if grep -q "A arena que você já aprovou." /tmp/home && ! grep -q '<canvas id="arena"' /tmp/home;then
-                echo "Tela publicada restaurada"
-                break
-              fi
-            fi
-            if test "$i" -eq 12;then echo "Site nao atualizado";exit 1;fi
-            sleep 10
-          done
-          for p in /cards.js /theme.css /origem-apk/assets/khar_tall_rei.png /origem-apk/assets/khar_tall_guardiao.png;do
-            curl --fail --location --max-time 30 -s -o /dev/null -w "%{http_code} ${p}\n" "$base$p"
+          python3 -m http.server 8080 --bind 127.0.0.1 --directory cerco-dos-reis > /tmp/cerco-http.log 2>&1 &
+          node <<'JS'
+          const { chromium } = require('/tmp/cerco-tests/node_modules/playwright');
+          const assert = require('node:assert/strict');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const problems=[];
+            const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
+            page.on('pageerror',e=>problems.push('js: '+String(e)));
+            await page.goto('http://127.0.0.1:8080/',{waitUntil:'networkidle'});
+            assert.equal(await page.locator('.game-nav button').count(),5);
+            const tabs=['arena','cards','shop','clans','profile'];
+            for(const tab of tabs){
+              await page.locator('#navigation [data-view="'+tab+'"]').click();
+              assert.equal(await page.locator('.page.active').getAttribute('data-page'),tab);
+              const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+              assert.ok(overflow<=2,'overflow '+tab+': '+overflow);
+            }
+            await page.locator('#navigation [data-view="shop"]').click();
+            assert.equal(await page.locator('#shopGrid .shop-item').count(),8);
+            await page.locator('#shopGrid .shop-item').nth(2).click();
+            assert.match(await page.locator('#shopStatus').innerText(),/Bosque Real/i);
+            assert.equal(await page.locator('#featuredCards button').count(),8);
+            await page.locator('#featuredCards button').first().click();
+            assert.equal(await page.locator('.page.active').getAttribute('data-page'),'cards');
+            assert.match(await page.locator('#cardName').innerText(),/Liliti/i);
+            const img=await page.locator('#fullArt').evaluate(e=>e.complete&&e.naturalWidth>0);
+            assert.ok(img,'Imagem Liliti nao carregou');
+            await page.locator('#navigation [data-view="arena"]').click();
+            await page.locator('#start').click();
+            await page.waitForTimeout(400);
+            assert.equal(await page.locator('#overlay').isVisible(),false);
+            assert.notEqual(await page.locator('#timer').innerText(),'03:00');
+            await page.screenshot({path:'/tmp/cerco-arena-mobile.png'});
+            await page.locator('#navigation [data-view="shop"]').click();
+            await page.screenshot({path:'/tmp/cerco-loja-mobile.png'});
+            assert.deepEqual(problems,[]);
+            await browser.close();
+            console.log('PASSOU: 5 telas, loja embutida, estandartes, arte Liliti, batalha, viewport Android, sem erros JS');
+          })().catch(e=>{console.error(e);process.exit(1)});
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cerco-dos-reis-mobile-preview
+          path: |
+            /tmp/cerco-arena-mobile.png
+            /tmp/cerco-loja-mobile.png
+          if-no-files-found: ignore
+      - name: Confirmar arquivos no Render
+        run: |
+          set -e
+          base=https://cerco-dos-reis-teste.onrender.com
+          for file in / /game-ui.css /app.js /realm-ui.js /origem-apk/assets/khar_tall_guardiao.png; do
+            for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+              if curl -fsSL --max-time 15 "$base$file" >/tmp/cerco-publicado; then break; fi
+              if [ "$attempt" = 12 ]; then exit 1; fi
+              sleep 8
+            done
+            echo "publicado: $file"
           done
