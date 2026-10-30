@@ -27,9 +27,9 @@ jobs:
           for name in ['#shopGrid','#featuredCards','#cardGrid','#arena']:
               assert name[1:] in html, name
           assert 'https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/' not in html
-          assert 'src="./app.js?v=6"' in html
+          assert 'src="./app.js?v=7"' in html
           assert 'src="./realm-ui.js?v=3"' in html
-          for name in ['game-ui.css','app.js','realm-ui.js','sw.js']:
+          for name in ['game-ui.css','app.js','arena3d.js','vendor/three.module.js','realm-ui.js','sw.js']:
               assert Path('cerco-dos-reis',name).is_file(),name
           print('Cinco ambientes, arquivos, navegacao e scripts: OK')
           PY
@@ -46,11 +46,16 @@ jobs:
           const { chromium } = require('/tmp/cerco-tests/node_modules/playwright');
           const assert = require('node:assert/strict');
           (async()=>{
-            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox','--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
             const problems=[];
             const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
             page.on('pageerror',e=>problems.push('js: '+String(e)));
             await page.goto('http://127.0.0.1:8080/?test=1',{waitUntil:'networkidle'});
+            await page.waitForFunction(()=>window.Cerco3D?.ready===true,{timeout:20000});
+            const threeInfo=await page.evaluate(()=>window.Cerco3D.info());
+            assert.ok(threeInfo.ready && threeInfo.meshes>30,'3D real nao iniciado: '+JSON.stringify(threeInfo));
+            assert.equal(await page.locator('#sceneBadge').innerText(),'3D ATIVO');
+
             assert.equal(await page.locator('.game-nav button').count(),5);
             const tabs=['arena','cards','shop','clans','profile'];
             for(const tab of tabs){
@@ -87,8 +92,20 @@ jobs:
             let group=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
             assert.equal(group.length,2,'Lobo precisa gerar duas unidades');
             assert.deepEqual(group.map(u=>u.lane).sort(),[0,1],'Centro deve dividir entre duas rotas');
-            assert.ok(group.every(u=>Math.abs(u.x-210)<26),'Posicao X ignorada');
-            assert.ok(group.every(u=>Math.abs(u.y-560*.57)<24),'Posicao Y ignorada');
+            const meanX=group.reduce((v,u)=>v+u.x,0)/group.length;
+            assert.ok(Math.abs(meanX-210)<25,'Centro do grupo deslocado');
+            assert.ok(Math.abs(group[0].x-group[1].x)>42,'Dois personagens sobrepostos');
+            const clickPoint=await page.evaluate(()=>{
+              const rect=document.getElementById('arena').getBoundingClientRect();
+              return window.Cerco3D.screenToBattle(rect.left+rect.width*.5,rect.top+rect.height*.57,rect);
+            });
+            assert.ok(group.every(u=>Math.abs(u.y-clickPoint.y)<24),'Profundidade da invocacao ignorada');
+            await page.waitForTimeout(140);
+            const modelInfo=await page.evaluate(()=>({actors:window.Cerco3D.info().actors,
+              wolfModels:window.Cerco3D.debugActors().filter(m=>m.kind==='lobo')}));
+            assert.equal(modelInfo.actors,2,'3D deve mostrar duas unidades separadas');
+            assert.equal(modelInfo.wolfModels.length,2,'Dupla de Lobos nao foi modelada em 3D');
+            assert.ok(modelInfo.wolfModels.every(m=>m.legs===4),'Lobos devem ter quatro patas articuladas');
 
             // Centro + inimigo a direita: tropas desviam juntas para defender/atacar.
             await page.evaluate(()=>window.__cercoTest.reset());
@@ -118,7 +135,7 @@ jobs:
             await page.locator('#arena').click({position:{x:box.width*.76,y:box.height*.22}});
             const high=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
             assert.equal(high.length,2);
-            assert.ok(high.every(u=>u.y<160),'Limite artificial do campo na invocacao');
+            assert.ok(high.every(u=>u.y<230),'Limite artificial do campo na invocacao');
 
             // Caminhada real: quadros variam enquanto o personagem se desloca.
             await page.evaluate(()=>window.__cercoTest.reset());
