@@ -1,4 +1,4 @@
-const CACHE='cerco-dos-reis-jogo-ui-v4';
+const CACHE='cerco-dos-reis-jogo-ui-v5';
 const CORE=['/','/index.html','/app.js','/realm-ui.js','/game-ui.css','/manifest.webmanifest','/sprites/sprite_lobo.png','/sprites/sprite_liliti.png','/assets/fortress_tower_enemy.svg','/assets/fortress_tower_ally.svg','/assets/fortress_keep_enemy.svg','/assets/fortress_keep_ally.svg','/icons/icon-192.png','/icons/icon-512.png','/origem-apk/assets/portrait_lobo.webp','/origem-apk/assets/portrait_rei.webp','/origem-apk/assets/portrait_lilith_ruiva.webp','/origem-apk/assets/arena_atmosfera.webp'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
