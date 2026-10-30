@@ -30,7 +30,7 @@ jobs:
           for name in ['#shopGrid','#featuredCards','#cardGrid','#arena']:
               assert name[1:] in html, name
           assert 'https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/' not in html
-          assert 'src="./app.js?v=18"' in html
+          assert 'src="./app.js?v=19"' in html
           assert 'src="./realm-ui.js?v=3"' in html
           for name in ['game-ui.css','app.js','arena3d.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js','khar-audio-original.js','original-audio/sha256.json']:
               assert Path('cerco-dos-reis',name).is_file(),name
@@ -63,7 +63,7 @@ jobs:
             const originalAudio=await page.evaluate(()=>window.CercoAudio?.status());
             assert.ok(originalAudio?.original===true,'Motor original Khar Tall não ativado');
             assert.equal(originalAudio.recordings,19,'Sons Khar Tall de ataques e movimentos não foram carregados');
-            assert.equal(originalAudio.attacksAndMovementOnly,true,'Política de sons de ataques e movimentos não está ativa');
+            assert.deepEqual(originalAudio.allowedEvents,['attack','movement','damage','towerDestroyed','castleDestroyed','victory'],'Política de sons do Cerco não corresponde à aprovada');
             const originalFiles=await page.evaluate(async()=>{
               const names=['arqueiro_disparo.wav','arqueiro_impacto.wav',
                 'soldado_espada_corte.wav','soldado_espadas_choque_nitido.wav',
@@ -79,23 +79,29 @@ jobs:
             assert.ok(originalFiles.every(f=>f.status===200&&f.signature==='RIFF'&&f.bytes>10000),
               'Arquivos originais ausentes ou inválidos: '+JSON.stringify(originalFiles));
 
-            // Silêncio absoluto de menus/invocação e demais eventos sem combate.
-            // Sons de passos reais continuam permitidos e o uivo do lobo é proibido.
+            // Som permitido: ataque, passo, dano, destruições e vitória.
+            // Menu, invocação, interface, derrota e impactos duplicados silenciosos.
             const soundAudit=await page.evaluate(()=>{
               const before=window.CercoAudio.played().length;
-              const quiet=['ui','place','magic','damage','impact','towerHit','victory','defeat'];
+              const quiet=['ui','place','magic','impact','towerHit','defeat','wolfHowl','summon'];
               const results=quiet.map(kind=>window.CercoAudio.play(kind));
               const wolf=window.CercoAudio.play('wolf',{card:'lobo'});
               const tower=window.CercoAudio.play('tower',{side:'ally'});
               const step=window.CercoAudio.play('step',{card:'colosso'});
               const invalidStep=window.CercoAudio.play('step',{card:'lobo'});
-              return {before,results,wolf,tower,step,invalidStep,log:window.CercoAudio.played()};
+              const damage=window.CercoAudio.play('damage',{side:'ally'});
+              const towerDestroyed=window.CercoAudio.play('towerDestroyed',{side:'enemy',lane:0});
+              const castleDestroyed=window.CercoAudio.play('castleDestroyed',{side:'enemy'});
+              const victory=window.CercoAudio.play('victory');
+              return {before,results,wolf,tower,step,invalidStep,damage,towerDestroyed,castleDestroyed,victory,log:window.CercoAudio.played()};
             });
-            assert.ok(soundAudit.results.every(x=>x===false),'Som indevido fora de ataques e movimento');
-            assert.equal(soundAudit.invalidStep,false,'Som de passos do Colosso usado por outra classe');
-            assert.ok(soundAudit.wolf&&soundAudit.tower&&soundAudit.step,'Sons permitidos ficaram silenciosos');
+            assert.ok(soundAudit.results.every(x=>x===false),'Som de menu ou evento proibido não foi bloqueado');
+            assert.equal(soundAudit.invalidStep,false,'Passo do Colosso tocou em outra classe');
+            assert.ok(['wolf','tower','step','damage','towerDestroyed','castleDestroyed','victory'].every(kind=>soundAudit[kind]),
+              'Uma categoria de som permitida não funcionou');
             assert.deepEqual(soundAudit.log.slice(soundAudit.before).map(x=>x.sample),
-              ['wolfBite','arrowLaunch','giantStep'],'Lobo, flechas e passos não usam gravações originais');
+              ['wolfBite','arrowLaunch','giantStep','royalWound','groundSmash','kingBlast','royalVictory'],
+              'Sons originais de mordida, flecha, passo, ferimento, destruição e vitória não foram vinculados');
             assert.ok(soundAudit.log.every(x=>!x.sample.toLowerCase().includes('howl')),'Uivo permaneceu no jogo');
 
             await page.locator('#soundToggle').click();
@@ -314,6 +320,37 @@ jobs:
             assert.ok(towerState.hits>0,'Projetil nao causou dano');
             const targetHealth=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='enemy').map(u=>u.hp));
             assert.ok(targetHealth.some(hp=>hp>0),'Alvo desapareceu antes do teste de torre');
+            // Os sons de dano, destruição e vitória precisam nascer dos eventos reais
+            // do motor, não apenas estar disponíveis no painel de áudio.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            const eventAudio=await page.evaluate(()=>{
+              const before=window.CercoAudio.played().length;
+              const ids=window.__cercoTest.createEnemy('colosso',210,420);
+              const wounded=window.__cercoTest.injure(ids[0],60);
+              const towerLost=window.__cercoTest.breach('enemy',0,99999);
+              const castleLost=window.__cercoTest.breach('enemy',-1,99999);
+              const beforeRepeated=window.__cercoTest.audioEvents().destroyed.length;
+              const repeated=window.__cercoTest.breach('enemy',0,99999);
+              const afterRepeated=window.__cercoTest.audioEvents().destroyed.length;
+              window.__cercoTest.finish('ally');
+              return {wounded,towerLost,castleLost,repeated,beforeRepeated,afterRepeated,
+                events:window.__cercoTest.audioEvents().destroyed,
+                played:window.CercoAudio.played().slice(before)};
+            });
+            assert.equal(eventAudio.wounded,true,'Dano de personagem não aconteceu');
+            assert.equal(eventAudio.towerLost,true,'Torre não foi destruída');
+            assert.equal(eventAudio.castleLost,true,'Castelo não foi destruído');
+            assert.equal(eventAudio.repeated,false,'Torre destruída tomou dano novamente');
+            assert.equal(eventAudio.beforeRepeated,eventAudio.afterRepeated,'Destruição tocou duas vezes');
+            assert.deepEqual(eventAudio.events.map(x=>x.kind),['towerDestroyed','castleDestroyed'],
+              'Não foram registrados os dois tipos de destruição');
+            assert.ok(eventAudio.played.some(x=>x.kind==='damage'),'Ferimento não produziu som de dano');
+            assert.ok(eventAudio.played.some(x=>x.kind==='towerDestroyed'),'Torre não produziu som de destruição');
+            assert.ok(eventAudio.played.some(x=>x.kind==='castleDestroyed'),'Castelo não produziu som de destruição');
+            assert.ok(eventAudio.played.some(x=>x.kind==='victory'),'Vitória não produziu som');
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
             // Tamanho variável dos celulares: HUD, arena e cartas não podem sair da tela.
             for(const [width,height] of [[360,740],[430,932],[390,844]]){
               await page.setViewportSize({width,height});
