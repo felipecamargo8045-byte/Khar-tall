@@ -423,6 +423,48 @@ function makeHealthBar(team,width=.84){
  node.userData.width=width-.06;
  return node;
 }
+
+// Acabamento ilustrado animado no espaço 3D: combina esculturas móveis,
+// sombras e silhuetas detalhadas dos personagens originais de Khar Thal.
+// Não usa artes ou modelos do jogo de referência.
+const characterMotion=new Map();
+const motionLoader=new THREE.TextureLoader();
+for(const id of ['lobo','arqueiro','soldado','colosso','guardiao','batedor','rei','liliti']){
+  motionLoader.load('./motion/motion_'+id+'.webp',tex=>{
+    tex.colorSpace=THREE.SRGBColorSpace;
+    tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.ClampToEdgeWrapping;
+    characterMotion.set(id,tex);
+  },undefined,()=>{ /* Exibe modelo 3D quando WebP não é suportado */ });
+}
+function detailedAppearance(u){
+ const tex=characterMotion.get(u.card.id);
+ if(!tex?.image)return null;
+ const frameWidth=tex.image.width/24;
+ const aspect=frameWidth/tex.image.height;
+ const height=u.card.id==='colosso'?2.12:u.card.id==='lobo'?1.62:u.card.id==='rei'?2.03:u.card.id==='liliti'?2.05:1.84;
+ const width=Math.min(2.05,height*aspect);
+ const sheet=tex.clone();
+ sheet.needsUpdate=true;
+ sheet.wrapS=THREE.RepeatWrapping;
+ sheet.repeat.set(1/24,1);
+ const material=new THREE.MeshBasicMaterial({
+   map:sheet,transparent:true,alphaTest:.055,depthWrite:false,
+   side:THREE.DoubleSide,opacity:.99,toneMapped:false
+ });
+ const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);
+ mesh.renderOrder=8;
+ mesh.frustumCulled=false;
+ return {mesh,sheet,height};
+}
+function detailedFrame(u){
+ const rate=u.card.id==='lobo'?1.35:u.card.id==='colosso'?.75:1;
+ if((u.attackPulse||0)>.0001){
+   const progress=clamp(1-(u.attackPulse||0)/.38,0,.999);
+   return 16+Math.floor(progress*8);
+ }
+ if(u.state==='walk')return Math.floor((u.motionTime||0)*9*rate+u.id*.4)%10;
+ return 10+Math.floor((u.motionTime||0)*2.4+u.id*.25)%6;
+}
 function createActor(u){
  const model=u.card.id==='lobo'?makeWolf(u.side):makeHuman(u.card.id,u.side);
  // Proporção de estratégia: tropas menores do que a estrutura que defendem.
@@ -430,12 +472,20 @@ function createActor(u){
  model.scale.setScalar(unitScale);
  model.traverse(o=>{if(o.isMesh)o.castShadow=true});
  const bar=makeHealthBar(u.side,1.05);
+ const appearance=detailedAppearance(u);
  scene.add(model);scene.add(bar);
- return {model,bar,side:u.side,lastFrame:0,position:new THREE.Vector3()};
+ if(appearance)scene.add(appearance.mesh);
+ return {model,bar,appearance,side:u.side,lastFrame:0,position:new THREE.Vector3()};
 }
 function syncActors(game){
  const live=new Set(game.units.filter(u=>u.hp>0).map(u=>u.id));
- for(const [id,rec] of actors){if(!live.has(id)){scene.remove(rec.model);scene.remove(rec.bar);actors.delete(id)}}
+ for(const [id,rec] of actors){
+  if(!live.has(id)){
+    scene.remove(rec.model);scene.remove(rec.bar);
+    if(rec.appearance){scene.remove(rec.appearance.mesh);rec.appearance.mesh.material.dispose();rec.appearance.sheet.dispose();}
+    actors.delete(id);
+  }
+ }
  for(const u of game.units){
   if(u.hp<=0)continue;
   let rec=actors.get(u.id);
@@ -443,6 +493,20 @@ function syncActors(game){
   const obj=rec.model,anim=obj.userData;
   const pos=position(u.x,u.y);
   obj.position.copy(pos);
+  // O modelo físico continua na cena, enquanto a arte animada dá
+  // acabamento de personagem real sobre a silhueta geométrica.
+  if(!rec.appearance && characterMotion.has(u.card.id)){
+     rec.appearance=detailedAppearance(u);
+     if(rec.appearance)scene.add(rec.appearance.mesh);
+  }
+  if(rec.appearance){
+     const art=rec.appearance;
+     art.mesh.position.set(pos.x,art.height*.48+.08,pos.z+.10);
+     art.mesh.quaternion.copy(camera.quaternion);
+     art.sheet.offset.x=detailedFrame(u)/24;
+     // O 3D fica por trás da arte, mantendo volume no cenário sem poluir a leitura.
+     obj.visible=false;
+  } else obj.visible=true;
   // Pequenos passos, com pés e braços articulados.
   const clock=u.motionTime||0,walking=u.state==='walk';
   const attacking=(u.attackPulse||0)>0;
@@ -572,7 +636,7 @@ window.Cerco3D={
  get ready(){return ready},
  render,screenToBattle,
  info:()=>({ready,actors:actors.size,meshes:scene?.children?.length||0,webgl:renderer?.capabilities?.isWebGL2||false}),
- debugActors:()=>[...actors.entries()].map(([id,rec])=>({id,kind:rec.model.userData.id,legs:rec.model.userData.legs?.length||0,
+ debugActors:()=>[...actors.entries()].map(([id,rec])=>({id,kind:rec.model.userData.id,illustrated:!!rec.appearance,legs:rec.model.userData.legs?.length||0,
    rotations:rec.model.userData.legs?.map(l=>Number(l.rotation.x.toFixed(3)))||[]}))
 };
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
