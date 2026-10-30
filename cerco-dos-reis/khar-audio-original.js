@@ -15,7 +15,7 @@ const FILES=Object.freeze({
 const VOLUMES=Object.freeze({blueLaunch:.87,blueImpact:.94,redLaunch:.87,redImpact:.94,
  arrowLaunch:.76,arrowImpact:.86,swordSwing:.83,swordImpact:.72,giantStep:.72,groundSmash:.94,
  royalWound:.73,royalSuspense:.60,royalGuardian:.60,royalVictory:.76,
- wolfHowl:.70,kingBlast:.78,guardianArea:.68,guardianLine:.72});
+ wolfGrowl:.65,wolfBite:.76,kingBlast:.78,guardianArea:.68,guardianLine:.72});
 const WOLF_ATTACK=Object.freeze([Object.freeze({key:'wolfBite',delay:0})]);
 function plan(event){
  const cues=[];let utility=null;
