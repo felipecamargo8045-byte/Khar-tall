@@ -774,6 +774,45 @@ function draw(){
    ctx.restore();
  }
 
+
+ // Disparos de cartas com formato distinto também no modo sem WebGL.
+ for(const shot of game.attackShots){
+   const color={arrow:'#f2e2b0',mark:'#83e8ff',shield:'#8dfff4',enchant:'#e7a1ff'}[shot.kind]||'#f9da93';
+   g.save();g.strokeStyle=color;g.fillStyle=color;g.shadowColor=color;g.shadowBlur=10;g.lineWidth=shot.kind==='arrow'?2.5:4;
+   const dir=Math.atan2(shot.toY-shot.fromY,shot.toX-shot.fromX);
+   g.translate(shot.x,shot.y);g.rotate(dir);
+   if(shot.kind==='arrow'||shot.kind==='mark'){
+     g.beginPath();g.moveTo(-12,0);g.lineTo(11,0);g.stroke();
+     g.beginPath();g.moveTo(11,0);g.lineTo(4,-4);g.lineTo(4,4);g.closePath();g.fill();
+   }else if(shot.kind==='enchant'){
+     g.beginPath();g.arc(0,0,8,0,Math.PI*2);g.fill();
+     g.strokeStyle='#a0e8c6';g.beginPath();g.arc(0,0,13,0,Math.PI*2);g.stroke();
+   }else{
+     g.beginPath();g.arc(0,0,8,0,Math.PI*2);g.stroke();
+   }
+   g.restore();
+ }
+ for(const fx of game.attackFx){
+   const strength=fx.life/fx.maxLife;
+   g.save();g.globalAlpha=strength;g.translate(fx.x,fx.y);
+   const radius=8+(1-strength)*23;
+   const color={bite:'#ffaaa1',slash:'#ffead1',slam:'#ff9955',shield:'#95eee9',mark:'#8bddff',royal:'#ffcf85',enchant:'#dca2ff',arrow:'#fff0a1'}[fx.kind]||'#f0c887';
+   g.shadowColor=color;g.shadowBlur=12;g.strokeStyle=color;g.lineWidth=fx.kind==='slam'?5:3;
+   if(fx.kind==='bite'){
+     for(let k=-1;k<=1;k++){g.beginPath();g.moveTo(k*7-8,-15);g.lineTo(k*7+10,15);g.stroke()}
+   }else if(fx.kind==='slash'||fx.kind==='royal'){
+     g.beginPath();g.arc(0,0,radius,-1.7,.7);g.stroke();
+     if(fx.kind==='royal'){g.beginPath();g.arc(0,0,radius+8,1.4,3.6);g.stroke()}
+   }else if(fx.kind==='mark'){
+     g.beginPath();g.arc(0,0,radius,0,Math.PI*2);g.stroke();
+     g.beginPath();g.moveTo(-radius-8,0);g.lineTo(radius+8,0);g.moveTo(0,-radius-8);g.lineTo(0,radius+8);g.stroke();
+   }else{
+     g.beginPath();g.arc(0,0,radius,0,Math.PI*2);g.stroke();
+     if(fx.kind==='enchant'){g.rotate(strength*2);g.beginPath();g.arc(0,0,radius*.6,0,Math.PI*2);g.stroke()}
+   }
+   g.restore();
+ }
+
 }
 function updateHand(){const node=$('#hand');node.replaceChildren();hand.forEach((id,i)=>{const c=cardData.find(x=>x.id===id);const b=document.createElement('button');b.type='button';b.className=i===activeIndex?'selected':'';b.setAttribute('aria-label',`Selecionar ${c.name}, ${c.cost} energia`);const im=document.createElement('img');im.src=cardImage(c);im.alt='';im.onerror=imgFallback;const label=document.createElement('b');label.textContent=c.name;const co=document.createElement('small');co.textContent=c.cost;b.append(im,label,co);b.addEventListener('click',()=>{activeIndex=i;chosen=c;selectedCard();updateHand()});node.append(b)})}
 function updateUI(){updateClock();$('#wins').textContent=String(local.wins);updateHand();selectedCard()}
