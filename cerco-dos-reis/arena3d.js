@@ -521,7 +521,7 @@ function detailedAppearance(u){
 function detailedFrame(u){
  const rate=u.card.id==='lobo'?1.35:u.card.id==='colosso'?.75:1;
  if((u.attackPulse||0)>.0001){
-   const progress=clamp(1-(u.attackPulse||0)/.38,0,.999);
+   const progress=clamp(1-(u.attackPulse||0)/.58,0,.999);
    return 16+Math.floor(progress*8);
  }
  if(u.state==='walk')return Math.floor((u.motionTime||0)*9*rate+u.id*.4)%10;
