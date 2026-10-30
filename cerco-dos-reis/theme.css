@@ -4,3 +4,17 @@
 .install-app { border:1px solid #ab864e; background:linear-gradient(160deg,#d4a761,#a57437); color:#151a27; box-shadow:0 3px 14px #0005; border-radius:10px; padding:9px 13px; font-size:12px; font-weight:800; cursor:pointer; white-space:nowrap }
 .install-app:focus-visible {outline:3px solid #e8bd70;outline-offset:3px}
 @media(max-width:730px) {.install-app{margin-left:auto;padding:8px 10px;font-size:11px}.head .tag{display:none}}
+
+/* Restauração da arena oficial em vez do simulador não aprovado */
+.restored-heading{max-width:930px}
+.restored-stage{display:grid;grid-template-columns:minmax(230px,.85fr) minmax(0,1.15fr);gap:22px;align-items:center;overflow:hidden;background:radial-gradient(circle at 20% 70%,#37507166,transparent 50%),linear-gradient(130deg,#1e2d45,#0f1726);border-color:#80663b;padding:clamp(18px,3vw,35px)}
+.restored-stage .restored-art{height:clamp(270px,39vw,430px);position:relative;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;gap:0;border-radius:14px;background:radial-gradient(ellipse at center 65%,#9f733f40,transparent 60%)}
+.restored-art img{width:53%;height:100%;min-width:0;object-fit:contain;filter:drop-shadow(0 15px 22px #0008)}
+.restored-art img+img{margin-left:-13%}
+.restored-copy h2{font-size:clamp(28px,3.5vw,49px);color:#f0d5a0}
+.restored-copy p{max-width:560px;line-height:1.7}
+.restored-primary{display:inline-flex;justify-content:center;align-items:center;gap:8px;margin-top:15px;text-decoration:none;padding:14px 20px;font-weight:800;border-radius:10px;font-size:15px}
+.restored-secondary{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:17px}
+.restored-secondary a,.restored-secondary button{font:600 12px/1.3 system-ui,sans-serif;color:#e6ce98;text-decoration:underline;text-underline-offset:4px;background:transparent;border:0;cursor:pointer;padding:4px}
+.restored-note{color:#b4bfd0;font-size:12px;margin-top:18px}
+@media(max-width:730px){.restored-stage{grid-template-columns:1fr;padding:15px 15px 24px}.restored-stage .restored-art{height:230px}.restored-copy h2{font-size:30px}.restored-primary{display:flex;width:100%;min-height:50px}.restored-secondary{justify-content:center}.restored-heading h1{font-size:clamp(29px,9vw,44px)}}
