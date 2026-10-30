@@ -16,13 +16,13 @@ const api=window.KharTallAudio;
 if(!api?.Player){console.error('Motor de áudio original Khar Tall ausente');return}
 const player=new api.Player({enabled:prefs.on});
 const recent=new Map();
-// Som apenas durante golpes e disparos. Sem sons de interface, passos,
-// invocacao, dano, impactos separados, vitoria ou derrota.
+// Sons apenas em ataques e movimentos autorizados. Sem som de menus,
+// invocacao, dano, telas de resultado ou eventos passivos.
 const minGap={
  wolf:.22,bite:.22,arrow:.10,slash:.12,shield:.31,mark:.23,markRed:.23,royal:.32,
- enchant:.42,colossus:.32,tower:.28
+ enchant:.42,colossus:.32,tower:.28,step:.48
 };
-const attackOnly=new Set(Object.keys(minGap));
+const allowedSounds=new Set(Object.keys(minGap));
 const attackLog=[];
 function refreshMaster(){
  if(player.output)player.output.gain.value=.90*prefs.volume;
@@ -38,6 +38,7 @@ function uniqueSample(kind,details){
   case 'wolf':return 'wolfBite';
   case 'bite':return 'wolfBite';
   case 'colossus':return 'groundSmash';
+  case 'step':return details.card==='colosso'?'giantStep':null;
   case 'shield':return 'guardianLine';
   case 'mark':return 'blueLaunch';
   case 'markRed':return 'redLaunch';
@@ -48,9 +49,8 @@ function uniqueSample(kind,details){
  }
 }
 function play(kind,details={}){
- // Filtro definitivo: até chamadas esquecidas em outras interfaces
- // permanecem silenciosas. Só ataques de tropas e torres emitem som.
- if(!attackOnly.has(kind)||!prefs.on||prefs.volume<=0)return false;
+ // Apenas ataques e passos de movimento previstos no áudio original.
+ if(!allowedSounds.has(kind)||!prefs.on||prefs.volume<=0)return false;
  const now=performance.now()/1000;
  const gap=minGap[kind]||0;
  if(now-(recent.get(kind)||-999)<gap)return false;
@@ -97,7 +97,7 @@ window.CercoAudio={
  play,unlock,getSettings:()=>({...prefs}),isReady:()=>player.ctx?.state==='running',
  setEnabled:value=>{prefs.on=Boolean(value);persist()},
  played:()=>attackLog.map(x=>({...x})),
- status:()=>({original:true,attackOnly:true,recordings:Object.keys(api.FILES).length,loaded:player.buffers.size,
+ status:()=>({original:true,attacksAndMovementOnly:true,recordings:Object.keys(api.FILES).length,loaded:player.buffers.size,
    failed:[...player.failed],fileNames:api.FILES}),
  player
 };
