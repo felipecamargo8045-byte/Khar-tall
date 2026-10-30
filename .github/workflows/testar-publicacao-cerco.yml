@@ -18,6 +18,7 @@ jobs:
           set -e
           node --check cerco-dos-reis/app.js
           node --check cerco-dos-reis/sfx.js
+          node --check cerco-dos-reis/voices.js
           node --check cerco-dos-reis/khar-audio-original.js
           node --check cerco-dos-reis/restore-original-audio.js
           node --check cerco-dos-reis/realm-ui.js
@@ -30,9 +31,10 @@ jobs:
           for name in ['#shopGrid','#featuredCards','#cardGrid','#arena']:
               assert name[1:] in html, name
           assert 'https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/' not in html
-          assert 'src="./app.js?v=19"' in html
+          assert 'src="./app.js?v=20"' in html
+          assert 'src="./voices.js?v=1"' in html
           assert 'src="./realm-ui.js?v=3"' in html
-          for name in ['game-ui.css','app.js','arena3d.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js','khar-audio-original.js','original-audio/sha256.json']:
+          for name in ['game-ui.css','app.js','arena3d.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
               assert Path('cerco-dos-reis',name).is_file(),name
           print('Cinco ambientes, arquivos, navegacao e scripts: OK')
           PY
@@ -52,6 +54,21 @@ jobs:
             const browser=await chromium.launch({headless:true,args:['--no-sandbox','--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
             const problems=[];
             const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
+            // Motor TTS de teste: valida falas, perfis e controles independentemente
+            // das vozes instaladas no runner. No Android real o sistema usa as vozes pt-BR do aparelho.
+            await page.addInitScript(()=>{
+              const synth={
+                speaking:false,pending:false,cancel(){this.speaking=false},
+                getVoices(){return [{name:'Português Brasil 1',lang:'pt-BR',default:true},
+                  {name:'Português Brasil 2',lang:'pt-BR',default:false}]},
+                addEventListener(){},
+                speak(utt){(window.__cercoVoiceCalls??=[]).push({
+                  text:utt.text,pitch:utt.pitch,rate:utt.rate,lang:utt.lang,voice:utt.voice?.name||''
+                });}
+              };
+              try{Object.defineProperty(window,'speechSynthesis',{configurable:true,value:synth})}catch{window.speechSynthesis=synth}
+              window.SpeechSynthesisUtterance=class SpeechSynthesisUtterance{constructor(text){this.text=text}};
+            });
             page.on('pageerror',e=>problems.push('js: '+String(e)));
             await page.goto('http://127.0.0.1:8080/?test=1',{waitUntil:'networkidle'});
             await page.waitForFunction(()=>window.Cerco3D?.ready===true,{timeout:20000});
@@ -60,6 +77,39 @@ jobs:
             assert.equal(await page.locator('#sceneBadge').innerText(),'3D ATIVO');
             const sounds=await page.evaluate(()=>window.CercoAudio?.getSettings());
             assert.ok(sounds && typeof sounds.volume==='number','Audio local nao inicializou');
+            const voiceAudit=await page.evaluate(()=>{
+              const engine=window.CercoVoices;
+              const profiles=engine.profiles;
+              const names=Object.keys(profiles);
+              const human=names.filter(id=>id!=='lobo');
+              const original=engine.status();
+              const before=window.__cercoVoiceCalls?.length||0;
+              const speaking=engine.speak('arqueiro','attack');
+              return {names,profiles,original,before,speaking,
+                spoken:window.__cercoVoiceCalls||[],history:engine.history()};
+            });
+            assert.equal(voiceAudit.names.length,8,'Oito personagens precisam ter identidade vocal');
+            assert.equal(voiceAudit.original.supported,true,'Motor vocal nao inicializou');
+            assert.ok(voiceAudit.names.includes('lobo'),'Vocalização animal do Lobo ausente');
+            assert.equal(voiceAudit.profiles.lobo.lines.length,0,'O Lobo recebeu falas humanas');
+            for(const [id,profile] of Object.entries(voiceAudit.profiles)){
+              if(id==='lobo')continue;
+              assert.ok(profile.lines.length>=3,'Poucas falas da classe '+id);
+              assert.ok(profile.hurt.length>=2,'Falas de ferimento ausentes: '+id);
+              assert.ok(profile.rate>0&&profile.pitch>0,'Sem identidade vocal: '+id);
+            }
+            const signatures=new Set(Object.entries(voiceAudit.profiles).filter(([id])=>id!=='lobo')
+              .map(([_,p])=>p.pitch.toFixed(2)+':'+p.rate.toFixed(2)));
+            assert.equal(signatures.size,7,'As sete classes humanas devem ter timbres diferentes');
+            assert.equal(voiceAudit.speaking,true,'Arqueiro nao falou');
+            assert.equal(voiceAudit.spoken.length,voiceAudit.before+1,'Uma única fala deve ser pronunciada');
+            assert.equal(voiceAudit.spoken.at(-1).lang,'pt-BR','Idioma da dublagem incorreto');
+            assert.equal(voiceAudit.spoken.at(-1).pitch,voiceAudit.profiles.arqueiro.pitch,'Tom do Arqueiro incorreto');
+            await page.locator('#voiceToggle').click();
+            assert.equal(await page.evaluate(()=>window.CercoVoices.enabled()),false,'Botao nao silenciou vozes');
+            await page.locator('#voiceToggle').click();
+            assert.equal(await page.evaluate(()=>window.CercoVoices.enabled()),true,'Botao nao restaurou vozes');
+
             const originalAudio=await page.evaluate(()=>window.CercoAudio?.status());
             assert.ok(originalAudio?.original===true,'Motor original Khar Tall não ativado');
             assert.equal(originalAudio.recordings,19,'Sons Khar Tall de ataques e movimentos não foram carregados');
@@ -148,6 +198,7 @@ jobs:
             assert.ok(!(await page.locator('#navigation').isVisible()),'Menu do site nao deve aparecer na partida');
             assert.ok(await page.locator('#battleBack').isVisible(),'Voltar nao aparece');
             assert.ok(await page.locator('#battlePause').isVisible(),'Pausar nao aparece');
+            assert.ok(await page.locator('#battleVoice').isVisible(),'Controlador de falas nao aparece na partida');
             await page.locator('#battlePause').click();
             assert.ok(await page.locator('#overlay').isVisible(),'Pausa nao mostrou painel');
             await page.locator('#battlePause').click();
