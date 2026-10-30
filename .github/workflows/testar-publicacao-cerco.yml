@@ -62,11 +62,12 @@ jobs:
             assert.ok(sounds && typeof sounds.volume==='number','Audio local nao inicializou');
             const originalAudio=await page.evaluate(()=>window.CercoAudio?.status());
             assert.ok(originalAudio?.original===true,'Motor original Khar Tall não ativado');
-            assert.equal(originalAudio.recordings,18,'Conjunto de gravações diferente do original');
+            assert.equal(originalAudio.recordings,19,'Sons Khar Tall de ataques e movimentos não foram carregados');
+            assert.equal(originalAudio.attacksAndMovementOnly,true,'Política de sons de ataques e movimentos não está ativa');
             const originalFiles=await page.evaluate(async()=>{
               const names=['arqueiro_disparo.wav','arqueiro_impacto.wav',
                 'soldado_espada_corte.wav','soldado_espadas_choque_nitido.wav',
-                'colosso_esmagamento_rachadura.wav','lobo_uivo_real.wav',
+                'colosso_esmagamento_rachadura.wav','colosso_passo_estrondoso.wav','lobo_mordida_impacto.wav',
                 'guardiao_ventania_magica.wav','rei_ataque_explosao.wav'];
               return await Promise.all(names.map(async name=>{
                 const response=await fetch('/original-audio/'+name);
@@ -77,6 +78,25 @@ jobs:
             });
             assert.ok(originalFiles.every(f=>f.status===200&&f.signature==='RIFF'&&f.bytes>10000),
               'Arquivos originais ausentes ou inválidos: '+JSON.stringify(originalFiles));
+
+            // Silêncio absoluto de menus/invocação e demais eventos sem combate.
+            // Sons de passos reais continuam permitidos e o uivo do lobo é proibido.
+            const soundAudit=await page.evaluate(()=>{
+              const before=window.CercoAudio.played().length;
+              const quiet=['ui','place','magic','damage','impact','towerHit','victory','defeat'];
+              const results=quiet.map(kind=>window.CercoAudio.play(kind));
+              const wolf=window.CercoAudio.play('wolf',{card:'lobo'});
+              const tower=window.CercoAudio.play('tower',{side:'ally'});
+              const step=window.CercoAudio.play('step',{card:'colosso'});
+              const invalidStep=window.CercoAudio.play('step',{card:'lobo'});
+              return {before,results,wolf,tower,step,invalidStep,log:window.CercoAudio.played()};
+            });
+            assert.ok(soundAudit.results.every(x=>x===false),'Som indevido fora de ataques e movimento');
+            assert.equal(soundAudit.invalidStep,false,'Som de passos do Colosso usado por outra classe');
+            assert.ok(soundAudit.wolf&&soundAudit.tower&&soundAudit.step,'Sons permitidos ficaram silenciosos');
+            assert.deepEqual(soundAudit.log.slice(soundAudit.before).map(x=>x.sample),
+              ['wolfBite','arrowLaunch','giantStep'],'Lobo, flechas e passos não usam gravações originais');
+            assert.ok(soundAudit.log.every(x=>!x.sample.toLowerCase().includes('howl')),'Uivo permaneceu no jogo');
 
             await page.locator('#soundToggle').click();
             const muted=await page.evaluate(()=>window.CercoAudio.getSettings());
@@ -286,6 +306,11 @@ jobs:
             await page.waitForFunction(()=>window.__cercoTest.towers().hits>0,{timeout:12000});
             const towerState=await page.evaluate(()=>window.__cercoTest.towers());
             assert.ok(towerState.shots.some(s=>s.side==='ally'&&s.slot===0),'Torre aliada nao disparou');
+            assert.ok(towerState.shots.every(shot=>shot.kind==='arrow'),'Castelo ainda dispara outro projétil que não flecha');
+            await page.evaluate(()=>window.__cercoTest.createEnemy('colosso',210,505));
+            await page.waitForFunction(()=>window.__cercoTest.towers().shots.some(s=>s.side==='ally'&&s.slot===2&&s.kind==='arrow'),
+              {timeout:12000});
+            assert.ok(await page.evaluate(()=>window.Cerco3D.info().ready),'Cena 3D indisponível para flechas das fortalezas');
             assert.ok(towerState.hits>0,'Projetil nao causou dano');
             const targetHealth=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='enemy').map(u=>u.hp));
             assert.ok(targetHealth.some(hp=>hp>0),'Alvo desapareceu antes do teste de torre');
