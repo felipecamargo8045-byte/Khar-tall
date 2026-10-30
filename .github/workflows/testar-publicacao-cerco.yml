@@ -157,6 +157,36 @@ jobs:
             assert.equal(modelInfo.wolfModels.length,2,'Dupla de Lobos nao foi modelada em 3D');
             assert.ok(modelInfo.wolfModels.every(m=>m.legs===4),'Lobos devem ter quatro patas articuladas');
 
+            // Dois arqueiros reais, cada qual com seu próprio corpo 3D e rota.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            await page.locator('#hand button').nth(1).click();
+            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.66}});
+            const archers=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'&&u.card==='arqueiro'));
+            assert.equal(archers.length,2,'Carta de Arqueiros deve invocar exatamente dois');
+            assert.ok(Math.abs(archers[0].x-archers[1].x)>=42,'Os dois arqueiros ficaram sobrepostos');
+            assert.deepEqual(archers.map(u=>u.lane).sort(),[0,1],'Arqueiros no centro devem escolher as duas rotas');
+            const archer3D=await page.evaluate(()=>window.Cerco3D.debugActors().filter(x=>x.kind==='arqueiro'));
+            assert.equal(archer3D.length,2,'Somente um arqueiro ficou visível no 3D');
+
+            // Cada classe precisa disparar uma categoria de ação exclusiva.
+            const expected={lobo:'bite',arqueiro:'arrow',soldado:'slash',
+              colosso:'slam',guardiao:'shield',batedor:'mark',rei:'royal',liliti:'enchant'};
+            for(const [id,kind] of Object.entries(expected)){
+              await page.evaluate(()=>window.__cercoTest.reset());
+              const duel=await page.evaluate(id=>window.__cercoTest.duel(id),id);
+              assert.ok(duel?.history?.length,'Ataque da carta não iniciado: '+id);
+              assert.ok(duel.history.every(a=>a.kind===kind),'Movimento errado: '+id);
+              if(['arqueiro','batedor','guardiao','liliti'].includes(id)){
+                assert.ok(duel.shots.some(a=>a.kind===kind),'Sem projétil visual de '+id);
+                assert.ok(duel.animated>0,'Efeito 3D do projétil ausente para '+id);
+              }
+              if(id==='arqueiro'){
+                assert.equal(duel.ids.length,2,'O duelo não criou dois arqueiros');
+                assert.equal(duel.history.length,2,'Os arqueiros não atacaram independentemente');
+              }
+            }
+
             // Centro + inimigo a direita: tropas desviam juntas para defender/atacar.
             await page.evaluate(()=>window.__cercoTest.reset());
             await page.locator('#start').click();
