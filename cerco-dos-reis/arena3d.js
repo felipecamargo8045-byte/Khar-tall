@@ -688,8 +688,10 @@ function size(){
  const w=host.clientWidth||gameCanvas.clientWidth||420;
  const h=host.clientHeight||gameCanvas.clientHeight||560;
  renderer.setSize(w,h,false);
- const aspect=w/h;
- const vertical=16.05;
+ const aspect=Math.max(.28,w/Math.max(1,h));
+ // Enquadramento inteligente: mostra toda a largura da arena no celular,
+ // aproveita a tela em retrato e preserva as duas pontes + os castelos.
+ const vertical=Math.max(16.7,12.35/aspect);
  camera.left=-vertical*aspect/2;
  camera.right=vertical*aspect/2;
  camera.top=vertical/2;camera.bottom=-vertical/2;
@@ -750,7 +752,7 @@ function screenToBattle(clientX,clientY,rect){
 }
 window.Cerco3D={
  get ready(){return ready},
- render,screenToBattle,
+ render,screenToBattle,resize:size,
  syncNow:(game)=>{if(ready&&game){syncActors(game);syncForts(game);syncBolts(game)}},
  info:()=>({ready,actors:actors.size,projectiles:flyingBolts.size,meshes:scene?.children?.length||0,webgl:renderer?.capabilities?.isWebGL2||false}),
  debugActors:()=>[...actors.entries()].map(([id,rec])=>({id,kind:rec.model.userData.id,illustrated:!!rec.appearance,legs:rec.model.userData.legs?.length||0,
