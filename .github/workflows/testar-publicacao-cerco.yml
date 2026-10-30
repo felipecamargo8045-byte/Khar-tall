@@ -1,0 +1,23 @@
+name: Verificar Cerco dos Reis publicado
+on:
+  push:
+    branches: [cerco-dos-reis-migracao-2026-10]
+    paths:
+      - 'cerco-dos-reis/**'
+      - '.github/workflows/testar-publicacao-cerco.yml'
+  workflow_dispatch:
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar resposta HTTP e arquivos essenciais da publicação
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://cerco-dos-reis-teste.onrender.com"
+          for path in / /app.js /theme.css /origem-apk/assets/portrait_lilith_ruiva.webp /origem-apk/assets/portrait_rei.webp; do
+            echo "GET $base$path"
+            curl --fail --location --retry 6 --retry-delay 6 --retry-all-errors --max-time 25 -o /tmp/check-asset -w 'HTTP %{http_code}; size=%{size_download} bytes\n' "$base$path"
+            test -s /tmp/check-asset
+          done
+          echo "Todas as respostas publicadas foram confirmadas."
