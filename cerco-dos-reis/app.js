@@ -512,7 +512,17 @@ function advanceProjectiles(dt){
   if(game.effects[i].life<=0)game.effects.splice(i,1);
  }
 }
-function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.energy+dt*(game.time<60?1.2:.7),0,10);game.aiTimer+=dt;const speed=$('#difficulty').value;const interval=speed==='easy'?6.2:speed==='hard'?2.9:4.4;if(game.aiTimer>=interval){game.aiTimer=0;aiCast()}defendFromTowers(dt);for(const u of game.units){u.motionTime=(u.motionTime||0)+dt;u.attackPulse=Math.max(0,(u.attackPulse||0)-dt);combat(u,dt);if(u.attackPulse>0&&u.stun<=0)u.state='attack';u.hitPulse=Math.max(0,(u.hitPulse||0)-dt);}advanceProjectiles(dt);advanceTroopAttacks(dt);separateFriendlyUnits();game.units=game.units.filter(u=>u.hp>0);if(game.castles.enemy<=0)result('ally');else if(game.castles.ally<=0)result('enemy');else if(game.time===0){let ally=game.castles.ally+game.towers.ally.reduce((a,b)=>a+b,0),enemy=game.castles.enemy+game.towers.enemy.reduce((a,b)=>a+b,0);result(ally>=enemy?'ally':'enemy')}}
+function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.energy+dt*(game.time<60?1.2:.7),0,10);game.aiTimer+=dt;const speed=$('#difficulty').value;const interval=speed==='easy'?6.2:speed==='hard'?2.9:4.4;if(game.aiTimer>=interval){game.aiTimer=0;aiCast()}defendFromTowers(dt);for(const u of game.units){u.motionTime=(u.motionTime||0)+dt;u.attackPulse=Math.max(0,(u.attackPulse||0)-dt);combat(u,dt);
+ // Um passo grave apenas enquanto o Colosso realmente caminha.
+ // Cada unidade controla seu ritmo para não tocar som ao ficar parada.
+ if(u.state==='walk'&&u.card.id==='colosso'){
+   u.stepClock=(u.stepClock||0)+dt;
+   if(u.stepClock>=.82){
+     u.stepClock%=.82;
+     window.CercoAudio?.play('step',{card:'colosso'});
+   }
+ }else u.stepClock=0;
+ if(u.attackPulse>0&&u.stun<=0)u.state='attack';u.hitPulse=Math.max(0,(u.hitPulse||0)-dt);}advanceProjectiles(dt);advanceTroopAttacks(dt);separateFriendlyUnits();game.units=game.units.filter(u=>u.hp>0);if(game.castles.enemy<=0)result('ally');else if(game.castles.ally<=0)result('enemy');else if(game.time===0){let ally=game.castles.ally+game.towers.ally.reduce((a,b)=>a+b,0),enemy=game.castles.enemy+game.towers.enemy.reduce((a,b)=>a+b,0);result(ally>=enemy?'ally':'enemy')}}
 function advanceByClock(now){
  if(!game.running||game.paused)return;
  // Intervalo lógico + RAF compartilham o mesmo relógio; nunca contam duas vezes.
