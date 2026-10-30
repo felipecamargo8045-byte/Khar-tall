@@ -1,4 +1,4 @@
-/* Sons originais do Khar Tall, apenas durante ataques. Reutiliza seu motor original e suas gravações,
+/* Sons originais do Khar Tall: ataques, passos, dano recebido, queda de fortalezas e vitória. Reutiliza seu motor original e suas gravações,
    sem substituir efeitos por samples inventados ou síntese para ataques.
    Fonte: ../audio.js + asset-bundle e audio-assets versionados no GitHub. */
 (()=>{
@@ -16,11 +16,12 @@ const api=window.KharTallAudio;
 if(!api?.Player){console.error('Motor de áudio original Khar Tall ausente');return}
 const player=new api.Player({enabled:prefs.on});
 const recent=new Map();
-// Sons apenas em ataques e movimentos autorizados. Sem som de menus,
-// invocacao, dano, telas de resultado ou eventos passivos.
+// Som apenas nos eventos aprovados: ataques, passos, dano recebido,
+ // destruição de torre/castelo e vitória. Interface e invocação são silenciosas.
 const minGap={
  wolf:.22,bite:.22,arrow:.10,slash:.12,shield:.31,mark:.23,markRed:.23,royal:.32,
- enchant:.42,colossus:.32,tower:.28,step:.48
+ enchant:.42,colossus:.32,tower:.28,step:.82,
+ damage:.52,towerDestroyed:.85,castleDestroyed:1.8,victory:2.8
 };
 const allowedSounds=new Set(Object.keys(minGap));
 const attackLog=[];
@@ -39,6 +40,10 @@ function uniqueSample(kind,details){
   case 'bite':return 'wolfBite';
   case 'colossus':return 'groundSmash';
   case 'step':return details.card==='colosso'?'giantStep':null;
+  case 'damage':return 'royalWound';
+  case 'towerDestroyed':return 'groundSmash';
+  case 'castleDestroyed':return 'kingBlast';
+  case 'victory':return 'royalVictory';
   case 'shield':return 'guardianLine';
   case 'mark':return 'blueLaunch';
   case 'markRed':return 'redLaunch';
@@ -49,7 +54,8 @@ function uniqueSample(kind,details){
  }
 }
 function play(kind,details={}){
- // Apenas ataques e passos de movimento previstos no áudio original.
+ // Só os eventos aprovados passam por este filtro, inclusive se alguém
+ // tentar reproduzir interface, invocação ou o uivo antigo.
  if(!allowedSounds.has(kind)||!prefs.on||prefs.volume<=0)return false;
  const now=performance.now()/1000;
  const gap=minGap[kind]||0;
@@ -60,7 +66,13 @@ function play(kind,details={}){
  attackLog.push({kind,sample});
  if(attackLog.length>90)attackLog.shift();
  unlock();
- player.play(sample).catch(()=>{});
+ const base=api.VOLUMES?.[sample]??.7;
+ // Passos discretos, ataques presentes, dano breve, destruição mais forte
+ // e toque de vitória marcante. As gravações permanecem originais.
+ const level=kind==='step'?.22:kind==='damage'?.42:kind==='victory'?.93:
+   kind==='castleDestroyed'?.96:kind==='towerDestroyed'?.88:.72;
+ const delay=kind==='victory'?470:0;
+ player.play(sample,delay,Math.min(1,base*level)).catch(()=>{});
  return true;
 }
 function persist(){
@@ -97,7 +109,7 @@ window.CercoAudio={
  play,unlock,getSettings:()=>({...prefs}),isReady:()=>player.ctx?.state==='running',
  setEnabled:value=>{prefs.on=Boolean(value);persist()},
  played:()=>attackLog.map(x=>({...x})),
- status:()=>({original:true,attacksAndMovementOnly:true,recordings:Object.keys(api.FILES).length,loaded:player.buffers.size,
+ status:()=>({original:true,allowedEvents:['attack','movement','damage','towerDestroyed','castleDestroyed','victory'],recordings:Object.keys(api.FILES).length,loaded:player.buffers.size,
    failed:[...player.failed],fileNames:api.FILES}),
  player
 };
