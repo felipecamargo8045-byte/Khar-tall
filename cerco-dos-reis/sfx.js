@@ -78,6 +78,7 @@ function play(kind,details={}){
 function persist(){
  try{localStorage.setItem(KEY,JSON.stringify(prefs))}catch{}
  player.setEnabled(prefs.on);
+ if(!prefs.on)window.CercoVoices?.stop?.();
  refreshMaster();
  updateUI();
 }
