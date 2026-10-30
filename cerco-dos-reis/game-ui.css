@@ -194,3 +194,29 @@ select{width:100%;background:#101d2f;color:#f0e5cb;border:1px solid #6c7f9c;padd
 .canvas-box #overlay{z-index:4}
 .scene-badge{display:inline-flex;vertical-align:middle;margin-left:8px;padding:3px 7px;background:#243f5a;border:1px solid #9c885e;border-radius:6px;font:800 9px system-ui;color:#eed19b;letter-spacing:.08em}
 @media(max-width:700px){.scene-badge{font-size:8px;padding:3px 5px;margin-left:5px}}
+
+/* Apresentação compacta de um jogo mobile — sem aparência de landing page. */
+.canvas-box.three-ready{background:#16465c}
+.canvas-box.three-ready #arena3d{background:#2e7a8e}
+.scene-badge{background:#287e8a!important;border:1px solid #9bdbd0!important;color:#ffffff!important;box-shadow:0 0 9px #50d0c244}
+@media(max-width:700px){
+ .game-header{min-height:43px;padding:4px 10px}
+ .brand-mark img{height:30px;width:30px}
+ .brand-mark strong{font-size:13px}
+ .brand-mark small{font-size:7px;margin-top:2px}
+ .mode-token{padding:5px;font-size:7px}
+ .install-btn{min-width:28px;height:29px;font-size:18px}
+ .game-nav{margin:0 5px 5px;padding:3px;gap:2px;border-radius:9px}
+ .game-nav button{padding:5px 2px;font-size:9px;gap:2px;border-radius:8px}
+ .nav-ico{font-size:16px}
+ .game-body{padding:4px 7px 20px}
+ .arena-topline{min-height:38px;margin-bottom:5px;align-items:center}
+ .arena-topline h1{font-size:18px}
+ .arena-topline .overline{font-size:8px;letter-spacing:.1em}
+ .rank-seal{font-size:15px;padding:5px 8px}
+ .scoreboard{padding:5px 6px;border-radius:8px 8px 0 0}
+ .scoreboard .clock b{font-size:20px}
+ .scoreboard .clock small{font-size:7px}
+ .canvas-box{border-radius:0 0 9px 9px}
+ .hand-box{border-radius:0 0 10px 10px}
+}
