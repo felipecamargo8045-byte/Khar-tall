@@ -67,8 +67,17 @@ function tacticalLane(x,y,side,index,count){
  }
  return x<W/2?0:1;
 }
-function addUnit(c,location,side){
+// O toque é livre em toda a arena, mas unidades terrestres não nascem dentro da água.
+// Ao tocar no rio fora da ponte, a unidade chega à margem do lado de seu exército.
+function groundSpawn(location,side){
  const spot=point(location.x,location.y);
+ if(spot.y>RIVER_TOP&&spot.y<RIVER_BOTTOM&&!onBridge(spot.x)){
+  spot.y=side==='ally'?RIVER_BOTTOM+SHORE_PADDING+4:RIVER_TOP-SHORE_PADDING-4;
+ }
+ return spot;
+}
+function addUnit(c,location,side){
+ const spot=groundSpawn(location,side);
  const count=c.units||1;
  const ids=[];
  for(let i=0;i<count;i++){
