@@ -35,10 +35,63 @@ function selectedCard(){const c=chosen;$('#selectedPortrait').src=cardImage(c);$
 const canvas=$('#arena'),ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height;
 const sprites=new Map(cardData.map(c=>{const i=new Image();i.src=cardImage(c);return[c.id,i]}));const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,n));
 let game,loop=0,ticker=0;let hand=['lobo','arqueiro','soldado','colosso'];let next=4;const queue=cardData.map(c=>c.id);let activeIndex=0;
-function reset(){cancelAnimationFrame(loop);clearInterval(ticker);game={running:false,paused:false,time:180,energy:6,max:10,last:0,units:[],towers:{ally:[1400,1400],enemy:[1400,1400]},castles:{ally:2600,enemy:2600},counter:0,aiTimer:0,message:'',result:null,projectiles:[],effects:[],towerTimers:{},towerShots:[],defenseHits:0};hand=['lobo','arqueiro','soldado','colosso'];next=4;activeIndex=0;$('#overlay').hidden=false;$('#overlay').innerHTML='<span class="overline">DOIS EXÉRCITOS · UM TRONO</span><h2>O cerco começa com você.</h2><p>3 minutos, duas rotas e cartas com habilidades próprias.</p><button class="gold" id="start">⚔ Iniciar treinamento</button>';$('#start').addEventListener('click',start);$('#pause').disabled=true;$('#pause').textContent='Pausar';updateUI();draw()}
-function start(){window.CercoAudio?.play('place');game.running=true;game.paused=false;game.result=null;game.last=performance.now();$('#overlay').hidden=true;$('#pause').disabled=false;clearInterval(ticker);ticker=setInterval(()=>advanceByClock(performance.now()),65);log('O cerco começou. Defenda suas torres!');loop=requestAnimationFrame(step)}
-function result(winner){if(!game.running)return;window.CercoAudio?.play(winner==='ally'?'victory':'defeat');game.running=false;clearInterval(ticker);cancelAnimationFrame(loop);$('#overlay').hidden=false;const win=winner==='ally';if(win){local.wins++;save()}$('#overlay').innerHTML='';const over=document.createElement('span');over.className='overline';over.textContent='O CERCO TERMINOU';const t=document.createElement('h2');t.textContent=win?'Vitória':'Derrota';const p=document.createElement('p');p.textContent=win?'Seu reino venceu o treinamento.':'Reorganize as cartas e tente novamente.';const b=document.createElement('button');b.className='gold';b.textContent='Jogar novamente';b.addEventListener('click',()=>{reset();start()});$('#overlay').append(over,t,p,b);updateUI()}
-function pause(){if(!game.running)return;window.CercoAudio?.play('ui');game.paused=!game.paused;$('#pause').textContent=game.paused?'Continuar':'Pausar';if(game.paused){$('#overlay').hidden=false;$('#overlay').innerHTML='<h2>Batalha pausada</h2><p>Seu reino pode esperar.</p><button class="gold" id="resume">Continuar batalha</button>';$('#resume').addEventListener('click',pause)}else{$('#overlay').hidden=true;game.last=performance.now();loop=requestAnimationFrame(step)}}
+
+// Partida é uma cena independente do portal: toda a janela é do jogo.
+// Fullscreen nativo é opcional; CSS ocupa 100dvh mesmo quando o navegador o nega.
+function enterBattle(){
+ const stage=$('#battleStage');
+ document.body.classList.add('battle-mode');
+ document.documentElement.classList.add('battle-mode-root');
+ document.body.style.overflow='hidden';
+ try{window.scrollTo({top:0,behavior:'instant'})}catch{}
+ if(stage?.requestFullscreen && !document.fullscreenElement){
+   try{
+    const promise=stage.requestFullscreen({navigationUI:'hide'});
+    if(promise?.catch)promise.catch(()=>{});
+   }catch{}
+ }
+ syncBattleButtons();
+ requestAnimationFrame(()=>window.Cerco3D?.resize?.());
+}
+function exitBattle(){
+ document.body.classList.remove('battle-mode');
+ document.documentElement.classList.remove('battle-mode-root');
+ document.body.style.removeProperty('overflow');
+ if(document.fullscreenElement){
+   const promise=document.exitFullscreen?.();
+   if(promise?.catch)promise.catch(()=>{});
+ }
+ reset();
+ requestAnimationFrame(()=>window.Cerco3D?.resize?.());
+}
+function menuFromBattle(){
+ if(game.running&&!game.paused){
+   pause();
+   const overlay=$('#overlay');
+   const back=document.createElement('button');back.className='gold return-home';
+   back.textContent='Sair da batalha';
+   back.addEventListener('click',exitBattle);
+   overlay.append(back);
+ }else{
+   exitBattle();
+ }
+}
+function syncBattleButtons(){
+ const pauseButton=$('#battlePause'),soundButton=$('#battleSound');
+ if(pauseButton){
+   pauseButton.textContent=game?.paused?'▶':'Ⅱ';
+   pauseButton.setAttribute('aria-label',game?.paused?'Continuar batalha':'Pausar batalha');
+ }
+ if(soundButton){
+   const enabled=window.CercoAudio?.getSettings?.().on!==false;
+   soundButton.textContent=enabled?'♫':'♪̸';
+   soundButton.setAttribute('aria-label',enabled?'Silenciar sons':'Ativar sons');
+ }
+}
+function reset(){cancelAnimationFrame(loop);clearInterval(ticker);game={running:false,paused:false,time:180,energy:6,max:10,last:0,units:[],towers:{ally:[1400,1400],enemy:[1400,1400]},castles:{ally:2600,enemy:2600},counter:0,aiTimer:0,message:'',result:null,projectiles:[],effects:[],towerTimers:{},towerShots:[],defenseHits:0};hand=['lobo','arqueiro','soldado','colosso'];next=4;activeIndex=0;$('#overlay').hidden=false;$('#overlay').innerHTML='<span class="overline">DOIS EXÉRCITOS · UM TRONO</span><h2>O cerco começa com você.</h2><p>3 minutos, duas rotas e cartas com habilidades próprias.</p><button class="gold" id="start">⚔ Iniciar treinamento</button>';$('#start').addEventListener('click',start);$('#pause').disabled=true;$('#pause').textContent='Pausar';syncBattleButtons();updateUI();draw()}
+function start(){enterBattle();window.CercoAudio?.play('place');game.running=true;game.paused=false;game.result=null;game.last=performance.now();$('#overlay').hidden=true;$('#pause').disabled=false;clearInterval(ticker);ticker=setInterval(()=>advanceByClock(performance.now()),65);log('O cerco começou. Defenda suas torres!');loop=requestAnimationFrame(step)}
+function result(winner){if(!game.running)return;window.CercoAudio?.play(winner==='ally'?'victory':'defeat');game.running=false;clearInterval(ticker);cancelAnimationFrame(loop);$('#overlay').hidden=false;const win=winner==='ally';if(win){local.wins++;save()}$('#overlay').innerHTML='';const over=document.createElement('span');over.className='overline';over.textContent='O CERCO TERMINOU';const t=document.createElement('h2');t.textContent=win?'Vitória':'Derrota';const p=document.createElement('p');p.textContent=win?'Seu reino venceu o treinamento.':'Reorganize as cartas e tente novamente.';const b=document.createElement('button');b.className='gold';b.textContent='Jogar novamente';b.addEventListener('click',()=>{reset();start()});$('#overlay').append(over,t,p,b);const home=document.createElement('button');home.className='secondary-btn';home.textContent='Voltar ao menu';home.addEventListener('click',exitBattle);$('#overlay').append(home);syncBattleButtons();updateUI()}
+function pause(){if(!game.running)return;window.CercoAudio?.play('ui');game.paused=!game.paused;syncBattleButtons();$('#pause').textContent=game.paused?'Continuar':'Pausar';if(game.paused){$('#overlay').hidden=false;$('#overlay').innerHTML='<h2>Batalha pausada</h2><p>Seu reino pode esperar.</p><button class="gold" id="resume">Continuar batalha</button>';$('#resume').addEventListener('click',pause)}else{$('#overlay').hidden=true;game.last=performance.now();loop=requestAnimationFrame(step)}}
 function log(s){const line=document.createElement('p');line.textContent=s;$('#battleLog').prepend(line);while($('#battleLog').children.length>8)$('#battleLog').lastElementChild.remove()}
 
 const LANES=[110,310];
@@ -676,6 +729,7 @@ if(new URLSearchParams(location.search).has('test')){
       return [];
     },
     reset:()=>reset(),
+    fullscreen:()=>({active:document.body.classList.contains('battle-mode'),native:!!document.fullscreenElement,rect:document.querySelector('#battleStage')?.getBoundingClientRect().toJSON()}),
     towers:()=>({shots:game.towerShots.slice(),hits:game.defenseHits,projectiles:game.projectiles.slice(),timers:{...game.towerTimers}}),
     forceTowerTarget:(side='enemy',slot=0,target='colosso')=>{
       const card=cardData.find(c=>c.id===target);
@@ -704,6 +758,11 @@ if(new URLSearchParams(location.search).has('test')){
     }
   };
 }
+$('#battleBack').addEventListener('click',menuFromBattle);
+$('#battlePause').addEventListener('click',pause);
+$('#battleSound').addEventListener('click',()=>{$('#soundToggle').click();syncBattleButtons()});
+document.addEventListener('fullscreenchange',()=>requestAnimationFrame(()=>window.Cerco3D?.resize?.()));
+window.addEventListener('resize',()=>{if(document.body.classList.contains('battle-mode'))window.Cerco3D?.resize?.()},{passive:true});
 $('#pause').addEventListener('click',pause);$('#reset').addEventListener('click',reset);$('#clearProgress').addEventListener('click',()=>{if(!confirm('Limpar somente o progresso local de treinamento?'))return;local={cards:{},wins:0};save();reset();renderCards()});
 window.addEventListener('hashchange',()=>{const key=location.hash.replace('#','');if(['arena','cards','shop','clans','profile'].includes(key))show(key)});window.Cerco3DGame={getState:()=>game};reset();renderCards();if(location.hash)show(location.hash.slice(1));
 })();
