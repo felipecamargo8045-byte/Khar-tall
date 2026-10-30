@@ -391,10 +391,12 @@ function init(){
   ready=true;
   host.hidden=false;
   shell.classList.add('three-ready');
+  const badge=document.getElementById('sceneBadge');if(badge)badge.textContent='3D ATIVO';
   render(window.Cerco3DGame?.getState?.());
  }catch(error){
   console.warn('Cerco 3D indisponível: mantendo renderização 2D.',error);
   host.hidden=true;shell.classList.remove('three-ready');ready=false;
+  const badge=document.getElementById('sceneBadge');if(badge)badge.textContent='2D COMPATÍVEL';
  }
 }
 function render(game){
