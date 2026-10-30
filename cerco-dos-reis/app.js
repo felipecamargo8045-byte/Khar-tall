@@ -855,7 +855,7 @@ if(new URLSearchParams(location.search).has('test')){
     duel:(cardId='arqueiro')=>{
       const card=cardData.find(c=>c.id===cardId);if(!card||card.spell)return null;
       const enemy=cardData.find(c=>c.id==='colosso');
-      const hostile=addUnit(enemy,{x:215,y:363},'enemy');
+      const hostile=addUnit(enemy,{x:215,y:375},'enemy');
       const friends=addUnit(card,{x:215,y:395},'ally');
       // Uma única ação de ataque; o motor continua simulando normalmente.
       friends.forEach(id=>{
