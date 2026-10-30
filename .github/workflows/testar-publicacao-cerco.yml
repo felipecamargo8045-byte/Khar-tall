@@ -388,6 +388,9 @@ jobs:
             // do motor, não apenas estar disponíveis no painel de áudio.
             await page.evaluate(()=>window.__cercoTest.reset());
             await page.locator('#start').click();
+            // O mixer evita repetições consecutivas de dano, destruição e vitória;
+            // aguardar o fim desses intervalos antes de testar novamente.
+            await page.waitForTimeout(3200);
             const eventAudio=await page.evaluate(()=>{
               const before=window.CercoAudio.played().length;
               const ids=window.__cercoTest.createEnemy('colosso',210,420);
