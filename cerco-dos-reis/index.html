@@ -8,13 +8,13 @@
 <title>Cerco dos Reis · Khar Thal</title>
 <link rel="icon" href="./origem-apk/assets/emblem.svg">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="stylesheet" href="./game-ui.css?v=9">
+<link rel="stylesheet" href="./game-ui.css?v=10">
 </head>
 <body>
 <div class="aurora" aria-hidden="true"></div>
 <header class="game-header">
   <div class="brand-mark"><img src="./origem-apk/assets/emblem.svg" alt=""><div><strong>CERCO DOS REIS</strong><small>KHAR THAL · ECOS DA CHAMA</small></div></div>
-  <div class="header-right"><div class="mode-token"><span class="live-dot"></span> MODO TREINO</div><button type="button" id="installApp" class="install-btn" aria-label="Instalar aplicativo">⇩</button></div>
+  <div class="header-right"><div class="sound-controls" aria-label="Som do jogo"><button type="button" id="soundToggle" class="sound-button" aria-label="Silenciar sons do jogo" aria-pressed="true" title="Alternar sons">♫</button><label class="sr-only" for="soundVolume">Volume dos efeitos sonoros</label><input id="soundVolume" type="range" min="0" max="100" value="55" aria-label="Volume dos efeitos sonoros"></div><div class="mode-token"><span class="live-dot"></span> MODO TREINO</div><button type="button" id="installApp" class="install-btn" aria-label="Instalar aplicativo">⇩</button></div>
 </header>
 <nav id="navigation" class="game-nav" aria-label="Seções do jogo">
  <button class="active" data-view="arena"><span class="nav-ico">⚔</span><span>Arena</span></button>
@@ -102,8 +102,9 @@
  </div>
 </section>
 </main>
-<script src="./app.js?v=12" defer></script>
+<script src="./sfx.js?v=1" defer></script>
+<script src="./app.js?v=13" defer></script>
 <script src="./realm-ui.js?v=3" defer></script>
-<script type="module" src="./arena3d.js?v=8"></script>
+<script type="module" src="./arena3d.js?v=9"></script>
 </body>
 </html>
