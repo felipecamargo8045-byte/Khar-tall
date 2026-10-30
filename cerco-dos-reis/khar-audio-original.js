@@ -9,14 +9,14 @@ const FILES=Object.freeze({
  giantStep:'colosso_passo_estrondoso.wav',groundSmash:'colosso_esmagamento_rachadura.wav',
  royalWound:'rei_primeira_vida_tam_tam_taam.wav',royalSuspense:'rei_morto_guardiao_vivo_suspense.wav',
  royalGuardian:'guardiao_trombeta_aviso.wav',royalVictory:'vitoria_trompetas_marcha.wav',
- wolfHowl:'lobo_uivo_real.wav',wolfGrowl:'lobo_matilha_rosnado.wav',wolfBite:'lobo_mordida_impacto.wav',
+ wolfGrowl:'lobo_matilha_rosnado.wav',wolfBite:'lobo_mordida_impacto.wav',
  kingBlast:'rei_ataque_explosao.wav',guardianArea:'guardiao_ataque_area_ancestral.wav',guardianLine:'guardiao_ventania_magica.wav'
 });
 const VOLUMES=Object.freeze({blueLaunch:.87,blueImpact:.94,redLaunch:.87,redImpact:.94,
  arrowLaunch:.76,arrowImpact:.86,swordSwing:.83,swordImpact:.72,giantStep:.72,groundSmash:.94,
  royalWound:.73,royalSuspense:.60,royalGuardian:.60,royalVictory:.76,
  wolfHowl:.70,kingBlast:.78,guardianArea:.68,guardianLine:.72});
-const WOLF_ATTACK=Object.freeze([Object.freeze({key:'wolfHowl',delay:0})]);
+const WOLF_ATTACK=Object.freeze([Object.freeze({key:'wolfBite',delay:0})]);
 function plan(event){
  const cues=[];let utility=null;
  if(!event)return {cues,utility};
@@ -48,7 +48,7 @@ function plan(event){
  if(lost.some(p=>p.type==='king'))add('royalSuspense',impact);
  else if(lost.some(p=>p.type==='guardian'&&p.original))add('royalGuardian',impact);
  else if(event.wounded?.length)add('royalWound',impact);
- if(lost.some(p=>p.type==='wolf')&&!cues.some(c=>c.key==='wolfHowl'))add('wolfHowl',impact);
+ if(lost.some(p=>p.type==='wolf')&&!cues.some(c=>c.key==='wolfGrowl'))add('wolfGrowl',impact);
  return {cues,utility};
 }
 class Player{
