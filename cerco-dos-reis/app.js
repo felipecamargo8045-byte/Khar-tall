@@ -88,9 +88,9 @@ function syncBattleButtons(){
    soundButton.setAttribute('aria-label',enabled?'Silenciar sons':'Ativar sons');
  }
 }
-function reset(){cancelAnimationFrame(loop);clearInterval(ticker);game={running:false,paused:false,time:180,energy:6,max:10,last:0,units:[],towers:{ally:[1400,1400],enemy:[1400,1400]},castles:{ally:2600,enemy:2600},counter:0,aiTimer:0,message:'',result:null,projectiles:[],effects:[],attackShots:[],attackFx:[],attackHistory:[],towerTimers:{},towerShots:[],defenseHits:0};hand=['lobo','arqueiro','soldado','colosso'];next=4;activeIndex=0;$('#overlay').hidden=false;$('#overlay').innerHTML='<span class="overline">DOIS EXÉRCITOS · UM TRONO</span><h2>O cerco começa com você.</h2><p>3 minutos, duas rotas e cartas com habilidades próprias.</p><button class="gold" id="start">⚔ Iniciar treinamento</button>';$('#start').addEventListener('click',start);$('#pause').disabled=true;$('#pause').textContent='Pausar';syncBattleButtons();updateUI();draw()}
+function reset(){cancelAnimationFrame(loop);clearInterval(ticker);game={running:false,paused:false,time:180,energy:6,max:10,last:0,units:[],towers:{ally:[1400,1400],enemy:[1400,1400]},castles:{ally:2600,enemy:2600},counter:0,aiTimer:0,message:'',result:null,projectiles:[],effects:[],attackShots:[],attackFx:[],attackHistory:[],towerTimers:{},towerShots:[],defenseHits:0,destroyedStructures:[]};hand=['lobo','arqueiro','soldado','colosso'];next=4;activeIndex=0;$('#overlay').hidden=false;$('#overlay').innerHTML='<span class="overline">DOIS EXÉRCITOS · UM TRONO</span><h2>O cerco começa com você.</h2><p>3 minutos, duas rotas e cartas com habilidades próprias.</p><button class="gold" id="start">⚔ Iniciar treinamento</button>';$('#start').addEventListener('click',start);$('#pause').disabled=true;$('#pause').textContent='Pausar';syncBattleButtons();updateUI();draw()}
 function start(){enterBattle();game.running=true;game.paused=false;game.result=null;game.last=performance.now();$('#overlay').hidden=true;$('#pause').disabled=false;clearInterval(ticker);ticker=setInterval(()=>advanceByClock(performance.now()),65);log('O cerco começou. Defenda suas torres!');loop=requestAnimationFrame(step)}
-function result(winner){if(!game.running)return;game.running=false;clearInterval(ticker);cancelAnimationFrame(loop);$('#overlay').hidden=false;const win=winner==='ally';if(win){local.wins++;save()}$('#overlay').innerHTML='';const over=document.createElement('span');over.className='overline';over.textContent='O CERCO TERMINOU';const t=document.createElement('h2');t.textContent=win?'Vitória':'Derrota';const p=document.createElement('p');p.textContent=win?'Seu reino venceu o treinamento.':'Reorganize as cartas e tente novamente.';const b=document.createElement('button');b.className='gold';b.textContent='Jogar novamente';b.addEventListener('click',()=>{reset();start()});$('#overlay').append(over,t,p,b);const home=document.createElement('button');home.className='secondary-btn';home.textContent='Voltar ao menu';home.addEventListener('click',exitBattle);$('#overlay').append(home);syncBattleButtons();updateUI()}
+function result(winner){if(!game.running)return;if(winner==='ally')window.CercoAudio?.play('victory');game.running=false;clearInterval(ticker);cancelAnimationFrame(loop);$('#overlay').hidden=false;const win=winner==='ally';if(win){local.wins++;save()}$('#overlay').innerHTML='';const over=document.createElement('span');over.className='overline';over.textContent='O CERCO TERMINOU';const t=document.createElement('h2');t.textContent=win?'Vitória':'Derrota';const p=document.createElement('p');p.textContent=win?'Seu reino venceu o treinamento.':'Reorganize as cartas e tente novamente.';const b=document.createElement('button');b.className='gold';b.textContent='Jogar novamente';b.addEventListener('click',()=>{reset();start()});$('#overlay').append(over,t,p,b);const home=document.createElement('button');home.className='secondary-btn';home.textContent='Voltar ao menu';home.addEventListener('click',exitBattle);$('#overlay').append(home);syncBattleButtons();updateUI()}
 function pause(){if(!game.running)return;game.paused=!game.paused;syncBattleButtons();$('#pause').textContent=game.paused?'Continuar':'Pausar';if(game.paused){$('#overlay').hidden=false;$('#overlay').innerHTML='<h2>Batalha pausada</h2><p>Seu reino pode esperar.</p><button class="gold" id="resume">Continuar batalha</button>';$('#resume').addEventListener('click',pause)}else{$('#overlay').hidden=true;game.last=performance.now();loop=requestAnimationFrame(step)}}
 function log(s){const line=document.createElement('p');line.textContent=s;$('#battleLog').prepend(line);while($('#battleLog').children.length>8)$('#battleLog').lastElementChild.remove()}
 
@@ -168,11 +168,11 @@ function cast(id){
      targets.forEach(u=>u.hp=Math.min(u.maxHp,u.hp+180));
      log('Campo de Cura restaurou '+targets.length+' tropa(s).');
    }else if(c.id==='chama'){
-     targets.forEach(u=>u.hp-=c.dmg);
+     targets.forEach(u=>receiveDamage(u,c.dmg));
      log('Chama Viva atingiu '+targets.length+' inimigo(s).');
    }else{
      const u=targets.sort((a,b)=>distance(a,spot)-distance(b,spot))[0];
-     if(u){u.hp-=c.dmg;u.stun=1.4}log('Armadilha ativada!');
+     if(u){receiveDamage(u,c.dmg);u.stun=1.4}log('Armadilha ativada!');
    }
  }else{
    const created=addUnit(c,spot,'ally');
@@ -318,9 +318,39 @@ function attackVisual(kind,x,y,side,phase='impact'){
  if(game.attackFx.length>55)game.attackFx.shift();
  return fx;
 }
+// Eventos sonoros verdadeiros do combate. Os efeitos originais do Khar Tall
+// são disparados apenas ao receber dano, destruir uma estrutura ou vencer.
+function receiveDamage(unit,amount){
+ if(!unit||unit.hp<=0||amount<=0)return false;
+ const before=unit.hp;
+ unit.hp=Math.max(0,before-amount);
+ if(unit.hp<before){
+  unit.hitPulse=Math.max(unit.hitPulse||0,.24);
+  window.CercoAudio?.play('damage',{card:unit.card.id,side:unit.side});
+ }
+ return unit.hp<before;
+}
+function receiveFortressDamage(side,lane,amount){
+ if(amount<=0||!['ally','enemy'].includes(side))return false;
+ const castle=lane===-1;
+ if(!castle && lane!==0 && lane!==1)return false;
+ const before=castle?game.castles[side]:game.towers[side][lane];
+ if(before<=0)return false;
+ const after=Math.max(0,before-amount);
+ if(castle)game.castles[side]=after;
+ else game.towers[side][lane]=after;
+ if(after===0){
+  const kind=castle?'castleDestroyed':'towerDestroyed';
+  game.destroyedStructures.push({side,lane,kind,time:game.time});
+  window.CercoAudio?.play(kind,{side,lane});
+ }else{
+  window.CercoAudio?.play('damage',{side,lane});
+ }
+ return true;
+}
 function applyAttackDamage(shot,target){
  if(target&&target.hp>0&&target.side!==shot.side){
-   target.hp=Math.max(0,target.hp-shot.damage);
+   receiveDamage(target,shot.damage);
    target.hitPulse=.27;
    if(shot.kind==='enchant'){
      const caster=game.units.find(u=>u.id===shot.sourceId&&u.hp>0);
@@ -332,13 +362,7 @@ function applyAttackDamage(shot,target){
  }
  if(shot.structureSide){
    const side=shot.structureSide,lane=shot.structureLane;
-   if(lane===-1){
-     if(game.castles[side]<=0)return false;
-     game.castles[side]=Math.max(0,game.castles[side]-shot.damage);
-   }else{
-     if(game.towers[side][lane]<=0)return false;
-     game.towers[side][lane]=Math.max(0,game.towers[side][lane]-shot.damage);
-   }
+   if(!receiveFortressDamage(side,lane,shot.damage))return false;
    attackVisual(shot.kind,shot.toX,shot.toY,shot.side);
    
    return true;
@@ -496,7 +520,7 @@ function advanceProjectiles(dt){
    shot.y=shot.fromY+(shot.toY-shot.fromY)*t;
    if(t>=1){
      if(target&&distance(shot,target)<26){
-       target.hp=Math.max(0,target.hp-shot.damage);
+       receiveDamage(target,shot.damage);
        target.hitPulse=.20;
        game.defenseHits++;
        
@@ -892,6 +916,10 @@ if(new URLSearchParams(location.search).has('test')){
         shots:game.attackShots.map(shot=>({id:shot.id,kind:shot.kind})),
         animated:window.Cerco3D?.info?.().troopShots??0};
     },
+    audioEvents:()=>({destroyed:game.destroyedStructures.slice(),running:game.running,life:JSON.parse(JSON.stringify({units:game.units.map(u=>({id:u.id,hp:u.hp})),towers:game.towers,castles:game.castles}))}),
+    injure:(id,damage=30)=>receiveDamage(game.units.find(u=>u.id===id),damage),
+    breach:(side='enemy',lane=0,damage=9999)=>receiveFortressDamage(side,lane,damage),
+    finish:(winner='ally')=>result(winner),
     towers:()=>({shots:game.towerShots.slice(),hits:game.defenseHits,projectiles:game.projectiles.slice(),timers:{...game.towerTimers}}),
     forceTowerTarget:(side='enemy',slot=0,target='colosso')=>{
       const card=cardData.find(c=>c.id===target);
