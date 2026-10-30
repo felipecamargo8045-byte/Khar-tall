@@ -72,6 +72,12 @@ jobs:
             await page.locator('#navigation [data-view="arena"]').click();
             await page.locator('#start').click();
             await page.waitForTimeout(1300);
+            // Invocar Lobo para verificar sprite humano/animal completo (nao token circular).
+            await page.locator('#arena').click({position:{x:100,y:330}});
+            await page.waitForTimeout(550);
+            const okSprite=await page.evaluate(()=>[...document.images].filter(x=>x.src.includes('/sprites/')).length);
+            const imagesReady=await page.evaluate(async()=>{const ids=['lobo','rei','liliti'];return await Promise.all(ids.map(id=>new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(img.naturalWidth>0);img.onerror=()=>resolve(false);img.src='/sprites/sprite_'+id+'.png'})))});
+            assert.ok(imagesReady.every(Boolean),'Sprite PNG nao carregou');
             assert.equal(await page.locator('#overlay').isVisible(),false);
             assert.notEqual(await page.locator('#timer').innerText(),'03:00');
             await page.screenshot({path:'/tmp/cerco-arena-mobile.png'});
