@@ -116,7 +116,10 @@ jobs:
               const rect=document.getElementById('arena').getBoundingClientRect();
               return window.Cerco3D.screenToBattle(rect.left+rect.width*.5,rect.top+rect.height*.57,rect);
             });
-            assert.ok(group.every(u=>Math.abs(u.y-clickPoint.y)<24),'Profundidade da invocacao ignorada');
+            const riverClick=clickPoint.y>256&&clickPoint.y<304 && 
+                [110,310].every(bridgeX=>Math.abs(clickPoint.x-bridgeX)>39);
+            const expectedY=riverClick?319:clickPoint.y;
+            assert.ok(group.every(u=>Math.abs(u.y-expectedY)<24),'Invocacao ignorou a posicao em terreno caminhavel');
             await page.waitForTimeout(140);
             const modelInfo=await page.evaluate(()=>({actors:window.Cerco3D.info().actors,
               wolfModels:window.Cerco3D.debugActors().filter(m=>m.kind==='lobo')}));
