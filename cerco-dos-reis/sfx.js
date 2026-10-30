@@ -1,4 +1,4 @@
-/* Sons ORIGINAIS de Khar Tall. Reutiliza seu motor original e suas gravações,
+/* Sons originais do Khar Tall, apenas durante ataques. Reutiliza seu motor original e suas gravações,
    sem substituir efeitos por samples inventados ou síntese para ataques.
    Fonte: ../audio.js + asset-bundle e audio-assets versionados no GitHub. */
 (()=>{
@@ -16,11 +16,14 @@ const api=window.KharTallAudio;
 if(!api?.Player){console.error('Motor de áudio original Khar Tall ausente');return}
 const player=new api.Player({enabled:prefs.on});
 const recent=new Map();
+// Som apenas durante golpes e disparos. Sem sons de interface, passos,
+// invocacao, dano, impactos separados, vitoria ou derrota.
 const minGap={
- wolf:1.45,bite:.22,arrow:.10,slash:.12,shield:.31,mark:.23,markRed:.23,royal:.32,
- enchant:.42,colossus:.32,impact:.065,tower:.28,towerHit:.15,
- victory:4,defeat:4,place:.10,ui:.06,damage:.26
+ wolf:.22,bite:.22,arrow:.10,slash:.12,shield:.31,mark:.23,markRed:.23,royal:.32,
+ enchant:.42,colossus:.32,tower:.28
 };
+const attackOnly=new Set(Object.keys(minGap));
+const attackLog=[];
 function refreshMaster(){
  if(player.output)player.output.gain.value=.90*prefs.volume;
 }
@@ -32,45 +35,32 @@ function uniqueSample(kind,details){
  switch(kind){
   case 'arrow':return 'arrowLaunch';
   case 'slash':return 'swordSwing';
-  case 'wolf':return 'wolfGrowl';
+  case 'wolf':return 'wolfBite';
   case 'bite':return 'wolfBite';
-  case 'colossus':return 'giantStep';
+  case 'colossus':return 'groundSmash';
   case 'shield':return 'guardianLine';
   case 'mark':return 'blueLaunch';
   case 'markRed':return 'redLaunch';
   case 'royal':return 'kingBlast';
   case 'enchant':return 'guardianArea'; // Liliti não existia no Khar Tall de tabuleiro.
   case 'tower':return 'arrowLaunch';
-  case 'towerHit':return 'arrowImpact';
-  case 'victory':return 'royalVictory';
-  case 'defeat':return 'royalSuspense';
-  case 'damage':return 'royalWound';
-  case 'attack':return details.card==='arqueiro'?'arrowLaunch':'swordSwing';
-  case 'impact':
-   if(details.card==='batedor'&&details.variant==='red')return 'redImpact';
-   return ({arqueiro:'arrowImpact',soldado:'swordImpact',lobo:'wolfBite',
-     colosso:'groundSmash',guardiao:'guardianArea',batedor:'blueImpact',
-     rei:'kingBlast',liliti:'guardianArea'})[details.card]||'swordImpact';
   default:return null;
  }
 }
 function play(kind,details={}){
- if(!prefs.on||prefs.volume<=0)return false;
+ // Filtro definitivo: até chamadas esquecidas em outras interfaces
+ // permanecem silenciosas. Só ataques de tropas e torres emitem som.
+ if(!attackOnly.has(kind)||!prefs.on||prefs.volume<=0)return false;
  const now=performance.now()/1000;
  const gap=minGap[kind]||0;
  if(now-(recent.get(kind)||-999)<gap)return false;
- recent.set(kind,now);
- if(kind==='ui'||kind==='place'){
-  unlock();player.ui(kind==='place'?'place':'tap').catch(()=>{});
-  return true;
- }
- if(kind==='magic'){
-  unlock();player.utility('magic').catch(()=>{});
-  return true;
- }
  const sample=uniqueSample(kind,details||{});
  if(!sample)return false;
- unlock();player.play(sample).catch(()=>{});
+ recent.set(kind,now);
+ attackLog.push({kind,sample});
+ if(attackLog.length>90)attackLog.shift();
+ unlock();
+ player.play(sample).catch(()=>{});
  return true;
 }
 function persist(){
@@ -93,14 +83,11 @@ function updateUI(){
 function setup(){
  document.getElementById('soundToggle')?.addEventListener('click',()=>{
   prefs.on=!prefs.on;persist();
-  if(prefs.on){unlock();play('ui')}
+  if(prefs.on)unlock()
  });
  document.getElementById('soundVolume')?.addEventListener('input',event=>{
   prefs.volume=Math.max(0,Math.min(1,Number(event.target.value)/100));
   persist();
- });
- document.querySelectorAll('#navigation button').forEach(button=>{
-  button.addEventListener('click',()=>play('ui'));
  });
  updateUI();
  // Carregamento antecipado de WAVs originais; áudio só toca após gesto do usuário.
@@ -109,7 +96,8 @@ function setup(){
 window.CercoAudio={
  play,unlock,getSettings:()=>({...prefs}),isReady:()=>player.ctx?.state==='running',
  setEnabled:value=>{prefs.on=Boolean(value);persist()},
- status:()=>({original:true,recordings:Object.keys(api.FILES).length,loaded:player.buffers.size,
+ played:()=>attackLog.map(x=>({...x})),
+ status:()=>({original:true,attackOnly:true,recordings:Object.keys(api.FILES).length,loaded:player.buffers.size,
    failed:[...player.failed],fileNames:api.FILES}),
  player
 };
