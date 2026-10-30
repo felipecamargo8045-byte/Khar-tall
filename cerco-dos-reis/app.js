@@ -300,7 +300,20 @@ function separateFriendlyUnits(){
  }
 }
 function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.energy+dt*(game.time<60?1.2:.7),0,10);game.aiTimer+=dt;const speed=$('#difficulty').value;const interval=speed==='easy'?6.2:speed==='hard'?2.9:4.4;if(game.aiTimer>=interval){game.aiTimer=0;aiCast()}for(const u of game.units){u.motionTime=(u.motionTime||0)+dt;u.attackPulse=Math.max(0,(u.attackPulse||0)-dt);combat(u,dt);if(u.attackPulse>0&&u.stun<=0)u.state='attack';}separateFriendlyUnits();game.units=game.units.filter(u=>u.hp>0);if(game.castles.enemy<=0)result('ally');else if(game.castles.ally<=0)result('enemy');else if(game.time===0){let ally=game.castles.ally+game.towers.ally.reduce((a,b)=>a+b,0),enemy=game.castles.enemy+game.towers.enemy.reduce((a,b)=>a+b,0);result(ally>=enemy?'ally':'enemy')}}
-function step(now){if(!game.running||game.paused)return;const dt=Math.min(.05,(now-game.last)/1000||0);game.last=now;tick(dt);draw();updateClock();if(game.running)loop=requestAnimationFrame(step)}
+function step(now){
+ if(!game.running||game.paused)return;
+ // Simulação independente do FPS: celulares com WebGL lento não perdem tempo de
+ // partida nem deixam a animação congelada por um limite artificial de 50 ms.
+ let delta=clamp((now-game.last)/1000||0,0,1.0);
+ game.last=now;
+ while(delta>.00001 && game.running){
+   const dt=Math.min(.05,delta);
+   tick(dt);
+   delta-=dt;
+ }
+ draw();updateClock();
+ if(game.running)loop=requestAnimationFrame(step);
+}
 function updateClock(){const sec=Math.ceil(game.time);$('#timer').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');$('#energy').textContent=game.energy.toFixed(1)+' / 10 energia';$('#energyFill').style.width=(game.energy*10)+'%';$('#enemyCastle').textContent=fmt(Math.ceil(game.castles.enemy))+' PV';$('#allyCastle').textContent=fmt(Math.ceil(game.castles.ally))+' PV';}
 const boardArt=new Image();boardArt.src=ASSET+'arena_atmosfera.webp';
 // Castelo ilustrado em camadas góticas, com pedra e brasões próprios de cada time.
