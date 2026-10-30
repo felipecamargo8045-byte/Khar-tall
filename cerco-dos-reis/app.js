@@ -72,9 +72,12 @@ function addUnit(c,location,side){
  const count=c.units||1;
  const ids=[];
  for(let i=0;i<count;i++){
-   const jitter=(i-(count-1)/2)*17;
-   const x=clamp(spot.x+jitter,SPAWN_MARGIN,W-SPAWN_MARGIN);
-   const y=clamp(spot.y+(i%2===0?-5:5),SPAWN_MARGIN,H-SPAWN_MARGIN);
+   // Uma invocação de grupo cria personagens distintos, sem sobrepor suas artes.
+   // A formação parte do toque: duplas lado a lado, demais tropas em leque.
+   const column=i-(count-1)/2;
+   const spacing=count===2?57:43;
+   const x=clamp(spot.x+column*spacing,SPAWN_MARGIN,W-SPAWN_MARGIN);
+   const y=clamp(spot.y+(i%2===0?-7:7),SPAWN_MARGIN,H-SPAWN_MARGIN);
    const lane=tacticalLane(spot.x,spot.y,side,i,count);
    const nearby=closestEnemyAt(side,{x,y},TARGET_AWARENESS);
    const id=cryptoRandom();
@@ -192,7 +195,27 @@ function combat(u,dt){
    }else u.state='idle';
  }else moveUnit(u,goal,dt);
 }
-function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.energy+dt*(game.time<60?1.2:.7),0,10);game.aiTimer+=dt;const speed=$('#difficulty').value;const interval=speed==='easy'?6.2:speed==='hard'?2.9:4.4;if(game.aiTimer>=interval){game.aiTimer=0;aiCast()}for(const u of game.units){u.motionTime=(u.motionTime||0)+dt;u.attackPulse=Math.max(0,(u.attackPulse||0)-dt);combat(u,dt);if(u.attackPulse>0&&u.stun<=0)u.state='attack';}game.units=game.units.filter(u=>u.hp>0);if(game.castles.enemy<=0)result('ally');else if(game.castles.ally<=0)result('enemy');else if(game.time===0){let ally=game.castles.ally+game.towers.ally.reduce((a,b)=>a+b,0),enemy=game.castles.enemy+game.towers.enemy.reduce((a,b)=>a+b,0);result(ally>=enemy?'ally':'enemy')}}
+// Personagens podem escolher a mesma rota, mas não devem se fundir visualmente.
+// A separação é puramente espacial: não muda quantidade, dano nem alvo escolhido.
+function separateFriendlyUnits(){
+ for(let i=0;i<game.units.length;i++){
+  const a=game.units[i];if(a.hp<=0)continue;
+  for(let j=i+1;j<game.units.length;j++){
+   const b=game.units[j];if(a.side!==b.side||b.hp<=0)continue;
+   const dx=b.x-a.x,dy=b.y-a.y;
+   const dist=Math.hypot(dx,dy)||.0001;
+   const minDist=(a.card.id==='colosso'||b.card.id==='colosso')?58:49;
+   if(dist>=minDist)continue;
+   const push=Math.min(4.4,(minDist-dist)/2);
+   const ux=dist>.01?dx/dist:(a.id%2?1:-1),uy=dist>.01?dy/dist:0;
+   a.x=clamp(a.x-ux*push,SPAWN_MARGIN,W-SPAWN_MARGIN);
+   a.y=clamp(a.y-uy*push,SPAWN_MARGIN,H-SPAWN_MARGIN);
+   b.x=clamp(b.x+ux*push,SPAWN_MARGIN,W-SPAWN_MARGIN);
+   b.y=clamp(b.y+uy*push,SPAWN_MARGIN,H-SPAWN_MARGIN);
+  }
+ }
+}
+function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.energy+dt*(game.time<60?1.2:.7),0,10);game.aiTimer+=dt;const speed=$('#difficulty').value;const interval=speed==='easy'?6.2:speed==='hard'?2.9:4.4;if(game.aiTimer>=interval){game.aiTimer=0;aiCast()}for(const u of game.units){u.motionTime=(u.motionTime||0)+dt;u.attackPulse=Math.max(0,(u.attackPulse||0)-dt);combat(u,dt);if(u.attackPulse>0&&u.stun<=0)u.state='attack';}separateFriendlyUnits();game.units=game.units.filter(u=>u.hp>0);if(game.castles.enemy<=0)result('ally');else if(game.castles.ally<=0)result('enemy');else if(game.time===0){let ally=game.castles.ally+game.towers.ally.reduce((a,b)=>a+b,0),enemy=game.castles.enemy+game.towers.enemy.reduce((a,b)=>a+b,0);result(ally>=enemy?'ally':'enemy')}}
 function step(now){if(!game.running||game.paused)return;const dt=Math.min(.05,(now-game.last)/1000||0);game.last=now;tick(dt);draw();updateClock();if(game.running)loop=requestAnimationFrame(step)}
 function updateClock(){const sec=Math.ceil(game.time);$('#timer').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');$('#energy').textContent=game.energy.toFixed(1)+' / 10 energia';$('#energyFill').style.width=(game.energy*10)+'%';$('#enemyCastle').textContent=fmt(Math.ceil(game.castles.enemy))+' PV';$('#allyCastle').textContent=fmt(Math.ceil(game.castles.ally))+' PV';}
 const boardArt=new Image();boardArt.src=ASSET+'arena_atmosfera.webp';
@@ -400,7 +423,7 @@ function draw(){
    const still=unitSprites.get(u.card.id);
    const source=motion?.complete&&motion.naturalWidth?motion:still;
    const t=(u.state==='walk'&&game.running)?Math.sin((u.motionTime||0)*12+(u.id*2))*.25:0;
-   const px=u.x+((u.id%3)-1)*7;
+   const px=u.x; // a posição de cada unidade já é individual; sem deslocamentos arbitrários
    const feet=u.y+8+t;
    const height=u.card.id==='colosso'?69:u.card.id==='lobo'?55:u.card.id==='liliti'?65:u.card.id==='rei'?62:58;
    const aspect=source?.naturalWidth?
@@ -447,7 +470,7 @@ if(new URLSearchParams(location.search).has('test')){
   // Observabilidade local para checagens automáticas, sem alterar partidas.
   window.__cercoTest={
     units:()=>game.units.map(u=>({id:u.id,side:u.side,lane:u.lane,x:u.x,y:u.y,
-      state:u.state,targetId:u.targetId,card:u.card.id})),
+      state:u.state,targetId:u.targetId,card:u.card.id,hp:u.hp})),
     createEnemy:(cardId,x,y)=>{
       const c=cardData.find(c=>c.id===cardId);
       if(c&&!c.spell)return addUnit(c,{x,y},'enemy');
