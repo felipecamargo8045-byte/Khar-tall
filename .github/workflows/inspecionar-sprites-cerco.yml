@@ -22,3 +22,7 @@ jobs:
               colors=im.convert('RGBA')
               print(file.name, 'mode', im.mode, 'size', im.size, 'alpha_extr', colors.getchannel('A').getextrema(), 'transparent', sum(a<250 for a in colors.getchannel('A').resize((128,128)).getdata()), 'corner', colors.getpixel((0,0)), 'center', colors.getpixel((im.width//2,im.height//2)))
           PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cerco-personagens-fontes
+          path: cerco-dos-reis/origem-apk/assets/khar_tall_*.png
