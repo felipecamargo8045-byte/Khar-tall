@@ -89,9 +89,9 @@ function syncBattleButtons(){
  }
 }
 function reset(){cancelAnimationFrame(loop);clearInterval(ticker);game={running:false,paused:false,time:180,energy:6,max:10,last:0,units:[],towers:{ally:[1400,1400],enemy:[1400,1400]},castles:{ally:2600,enemy:2600},counter:0,aiTimer:0,message:'',result:null,projectiles:[],effects:[],attackShots:[],attackFx:[],attackHistory:[],towerTimers:{},towerShots:[],defenseHits:0};hand=['lobo','arqueiro','soldado','colosso'];next=4;activeIndex=0;$('#overlay').hidden=false;$('#overlay').innerHTML='<span class="overline">DOIS EXÉRCITOS · UM TRONO</span><h2>O cerco começa com você.</h2><p>3 minutos, duas rotas e cartas com habilidades próprias.</p><button class="gold" id="start">⚔ Iniciar treinamento</button>';$('#start').addEventListener('click',start);$('#pause').disabled=true;$('#pause').textContent='Pausar';syncBattleButtons();updateUI();draw()}
-function start(){enterBattle();window.CercoAudio?.play('place');game.running=true;game.paused=false;game.result=null;game.last=performance.now();$('#overlay').hidden=true;$('#pause').disabled=false;clearInterval(ticker);ticker=setInterval(()=>advanceByClock(performance.now()),65);log('O cerco começou. Defenda suas torres!');loop=requestAnimationFrame(step)}
-function result(winner){if(!game.running)return;window.CercoAudio?.play(winner==='ally'?'victory':'defeat');game.running=false;clearInterval(ticker);cancelAnimationFrame(loop);$('#overlay').hidden=false;const win=winner==='ally';if(win){local.wins++;save()}$('#overlay').innerHTML='';const over=document.createElement('span');over.className='overline';over.textContent='O CERCO TERMINOU';const t=document.createElement('h2');t.textContent=win?'Vitória':'Derrota';const p=document.createElement('p');p.textContent=win?'Seu reino venceu o treinamento.':'Reorganize as cartas e tente novamente.';const b=document.createElement('button');b.className='gold';b.textContent='Jogar novamente';b.addEventListener('click',()=>{reset();start()});$('#overlay').append(over,t,p,b);const home=document.createElement('button');home.className='secondary-btn';home.textContent='Voltar ao menu';home.addEventListener('click',exitBattle);$('#overlay').append(home);syncBattleButtons();updateUI()}
-function pause(){if(!game.running)return;window.CercoAudio?.play('ui');game.paused=!game.paused;syncBattleButtons();$('#pause').textContent=game.paused?'Continuar':'Pausar';if(game.paused){$('#overlay').hidden=false;$('#overlay').innerHTML='<h2>Batalha pausada</h2><p>Seu reino pode esperar.</p><button class="gold" id="resume">Continuar batalha</button>';$('#resume').addEventListener('click',pause)}else{$('#overlay').hidden=true;game.last=performance.now();loop=requestAnimationFrame(step)}}
+function start(){enterBattle();game.running=true;game.paused=false;game.result=null;game.last=performance.now();$('#overlay').hidden=true;$('#pause').disabled=false;clearInterval(ticker);ticker=setInterval(()=>advanceByClock(performance.now()),65);log('O cerco começou. Defenda suas torres!');loop=requestAnimationFrame(step)}
+function result(winner){if(!game.running)return;game.running=false;clearInterval(ticker);cancelAnimationFrame(loop);$('#overlay').hidden=false;const win=winner==='ally';if(win){local.wins++;save()}$('#overlay').innerHTML='';const over=document.createElement('span');over.className='overline';over.textContent='O CERCO TERMINOU';const t=document.createElement('h2');t.textContent=win?'Vitória':'Derrota';const p=document.createElement('p');p.textContent=win?'Seu reino venceu o treinamento.':'Reorganize as cartas e tente novamente.';const b=document.createElement('button');b.className='gold';b.textContent='Jogar novamente';b.addEventListener('click',()=>{reset();start()});$('#overlay').append(over,t,p,b);const home=document.createElement('button');home.className='secondary-btn';home.textContent='Voltar ao menu';home.addEventListener('click',exitBattle);$('#overlay').append(home);syncBattleButtons();updateUI()}
+function pause(){if(!game.running)return;game.paused=!game.paused;syncBattleButtons();$('#pause').textContent=game.paused?'Continuar':'Pausar';if(game.paused){$('#overlay').hidden=false;$('#overlay').innerHTML='<h2>Batalha pausada</h2><p>Seu reino pode esperar.</p><button class="gold" id="resume">Continuar batalha</button>';$('#resume').addEventListener('click',pause)}else{$('#overlay').hidden=true;game.last=performance.now();loop=requestAnimationFrame(step)}}
 function log(s){const line=document.createElement('p');line.textContent=s;$('#battleLog').prepend(line);while($('#battleLog').children.length>8)$('#battleLog').lastElementChild.remove()}
 
 const LANES=[110,310];
@@ -159,7 +159,7 @@ function cast(id){
  const c=cardData.find(x=>x.id===id);
  if(!c||game.energy<c.cost){log('Energia insuficiente para '+(c?.name||'esta carta'));return}
  game.energy-=c.cost;
- window.CercoAudio?.play(c.spell?'magic':'place');
+ 
  const spot=point(game.spawn?.x??W/2,game.spawn?.y??H*.7);
  if(c.spell){
    const targets=game.units.filter(u=>u.side===(c.id==='cura'?'ally':'enemy')&&
@@ -176,8 +176,8 @@ function cast(id){
    }
  }else{
    const created=addUnit(c,spot,'ally');
-   if(c.id==='lobo')window.CercoAudio?.play('wolf');
-   if(c.id==='colosso')window.CercoAudio?.play('colossus');
+   
+   
    const lanes=created.map(i=>game.units.find(u=>u.id===i)?.lane);
    if(created.length>1&&lanes.includes(0)&&lanes.includes(1))
       log(c.name+': grupo dividido entre esquerda e direita.');
@@ -196,7 +196,7 @@ function aiCast(){
  const x=Math.random()<.16?W/2:(Math.random()<.5?110:310);
  const y=clamp(78+Math.random()*92,SPAWN_MARGIN,H-SPAWN_MARGIN);
  addUnit(c,{x,y},'enemy');
- window.CercoAudio?.play('place');
+ 
  log('Exército rubro invocou '+c.name);
 }
 // O rio é uma barreira física. Somente as duas pontes permitem travessia.
@@ -327,7 +327,7 @@ function applyAttackDamage(shot,target){
      if(caster)caster.hp=Math.min(caster.maxHp,caster.hp+shot.damage*.5);
    }
    attackVisual(shot.kind,target.x,target.y,shot.side);
-   window.CercoAudio?.play(shot.kind==='slam'?'colossus':'impact',{card:shot.cardId,variant:shot.variant});
+   
    return true;
  }
  if(shot.structureSide){
@@ -340,7 +340,7 @@ function applyAttackDamage(shot,target){
      game.towers[side][lane]=Math.max(0,game.towers[side][lane]-shot.damage);
    }
    attackVisual(shot.kind,shot.toX,shot.toY,shot.side);
-   window.CercoAudio?.play('impact',{card:shot.cardId});
+   
    return true;
  }
  return false;
@@ -499,7 +499,7 @@ function advanceProjectiles(dt){
        target.hp=Math.max(0,target.hp-shot.damage);
        target.hitPulse=.20;
        game.defenseHits++;
-       window.CercoAudio?.play('towerHit');
+       
        game.effects.push({id:shot.id,x:target.x,y:target.y,color:shot.color,life:.32,maxLife:.32});
      }else{
        game.effects.push({id:shot.id,x:shot.x,y:shot.y,color:shot.color,life:.16,maxLife:.16});
