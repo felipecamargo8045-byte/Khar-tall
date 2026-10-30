@@ -27,7 +27,7 @@ jobs:
           for name in ['#shopGrid','#featuredCards','#cardGrid','#arena']:
               assert name[1:] in html, name
           assert 'https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/' not in html
-          assert 'src="./app.js?v=4"' in html
+          assert 'src="./app.js?v=5"' in html
           assert 'src="./realm-ui.js?v=3"' in html
           for name in ['game-ui.css','app.js','realm-ui.js','sw.js']:
               assert Path('cerco-dos-reis',name).is_file(),name
@@ -50,7 +50,7 @@ jobs:
             const problems=[];
             const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
             page.on('pageerror',e=>problems.push('js: '+String(e)));
-            await page.goto('http://127.0.0.1:8080/',{waitUntil:'networkidle'});
+            await page.goto('http://127.0.0.1:8080/?test=1',{waitUntil:'networkidle'});
             assert.equal(await page.locator('.game-nav button').count(),5);
             const tabs=['arena','cards','shop','clans','profile'];
             for(const tab of tabs){
@@ -78,6 +78,48 @@ jobs:
             const okSprite=await page.evaluate(()=>[...document.images].filter(x=>x.src.includes('/sprites/')).length);
             const imagesReady=await page.evaluate(async()=>{const ids=['lobo','rei','liliti'];return await Promise.all(ids.map(id=>new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(img.naturalWidth>0);img.onerror=()=>resolve(false);img.src='/sprites/sprite_'+id+'.png'})))});
             assert.ok(imagesReady.every(Boolean),'Sprite PNG nao carregou');
+            // Centro + carta com duas unidades: sem ameaça, divide esquerda/direita.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            const box=await page.locator('#arena').boundingBox();
+            assert.ok(box && box.width>200 && box.height>200,'Arena indisponivel');
+            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.57}});
+            let group=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
+            assert.equal(group.length,2,'Lobo precisa gerar duas unidades');
+            assert.deepEqual(group.map(u=>u.lane).sort(),[0,1],'Centro deve dividir entre duas rotas');
+            assert.ok(group.every(u=>Math.abs(u.x-210)<26),'Posicao X ignorada');
+            assert.ok(group.every(u=>Math.abs(u.y-560*.57)<24),'Posicao Y ignorada');
+
+            // Centro + inimigo a direita: tropas desviam juntas para defender/atacar.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            await page.evaluate(()=>window.__cercoTest.createEnemy('soldado',266,313));
+            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.57}});
+            await page.waitForTimeout(90);
+            group=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
+            assert.deepEqual(group.map(u=>u.lane),[1,1],'Inimigo proximo deve alterar a rota do grupo');
+            assert.ok(group.some(u=>u.targetId),'Grupo nao adquiriu alvo proximo');
+
+            // Unidade unica no centro identifica o inimigo em qualquer rota.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            await page.evaluate(()=>window.__cercoTest.createEnemy('soldado',266,315));
+            await page.locator('#hand button').nth(2).click();
+            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.57}});
+            await page.waitForTimeout(90);
+            const solo=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
+            assert.equal(solo.length,1);
+            assert.equal(solo[0].lane,1,'Unidade solitaria ignorou inimigo proximo');
+            assert.ok(solo[0].targetId,'Unidade solitaria nao perseguiu o inimigo');
+
+            // Ponto livre: colocar no lado superior nao teleporta de volta a uma origem fixa.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            await page.locator('#arena').click({position:{x:box.width*.76,y:box.height*.22}});
+            const high=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
+            assert.equal(high.length,2);
+            assert.ok(high.every(u=>u.y<160),'Limite artificial do campo na invocacao');
+
             assert.equal(await page.locator('#overlay').isVisible(),false);
             assert.notEqual(await page.locator('#timer').innerText(),'03:00');
             await page.screenshot({path:'/tmp/cerco-arena-mobile.png'});
