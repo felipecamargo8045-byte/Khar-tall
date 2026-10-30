@@ -5,7 +5,7 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const ASSET='./origem-apk/assets/';const KEY='cerco-reis-migracao-treino-v1';
 const cardData=[
 {id:'lobo',name:'Lobo',kind:'Tropa · Velocidade',rarity:'Comum',cost:3,dmg:58,hp:260,units:2,range:32,speed:33,attackSpeed:.95,ability:'Bote do Lobo',desc:'Dois lobos velozes avançam em matilha. Seu primeiro bote ganha força.',effect:'O primeiro golpe de cada lobo causa 60% de dano adicional.',img:'portrait_lobo.webp',role:'Pressão rápida'},
-{id:'arqueiro',name:'Arqueiro',kind:'Tropa · Distância',rarity:'Comum',cost:3,dmg:47,hp:150,range:100,speed:24,attackSpeed:1.25,ability:'Disparo de apoio',desc:'Aprendiz que ataca de longe e apoia aliados na rota.',effect:'Mantém distância dos inimigos. Depois do nível Ouro, pode evoluir na batalha ao abater tropas.',img:'portrait_aprendiz_arqueiro.webp',role:'Cobertura'},
+{id:'arqueiro',name:'Arqueiro',kind:'Tropa · Distância',rarity:'Comum',cost:3,dmg:47,hp:150,units:2,range:100,speed:24,attackSpeed:1.25,ability:'Disparo de apoio',desc:'Dois arqueiros surgem juntos e disparam flechas de longe, cobrindo as duas rotas quando invocados no centro.',effect:'Mantém distância dos inimigos. Depois do nível Ouro, pode evoluir na batalha ao abater tropas.',img:'portrait_aprendiz_arqueiro.webp',role:'Cobertura'},
 {id:'soldado',name:'Soldado',kind:'Tropa · Frente',rarity:'Comum',cost:2,dmg:49,hp:330,range:27,speed:25,attackSpeed:.9,ability:'Infantaria',desc:'Aprendiz que protege a linha de frente e abre caminho.',effect:'Depois do nível Ouro pode evoluir na batalha ao derrotar um alvo.',img:'portrait_aprendiz_soldado.webp',role:'Defesa inicial'},
 {id:'colosso',name:'Colosso',kind:'Tropa · Pesada',rarity:'Rara',cost:6,dmg:133,hp:1040,range:32,speed:14,attackSpeed:1.9,ability:'Investida do Colosso',desc:'Um gigante capaz de romper fortificações.',effect:'Investida pesada: no treinamento o primeiro contato causa dano adicional.',img:'portrait_colosso.webp',role:'Demolição'},
 {id:'guardiao',name:'Guardião',kind:'Tropa · Defesa',rarity:'Épica',cost:5,dmg:88,hp:820,range:65,speed:17,attackSpeed:1.6,ability:'Defesa do Guardião',desc:'Protege o espaço à sua volta e os aliados mais vulneráveis.',effect:'Ataque de médio alcance com foco na defesa.',img:'portrait_guardiao.webp',role:'Proteção'},
@@ -88,7 +88,7 @@ function syncBattleButtons(){
    soundButton.setAttribute('aria-label',enabled?'Silenciar sons':'Ativar sons');
  }
 }
-function reset(){cancelAnimationFrame(loop);clearInterval(ticker);game={running:false,paused:false,time:180,energy:6,max:10,last:0,units:[],towers:{ally:[1400,1400],enemy:[1400,1400]},castles:{ally:2600,enemy:2600},counter:0,aiTimer:0,message:'',result:null,projectiles:[],effects:[],towerTimers:{},towerShots:[],defenseHits:0};hand=['lobo','arqueiro','soldado','colosso'];next=4;activeIndex=0;$('#overlay').hidden=false;$('#overlay').innerHTML='<span class="overline">DOIS EXÉRCITOS · UM TRONO</span><h2>O cerco começa com você.</h2><p>3 minutos, duas rotas e cartas com habilidades próprias.</p><button class="gold" id="start">⚔ Iniciar treinamento</button>';$('#start').addEventListener('click',start);$('#pause').disabled=true;$('#pause').textContent='Pausar';syncBattleButtons();updateUI();draw()}
+function reset(){cancelAnimationFrame(loop);clearInterval(ticker);game={running:false,paused:false,time:180,energy:6,max:10,last:0,units:[],towers:{ally:[1400,1400],enemy:[1400,1400]},castles:{ally:2600,enemy:2600},counter:0,aiTimer:0,message:'',result:null,projectiles:[],effects:[],attackShots:[],attackFx:[],attackHistory:[],towerTimers:{},towerShots:[],defenseHits:0};hand=['lobo','arqueiro','soldado','colosso'];next=4;activeIndex=0;$('#overlay').hidden=false;$('#overlay').innerHTML='<span class="overline">DOIS EXÉRCITOS · UM TRONO</span><h2>O cerco começa com você.</h2><p>3 minutos, duas rotas e cartas com habilidades próprias.</p><button class="gold" id="start">⚔ Iniciar treinamento</button>';$('#start').addEventListener('click',start);$('#pause').disabled=true;$('#pause').textContent='Pausar';syncBattleButtons();updateUI();draw()}
 function start(){enterBattle();window.CercoAudio?.play('place');game.running=true;game.paused=false;game.result=null;game.last=performance.now();$('#overlay').hidden=true;$('#pause').disabled=false;clearInterval(ticker);ticker=setInterval(()=>advanceByClock(performance.now()),65);log('O cerco começou. Defenda suas torres!');loop=requestAnimationFrame(step)}
 function result(winner){if(!game.running)return;window.CercoAudio?.play(winner==='ally'?'victory':'defeat');game.running=false;clearInterval(ticker);cancelAnimationFrame(loop);$('#overlay').hidden=false;const win=winner==='ally';if(win){local.wins++;save()}$('#overlay').innerHTML='';const over=document.createElement('span');over.className='overline';over.textContent='O CERCO TERMINOU';const t=document.createElement('h2');t.textContent=win?'Vitória':'Derrota';const p=document.createElement('p');p.textContent=win?'Seu reino venceu o treinamento.':'Reorganize as cartas e tente novamente.';const b=document.createElement('button');b.className='gold';b.textContent='Jogar novamente';b.addEventListener('click',()=>{reset();start()});$('#overlay').append(over,t,p,b);const home=document.createElement('button');home.className='secondary-btn';home.textContent='Voltar ao menu';home.addEventListener('click',exitBattle);$('#overlay').append(home);syncBattleButtons();updateUI()}
 function pause(){if(!game.running)return;window.CercoAudio?.play('ui');game.paused=!game.paused;syncBattleButtons();$('#pause').textContent=game.paused?'Continuar':'Pausar';if(game.paused){$('#overlay').hidden=false;$('#overlay').innerHTML='<h2>Batalha pausada</h2><p>Seu reino pode esperar.</p><button class="gold" id="resume">Continuar batalha</button>';$('#resume').addEventListener('click',pause)}else{$('#overlay').hidden=true;game.last=performance.now();loop=requestAnimationFrame(step)}}
@@ -298,6 +298,96 @@ function selectThreat(u){
  if(best)u.lane=best.x<W/2?0:1;
  return best;
 }
+// Perfis individuais: animação, projétil, alcance visual e efeito de impacto.
+// Estes tipos controlam movimento, áudio e VFX; o dano e as habilidades continuam
+// vindos exclusivamente das fichas das cartas.
+const ATTACK_STYLES={
+ lobo:{kind:'bite',audio:'wolf',ranged:false,impact:.32},
+ arqueiro:{kind:'arrow',audio:'arrow',ranged:true,impact:.32},
+ soldado:{kind:'slash',audio:'slash',ranged:false,impact:.30},
+ colosso:{kind:'slam',audio:'colossus',ranged:false,impact:.54},
+ guardiao:{kind:'shield',audio:'shield',ranged:true,impact:.42},
+ batedor:{kind:'mark',audio:'mark',ranged:true,impact:.39},
+ rei:{kind:'royal',audio:'royal',ranged:false,impact:.40},
+ liliti:{kind:'enchant',audio:'enchant',ranged:true,impact:.55}
+};
+function attackVisual(kind,x,y,side,phase='impact'){
+ const life=ATTACK_STYLES[kind]?.impact||.35;
+ const fx={id:++game.counter,x,y,side,kind,phase,life:phase==='release'?.17:life,maxLife:phase==='release'?.17:life};
+ game.attackFx.push(fx);
+ if(game.attackFx.length>55)game.attackFx.shift();
+ return fx;
+}
+function applyAttackDamage(shot,target){
+ if(target&&target.hp>0&&target.side!==shot.side){
+   target.hp=Math.max(0,target.hp-shot.damage);
+   target.hitPulse=.27;
+   if(shot.kind==='enchant'){
+     const caster=game.units.find(u=>u.id===shot.sourceId&&u.hp>0);
+     if(caster)caster.hp=Math.min(caster.maxHp,caster.hp+shot.damage*.5);
+   }
+   attackVisual(shot.kind,target.x,target.y,shot.side);
+   window.CercoAudio?.play(shot.kind==='slam'?'colossus':'impact',{card:shot.cardId});
+   return true;
+ }
+ if(shot.structureSide){
+   const side=shot.structureSide,lane=shot.structureLane;
+   if(lane===-1){
+     if(game.castles[side]<=0)return false;
+     game.castles[side]=Math.max(0,game.castles[side]-shot.damage);
+   }else{
+     if(game.towers[side][lane]<=0)return false;
+     game.towers[side][lane]=Math.max(0,game.towers[side][lane]-shot.damage);
+   }
+   attackVisual(shot.kind,shot.toX,shot.toY,shot.side);
+   window.CercoAudio?.play('impact',{card:shot.cardId});
+   return true;
+ }
+ return false;
+}
+function startTroopAttack(u,target,damage,structureSide=null,structureLane=null,position=null){
+ const profile=ATTACK_STYLES[u.card.id]||ATTACK_STYLES.soldado;
+ const aim=target?{x:target.x,y:target.y}:position||{x:u.x,y:u.y-40};
+ u.heading=Math.atan2(aim.y-u.y,aim.x-u.x);
+ u.attackKind=profile.kind;u.state='attack';u.attackPulse=MOTION_ATTACK_SECONDS;
+ u.attacks=(u.attacks||0)+1;
+ u.lastAttackAt=game.time;
+ u.mark=target?.id||null;u.first=false;
+ const shot={
+   id:++game.counter,sourceId:u.id,side:u.side,cardId:u.card.id,
+   kind:profile.kind,damage,targetId:target?.id??null,
+   structureSide,structureLane,
+   x:u.x,y:u.y,fromX:u.x,fromY:u.y,toX:aim.x,toY:aim.y,progress:0,
+   duration:Math.min(.64,Math.max(.23,distance(u,aim)/(u.card.id==='arqueiro'?225:290))),
+   ranged:profile.ranged
+ };
+ game.attackHistory.push({id:shot.id,sourceId:u.id,card:u.card.id,kind:profile.kind,ranged:profile.ranged,targetId:shot.targetId,time:game.time});
+ if(game.attackHistory.length>90)game.attackHistory.shift();
+ attackVisual(profile.kind,u.x,u.y,u.side,'release');
+ window.CercoAudio?.play(profile.audio,{card:u.card.id});
+ if(profile.ranged){
+   game.attackShots.push(shot);
+   if(game.attackShots.length>38)game.attackShots.shift();
+ }else applyAttackDamage(shot,target);
+}
+function advanceTroopAttacks(dt){
+ for(let i=game.attackShots.length-1;i>=0;i--){
+   const shot=game.attackShots[i];
+   shot.progress=Math.min(1,shot.progress+dt/shot.duration);
+   const target=game.units.find(u=>u.id===shot.targetId&&u.hp>0&&u.side!==shot.side);
+   if(target){shot.toX=target.x;shot.toY=target.y}
+   shot.x=shot.fromX+(shot.toX-shot.fromX)*shot.progress;
+   shot.y=shot.fromY+(shot.toY-shot.fromY)*shot.progress;
+   if(shot.progress>=1){
+     applyAttackDamage(shot,target);
+     game.attackShots.splice(i,1);
+   }
+ }
+ for(let i=game.attackFx.length-1;i>=0;i--){
+   game.attackFx[i].life-=dt;
+   if(game.attackFx[i].life<=0)game.attackFx.splice(i,1);
+ }
+}
 function combat(u,dt){
  if(u.stun>0){u.stun=Math.max(0,u.stun-dt);u.state='stun';return}
  u.cooldown-=dt;
@@ -310,32 +400,24 @@ function combat(u,dt){
        if(u.first&&u.card.id==='lobo')damage*=1.6;
        if(u.first&&u.card.id==='colosso')damage*=1.4;
        if(u.card.id==='batedor'&&u.mark===target.id)damage*=1.4;
-       target.hp-=damage;
-       if(u.card.id==='liliti')u.hp=Math.min(u.maxHp,u.hp+damage*.5);
-       u.mark=target.id;u.first=false;u.cooldown=u.card.attackSpeed||1.25;
-       u.state='attack';u.attackPulse=MOTION_ATTACK_SECONDS;
-       window.CercoAudio?.play(u.card.id==='lobo'?'wolf':u.card.id==='colosso'?'colossus':'attack',{card:u.card.id});u.attacks=(u.attacks||0)+1;
-     }else{u.state='idle'}
+       startTroopAttack(u,target,damage);
+       u.cooldown=u.card.attackSpeed||1.25;
+     }else if(u.attackPulse<=0){u.state='idle'}
    }else moveUnit(u,target,dt);
    return;
  }
- // Sem inimigos próximos, a unidade segue à fortaleza da rota que escolheu.
- // A posição do nascimento é mantida, inclusive no centro ou na área adversária.
  const opponent=u.side==='ally'?'enemy':'ally';
  const lane=u.lane??(u.x<W/2?0:1);
- const towerStanding=game.towers[opponent][lane]>0;
- const goal=towerStanding?
-   {x:LANES[lane],y:opponent==='enemy'?126:H-46}:
+ const standing=game.towers[opponent][lane]>0;
+ const goal=standing?{x:LANES[lane],y:opponent==='enemy'?126:H-46}:
    {x:W/2,y:opponent==='enemy'?73:H-19};
  const reach=(u.card.range||32)+12;
  if(distance(u,goal)<=reach){
    if(u.cooldown<=0){
-     if(towerStanding)game.towers[opponent][lane]=Math.max(0,game.towers[opponent][lane]-u.card.dmg);
-     else game.castles[opponent]=Math.max(0,game.castles[opponent]-u.card.dmg);
+     const cardId=u.card.id;
+     startTroopAttack(u,null,u.card.dmg,opponent,standing?lane:-1,goal);
      u.cooldown=u.card.attackSpeed||1.1;
-     u.state='attack';u.attackPulse=MOTION_ATTACK_SECONDS;
-       window.CercoAudio?.play(u.card.id==='lobo'?'wolf':u.card.id==='colosso'?'colossus':'attack',{card:u.card.id});u.attacks=(u.attacks||0)+1;
-   }else u.state='idle';
+   }else if(u.attackPulse<=0)u.state='idle';
  }else moveUnit(u,goal,dt);
 }
 // Personagens podem escolher a mesma rota, mas não devem se fundir visualmente.
@@ -429,7 +511,7 @@ function advanceProjectiles(dt){
   if(game.effects[i].life<=0)game.effects.splice(i,1);
  }
 }
-function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.energy+dt*(game.time<60?1.2:.7),0,10);game.aiTimer+=dt;const speed=$('#difficulty').value;const interval=speed==='easy'?6.2:speed==='hard'?2.9:4.4;if(game.aiTimer>=interval){game.aiTimer=0;aiCast()}defendFromTowers(dt);for(const u of game.units){u.motionTime=(u.motionTime||0)+dt;u.attackPulse=Math.max(0,(u.attackPulse||0)-dt);combat(u,dt);if(u.attackPulse>0&&u.stun<=0)u.state='attack';u.hitPulse=Math.max(0,(u.hitPulse||0)-dt);}advanceProjectiles(dt);separateFriendlyUnits();game.units=game.units.filter(u=>u.hp>0);if(game.castles.enemy<=0)result('ally');else if(game.castles.ally<=0)result('enemy');else if(game.time===0){let ally=game.castles.ally+game.towers.ally.reduce((a,b)=>a+b,0),enemy=game.castles.enemy+game.towers.enemy.reduce((a,b)=>a+b,0);result(ally>=enemy?'ally':'enemy')}}
+function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.energy+dt*(game.time<60?1.2:.7),0,10);game.aiTimer+=dt;const speed=$('#difficulty').value;const interval=speed==='easy'?6.2:speed==='hard'?2.9:4.4;if(game.aiTimer>=interval){game.aiTimer=0;aiCast()}defendFromTowers(dt);for(const u of game.units){u.motionTime=(u.motionTime||0)+dt;u.attackPulse=Math.max(0,(u.attackPulse||0)-dt);combat(u,dt);if(u.attackPulse>0&&u.stun<=0)u.state='attack';u.hitPulse=Math.max(0,(u.hitPulse||0)-dt);}advanceProjectiles(dt);advanceTroopAttacks(dt);separateFriendlyUnits();game.units=game.units.filter(u=>u.hp>0);if(game.castles.enemy<=0)result('ally');else if(game.castles.ally<=0)result('enemy');else if(game.time===0){let ally=game.castles.ally+game.towers.ally.reduce((a,b)=>a+b,0),enemy=game.castles.enemy+game.towers.enemy.reduce((a,b)=>a+b,0);result(ally>=enemy?'ally':'enemy')}}
 function advanceByClock(now){
  if(!game.running||game.paused)return;
  // Intervalo lógico + RAF compartilham o mesmo relógio; nunca contam duas vezes.
@@ -466,7 +548,7 @@ const unitSprites=new Map(spriteNames.map(id=>{
 }));
 // Uma sprite-sheet gratuita por personagem: 10 caminhada, 6 repouso, 8 ataque.
 const MOTION_FRAMES=24;
-const MOTION_ATTACK_SECONDS=.38;
+const MOTION_ATTACK_SECONDS=.58;
 const motionSheets=new Map(spriteNames.map(id=>{
   const image=new Image();
   image.src='./motion/motion_'+id+'.webp';
@@ -730,6 +812,20 @@ if(new URLSearchParams(location.search).has('test')){
     },
     reset:()=>reset(),
     fullscreen:()=>({active:document.body.classList.contains('battle-mode'),native:!!document.fullscreenElement,rect:document.querySelector('#battleStage')?.getBoundingClientRect().toJSON()}),
+    attackInfo:()=>({shots:game.attackShots.map(x=>({...x})),effects:game.attackFx.map(x=>({...x})),history:game.attackHistory.map(x=>({...x}))}),
+    duel:(cardId='arqueiro')=>{
+      const card=cardData.find(c=>c.id===cardId);if(!card||card.spell)return null;
+      const enemy=cardData.find(c=>c.id==='colosso');
+      const hostile=addUnit(enemy,{x:215,y:363},'enemy');
+      const friends=addUnit(card,{x:215,y:395},'ally');
+      // Uma única ação de ataque; o motor continua simulando normalmente.
+      friends.forEach(id=>{
+        const u=game.units.find(u=>u.id===id);
+        const target=game.units.find(v=>v.id===hostile[0]);
+        if(u&&target){u.cooldown=0;combat(u,.02);}
+      });
+      return {ids:friends,enemy:hostile[0],history:game.attackHistory.slice(-friends.length)};
+    },
     towers:()=>({shots:game.towerShots.slice(),hits:game.defenseHits,projectiles:game.projectiles.slice(),timers:{...game.towerTimers}}),
     forceTowerTarget:(side='enemy',slot=0,target='colosso')=>{
       const card=cardData.find(c=>c.id===target);
