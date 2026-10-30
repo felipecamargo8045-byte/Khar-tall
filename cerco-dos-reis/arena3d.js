@@ -13,9 +13,9 @@ const teams={
  enemy:{cloth:0x9e3d50,glow:0xf9a0ad,flag:0xc1536c}
 };
 const mat=(color,metalness=.08,roughness=.83)=>new THREE.MeshStandardMaterial({color,metalness,roughness,flatShading:true});
-const stone=mat(0x555f70),darkStone=mat(0x242c39),stoneLight=mat(0x808a97);
+const stone=mat(0x8693a4),darkStone=mat(0x344354),stoneLight=mat(0xb4c0cb);
 const iron=mat(0x8994a5,.8,.35),black=mat(0x131a27,.35),gold=mat(0xc6a569,.7,.34);
-const wood=mat(0x65523e),grass=mat(0x293d39),dirt=mat(0x384341),water=mat(0x174958,.15,.43);
+const wood=mat(0x94734c),grass=mat(0x385e44),dirt=mat(0x4a6361),water=mat(0x236a80,.15,.4);
 const skin=mat(0xd1a486),fur=mat(0x48403b),redHair=mat(0x9d452c),green=mat(0x64b87b);
 const box=(w,h,d,m)=>new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
 const sphere=(r,m)=>new THREE.Mesh(new THREE.IcosahedronGeometry(r,1),m);
@@ -40,8 +40,8 @@ function createRenderer(){
  r.shadowMap.enabled=false;
  r.shadowMap.type=THREE.PCFSoftShadowMap;
  r.outputColorSpace=THREE.SRGBColorSpace;
- r.toneMapping=THREE.ACESFilmicToneMapping;
- r.toneMappingExposure=1.5;
+ r.toneMapping=THREE.NoToneMapping;
+ r.toneMappingExposure=1.15;
  return r;
 }
 function terrain(){
@@ -359,7 +359,7 @@ function size(){
  const h=host.clientHeight||gameCanvas.clientHeight||560;
  renderer.setSize(w,h,false);
  const aspect=w/h;
- const vertical=16.35;
+ const vertical=16.55;
  camera.left=-vertical*aspect/2;
  camera.right=vertical*aspect/2;
  camera.top=vertical/2;camera.bottom=-vertical/2;
@@ -372,13 +372,14 @@ function init(){
   renderer.domElement.style.cssText='width:100%;height:100%;display:block;pointer-events:none';
   host.appendChild(renderer.domElement);
   scene=new THREE.Scene();
-  scene.background=new THREE.Color(0x0a1422);
-  scene.fog=new THREE.Fog(0x0a1422,13,36);
+  scene.background=new THREE.Color(0x11283c);
+  scene.fog=new THREE.Fog(0x11283c,23,48);
   camera=new THREE.OrthographicCamera(-6,6,8,-8,.1,90);
-  camera.position.set(0,24,14);
+  camera.position.set(0,19.5,19.5);
   camera.lookAt(0,0,0);
-  const hemi=new THREE.HemisphereLight(0xd4e9ff,0x3a3041,2.2);scene.add(hemi);
-  const sun=new THREE.DirectionalLight(0xffe1aa,3.1);
+  const hemi=new THREE.HemisphereLight(0xe7f2ff,0x7d8293,2.5);scene.add(hemi);
+  scene.add(new THREE.AmbientLight(0xf6e9d6,1.25));
+  const sun=new THREE.DirectionalLight(0xffe1b0,3.35);
   sun.position.set(-4,12,-5);sun.castShadow=false;
   sun.shadow.mapSize.set(1024,1024);
   sun.shadow.camera.left=-9;sun.shadow.camera.right=9;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;
