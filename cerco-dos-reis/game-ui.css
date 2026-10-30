@@ -220,3 +220,12 @@ select{width:100%;background:#101d2f;color:#f0e5cb;border:1px solid #6c7f9c;padd
  .canvas-box{border-radius:0 0 9px 9px}
  .hand-box{border-radius:0 0 10px 10px}
 }
+
+/* Controles de áudio e acessibilidade sem telas extras */
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.sound-controls{display:flex;align-items:center;gap:5px;background:linear-gradient(180deg,#223852,#15263c);border:1px solid #7a8da6;border-radius:10px;padding:3px 6px}
+.sound-button{height:30px;width:32px;border:0;background:transparent;color:#f2d69d;font:900 20px system-ui;cursor:pointer}
+.sound-button:focus-visible,.sound-controls input:focus-visible{outline:2px solid #f6d898;outline-offset:2px}
+#soundVolume{width:70px;max-width:80px;accent-color:#e5c080;height:18px;cursor:pointer}
+@media(max-width:700px){.sound-controls{gap:2px;padding:2px 4px}.sound-button{height:26px;width:25px;font-size:18px}#soundVolume{width:44px}.header-right{gap:5px}}
+@media(max-width:400px){#soundVolume{width:36px}.mode-token{display:none}}
