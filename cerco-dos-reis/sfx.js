@@ -17,7 +17,7 @@ if(!api?.Player){console.error('Motor de áudio original Khar Tall ausente');ret
 const player=new api.Player({enabled:prefs.on});
 const recent=new Map();
 const minGap={
- wolf:1.45,bite:1.45,arrow:.10,slash:.12,shield:.31,mark:.23,royal:.32,
+ wolf:1.45,bite:1.45,arrow:.10,slash:.12,shield:.31,mark:.23,markRed:.23,royal:.32,
  enchant:.42,colossus:.32,impact:.065,tower:.28,towerHit:.15,
  victory:4,defeat:4,place:.10,ui:.06,damage:.26
 };
@@ -36,6 +36,7 @@ function uniqueSample(kind,details){
   case 'colossus':return 'giantStep';
   case 'shield':return 'guardianLine';
   case 'mark':return 'blueLaunch';
+  case 'markRed':return 'redLaunch';
   case 'royal':return 'kingBlast';
   case 'enchant':return 'guardianArea'; // Liliti não existia no Khar Tall de tabuleiro.
   case 'tower':return 'guardianLine';
@@ -45,6 +46,7 @@ function uniqueSample(kind,details){
   case 'damage':return 'royalWound';
   case 'attack':return details.card==='arqueiro'?'arrowLaunch':'swordSwing';
   case 'impact':
+   if(details.card==='batedor'&&details.variant==='red')return 'redImpact';
    return ({arqueiro:'arrowImpact',soldado:'swordImpact',lobo:'wolfHowl',
      colosso:'groundSmash',guardiao:'guardianArea',batedor:'blueImpact',
      rei:'kingBlast',liliti:'guardianArea'})[details.card]||'swordImpact';
