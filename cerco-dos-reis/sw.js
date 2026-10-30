@@ -1,5 +1,5 @@
-const CACHE = 'cerco-dos-reis-treino-v1';
-const CORE = [ '/', '/index.html', '/app.js', '/theme.css', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/origem-apk/assets/portrait_lobo.webp', '/origem-apk/assets/portrait_rei.webp', '/origem-apk/assets/portrait_lilith_ruiva.webp' ];
-self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting())); });
-self.addEventListener('activate', event => { event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });
-self.addEventListener('fetch', event => { const req=event.request; if(req.method !== 'GET' || new URL(req.url).origin !== self.location.origin)return; event.respondWith(fetch(req).then(res=>{if(res.ok){const clone=res.clone();caches.open(CACHE).then(cache=>cache.put(req,clone));}return res;}).catch(()=>caches.match(req).then(hit=>hit || (req.mode==='navigate'?caches.match('/index.html'):Response.error())))); });
+const CACHE='cerco-dos-reis-jogo-ui-v3';
+const CORE=['/','/index.html','/app.js','/realm-ui.js','/game-ui.css','/manifest.webmanifest','/icons/icon-192.png','/icons/icon-512.png','/origem-apk/assets/portrait_lobo.webp','/origem-apk/assets/portrait_rei.webp','/origem-apk/assets/portrait_lilith_ruiva.webp','/origem-apk/assets/arena_atmosfera.webp'];
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',event=>{const req=event.request;if(req.method!=='GET'||new URL(req.url).origin!==self.location.origin)return;event.respondWith(fetch(req).then(res=>{if(res.ok){const copy=res.clone();caches.open(CACHE).then(cache=>cache.put(req,copy));}return res}).catch(()=>caches.match(req).then(hit=>hit||(req.mode==='navigate'?caches.match('/index.html'):Response.error()))))});
