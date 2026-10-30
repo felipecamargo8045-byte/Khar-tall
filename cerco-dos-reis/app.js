@@ -169,7 +169,7 @@ function combat(u,dt){
        target.hp-=damage;
        if(u.card.id==='liliti')u.hp=Math.min(u.maxHp,u.hp+damage*.5);
        u.mark=target.id;u.first=false;u.cooldown=u.card.attackSpeed||1.25;
-       u.state='attack';u.attackPulse=.25;
+       u.state='attack';u.attackPulse=MOTION_ATTACK_SECONDS;
      }else{u.state='idle'}
    }else moveUnit(u,target,dt);
    return;
@@ -188,11 +188,11 @@ function combat(u,dt){
      if(towerStanding)game.towers[opponent][lane]=Math.max(0,game.towers[opponent][lane]-u.card.dmg);
      else game.castles[opponent]=Math.max(0,game.castles[opponent]-u.card.dmg);
      u.cooldown=u.card.attackSpeed||1.1;
-     u.state='attack';u.attackPulse=.25;
+     u.state='attack';u.attackPulse=MOTION_ATTACK_SECONDS;
    }else u.state='idle';
  }else moveUnit(u,goal,dt);
 }
-function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.energy+dt*(game.time<60?1.2:.7),0,10);game.aiTimer+=dt;const speed=$('#difficulty').value;const interval=speed==='easy'?6.2:speed==='hard'?2.9:4.4;if(game.aiTimer>=interval){game.aiTimer=0;aiCast()}for(const u of game.units)combat(u,dt);game.units=game.units.filter(u=>u.hp>0);if(game.castles.enemy<=0)result('ally');else if(game.castles.ally<=0)result('enemy');else if(game.time===0){let ally=game.castles.ally+game.towers.ally.reduce((a,b)=>a+b,0),enemy=game.castles.enemy+game.towers.enemy.reduce((a,b)=>a+b,0);result(ally>=enemy?'ally':'enemy')}}
+function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.energy+dt*(game.time<60?1.2:.7),0,10);game.aiTimer+=dt;const speed=$('#difficulty').value;const interval=speed==='easy'?6.2:speed==='hard'?2.9:4.4;if(game.aiTimer>=interval){game.aiTimer=0;aiCast()}for(const u of game.units){u.motionTime=(u.motionTime||0)+dt;u.attackPulse=Math.max(0,(u.attackPulse||0)-dt);combat(u,dt);if(u.attackPulse>0&&u.stun<=0)u.state='attack';}game.units=game.units.filter(u=>u.hp>0);if(game.castles.enemy<=0)result('ally');else if(game.castles.ally<=0)result('enemy');else if(game.time===0){let ally=game.castles.ally+game.towers.ally.reduce((a,b)=>a+b,0),enemy=game.castles.enemy+game.towers.enemy.reduce((a,b)=>a+b,0);result(ally>=enemy?'ally':'enemy')}}
 function step(now){if(!game.running||game.paused)return;const dt=Math.min(.05,(now-game.last)/1000||0);game.last=now;tick(dt);draw();updateClock();if(game.running)loop=requestAnimationFrame(step)}
 function updateClock(){const sec=Math.ceil(game.time);$('#timer').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');$('#energy').textContent=game.energy.toFixed(1)+' / 10 energia';$('#energyFill').style.width=(game.energy*10)+'%';$('#enemyCastle').textContent=fmt(Math.ceil(game.castles.enemy))+' PV';$('#allyCastle').textContent=fmt(Math.ceil(game.castles.ally))+' PV';}
 const boardArt=new Image();boardArt.src=ASSET+'arena_atmosfera.webp';
@@ -210,6 +210,53 @@ const spriteNames=['lobo','arqueiro','soldado','colosso','guardiao','batedor','r
 const unitSprites=new Map(spriteNames.map(id=>{
  const image=new Image();image.src='./sprites/sprite_'+id+'.png';return[id,image];
 }));
+// Uma sprite-sheet gratuita por personagem: 10 caminhada, 6 repouso, 8 ataque.
+const MOTION_FRAMES=24;
+const MOTION_ATTACK_SECONDS=.38;
+const motionSheets=new Map(spriteNames.map(id=>{
+  const image=new Image();
+  image.src='./motion/motion_'+id+'.webp';
+  return [id,image];
+}));
+const motionRates={
+  lobo:1.5, arqueiro:1.02, soldado:1, colosso:.65,
+  guardiao:.85, batedor:1.17, rei:.87, liliti:1.08
+};
+function motionFrame(u,requestedState){
+ const state=requestedState||u.state||'idle';
+ const clock=Math.max(0,u.motionTime||0);
+ const rate=motionRates[u.card.id]||1;
+ if(state==='attack'){
+   const progress=clamp(1-(u.attackPulse||0)/MOTION_ATTACK_SECONDS,0,1);
+   return 16+Math.min(7,Math.floor(progress*8));
+ }
+ if(state==='walk')return Math.floor(clock*8.4*rate+u.id*.7)%10;
+ // Respiração e pequenos ajustes de postura.
+ return 10+Math.floor(clock*2.6*rate+u.id*.35)%6;
+}
+function drawMotionSprite(g,u,px,feet,width,height){
+ const image=motionSheets.get(u.card.id);
+ if(image?.complete&&image.naturalWidth&&image.naturalHeight){
+   const frameWidth=image.naturalWidth/MOTION_FRAMES;
+   const state=u.stun>0?'idle':(u.attackPulse>0?'attack':u.state);
+   const frame=motionFrame(u,state);
+   g.drawImage(image,frame*frameWidth,0,frameWidth,image.naturalHeight,
+     px-width/2,feet-height,width,height);
+   return;
+ }
+ // Até a sprite-sheet carregar, mostrar a arte inteira sem círculos.
+ const backup=unitSprites.get(u.card.id);
+ if(backup?.complete&&backup.naturalWidth){
+   g.drawImage(backup,px-width/2,feet-height,width,height);
+   return;
+ }
+ g.fillStyle=u.side==='ally'?'#5982a0':'#a55c67';
+ g.beginPath();g.moveTo(px-11,feet);g.lineTo(px-10,feet-26);
+ g.lineTo(px-15,feet-33);g.lineTo(px,feet-43);g.lineTo(px+15,feet-33);
+ g.lineTo(px+10,feet-26);g.lineTo(px+11,feet);g.closePath();g.fill();
+ g.fillStyle='#d7c19d';g.beginPath();g.arc(px,feet-41,7,0,Math.PI*2);g.fill();
+}
+
 function drawFortress(g,x,y,side,kind,hp){
  const asset=fortressArt[(kind==='castle'?'keep':'tower')+'_'+side];
  if(asset?.complete&&asset.naturalWidth){
@@ -345,33 +392,28 @@ function draw(){
    g.fillText('♛ '+fmt(Math.ceil(game.castles[side])),W/2,enemy?18:H-8);
    g.shadowBlur=0;
  }
- // Personagens com pernas, mantos, armaduras, lobo e proporções reais.
- // Movimento do jogo é mantido: apenas a representação muda.
+ // Personagens articulados por quadros de membros, com ritmo próprio por espécie.
+ // Os pés permanecem sobre o terreno, sem fotografias circulares.
  for(const u of game.units){
-   const blue=u.side==='ally',im=unitSprites.get(u.card.id);
-   const t=game.running?Math.sin((180-game.time)*8+u.id*2)*1.1:0;
+   const blue=u.side==='ally';
+   const motion=motionSheets.get(u.card.id);
+   const still=unitSprites.get(u.card.id);
+   const source=motion?.complete&&motion.naturalWidth?motion:still;
+   const t=(u.state==='walk'&&game.running)?Math.sin((u.motionTime||0)*12+(u.id*2))*.25:0;
    const px=u.x+((u.id%3)-1)*7;
    const feet=u.y+8+t;
    const height=u.card.id==='colosso'?69:u.card.id==='lobo'?55:u.card.id==='liliti'?65:u.card.id==='rei'?62:58;
-   const width=im?.naturalWidth?Math.min(72,im.naturalWidth/im.naturalHeight*height):40;
+   const aspect=source?.naturalWidth?
+     ((source===motion?source.naturalWidth/MOTION_FRAMES:source.naturalWidth)/source.naturalHeight):.75;
+   const width=Math.min(72,aspect*height);
    const color=blue?'#76d0ef':'#f28e95';
    g.save();
-   // Sombras projetadas e base de facção, sem retrato circular.
    g.fillStyle='#030a12a6';g.beginPath();g.ellipse(px,feet+1,width*.42,7,0,0,Math.PI*2);g.fill();
    g.fillStyle=blue?'#69cce04a':'#dd677d4c';g.beginPath();g.ellipse(px,feet,width*.41,4,0,0,Math.PI*2);g.fill();
    g.shadowColor='#03060ec9';g.shadowBlur=6;g.shadowOffsetY=3;
-   if(im?.complete&&im.naturalWidth){
-     g.drawImage(im,px-width/2,feet-height,width,height);
-   }else{
-     // Asset ainda carregando: silhueta legível, nunca a foto em bolinha.
-     g.fillStyle=blue?'#5982a0':'#a55c67';
-     g.beginPath();g.moveTo(px-11,feet);g.lineTo(px-10,feet-26);
-     g.lineTo(px-15,feet-33);g.lineTo(px,feet-43);g.lineTo(px+15,feet-33);
-     g.lineTo(px+10,feet-26);g.lineTo(px+11,feet);g.closePath();g.fill();
-     g.fillStyle='#d7c19d';g.beginPath();g.arc(px,feet-41,7,0,Math.PI*2);g.fill();
-   }
+   drawMotionSprite(g,u,px,feet,width,height);
    g.restore();
-   // Barra fina acima da cabeça com cor do exército.
+ // Barra fina acima da cabeça com cor do exército.
    const by=feet-height-8,bw=Math.max(27,Math.min(44,width*.9));
    g.fillStyle='#07101c';g.fillRect(px-bw/2-1,by-1,bw+2,6);
    g.fillStyle=color;g.fillRect(px-bw/2,by,bw*clamp(u.hp/u.maxHp,0,1),4);
@@ -411,7 +453,9 @@ if(new URLSearchParams(location.search).has('test')){
       if(c&&!c.spell)return addUnit(c,{x,y},'enemy');
       return [];
     },
-    reset:()=>reset()
+    reset:()=>reset(),
+    animation:(id)=>{const u=game.units.find(u=>u.id===id);return u?{state:u.state,frame:motionFrame(u,u.attackPulse>0?'attack':u.state),clock:u.motionTime,attackPulse:u.attackPulse}:null},
+    motionReady:(name)=>{const im=motionSheets.get(name);return !!(im?.complete&&im.naturalWidth>0)}
   };
 }
 $('#pause').addEventListener('click',pause);$('#reset').addEventListener('click',reset);$('#clearProgress').addEventListener('click',()=>{if(!confirm('Limpar somente o progresso local de treinamento?'))return;local={cards:{},wins:0};save();reset();renderCards()});
