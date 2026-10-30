@@ -1,4 +1,4 @@
-name: Verificar Cerco dos Reis publicado
+name: Verificar Cerco dos Reis - restauracao da arena
 on:
   push:
     branches: [cerco-dos-reis-migracao-2026-10]
@@ -10,14 +10,30 @@ jobs:
   verificar:
     runs-on: ubuntu-latest
     steps:
-      - name: Verificar resposta HTTP e arquivos essenciais da publicação
+      - uses: actions/checkout@v4
+        with:
+          ref: cerco-dos-reis-migracao-2026-10
+      - name: Sintaxe, origem da arena e componentes recuperados
+        run: |
+          set -e
+          node --check cerco-dos-reis/cards.js
+          node -e "const fs=require('fs');let html=fs.readFileSync('cerco-dos-reis/index.html','utf8'); if(!html.includes('href=\"https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/game/\"'))throw Error('Arena original nao vinculada'); if(html.includes('<canvas id=\"arena\"')) throw Error('Arena substituta ainda exibida'); if(!html.includes('src=\"./cards.js\"'))throw Error('Cartas sem script'); let js=fs.readFileSync('cerco-dos-reis/cards.js','utf8');if(js.includes('const canvas='))throw Error('Motor substituto carregado'); console.log('Estrutura restaurada OK')"
+          for p in cerco-dos-reis/origem-apk/assets/khar_tall_rei.png cerco-dos-reis/origem-apk/assets/khar_tall_guardiao.png cerco-dos-reis/origem-apk/assets/portrait_lilith_ruiva.webp;do test -s "$p";done
+      - name: Verificar nova publicacao da Render
         shell: bash
         run: |
           set -euo pipefail
           base="https://cerco-dos-reis-teste.onrender.com"
-          for path in / /app.js /theme.css /origem-apk/assets/portrait_lilith_ruiva.webp /origem-apk/assets/portrait_rei.webp; do
-            echo "GET $base$path"
-            curl --fail --location --retry 6 --retry-delay 6 --retry-all-errors --max-time 25 -o /tmp/check-asset -w 'HTTP %{http_code}; size=%{size_download} bytes\n' "$base$path"
-            test -s /tmp/check-asset
+          for i in {1..12};do
+            if curl --fail --location --max-time 15 -s "$base/" -o /tmp/home;then
+              if grep -q "A arena que você já aprovou." /tmp/home && ! grep -q '<canvas id="arena"' /tmp/home;then
+                echo "Tela publicada restaurada"
+                break
+              fi
+            fi
+            if test "$i" -eq 12;then echo "Site nao atualizado";exit 1;fi
+            sleep 10
           done
-          echo "Todas as respostas publicadas foram confirmadas."
+          for p in /cards.js /theme.css /origem-apk/assets/khar_tall_rei.png /origem-apk/assets/khar_tall_guardiao.png;do
+            curl --fail --location --max-time 30 -s -o /dev/null -w "%{http_code} ${p}\n" "$base$p"
+          done
