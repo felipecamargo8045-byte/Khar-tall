@@ -80,12 +80,25 @@
  <div id="featuredCards" class="featured-grid"></div>
 </section>
 <section class="page" data-page="clans">
- <div class="view-heading"><div class="overline">ALIANÇAS DE KHAR THAL</div><h1>CLÃS</h1><p>Um comandante é forte. Um clã é inesquecível.</p></div>
- <div class="clan-stage panel"><img src="./origem-apk/assets/khar_tall_rei.png" alt="Rei"><div class="clan-stage-copy"><div class="overline">SALA DAS ALIANÇAS</div><h2>Seu estandarte. Seu reino.</h2><p>O salão já faz parte da interface. Para não criar clãs fictícios nem perder mensagens, o multiplayer e o chat aguardam a migração autorizada do servidor original.</p><div class="lock-state">♜ INTEGRAÇÃO ONLINE PENDENTE</div></div></div>
+ <div class="view-heading"><div class="overline">SALÃO DAS ALIANÇAS</div><h1>SEU CLÃ</h1><p>Erga um estandarte no seu reino.</p></div>
+ <div class="clan-interface">
+  <div class="clan-crest-panel panel"><div class="clan-crest"><img src="./origem-apk/assets/emblem.svg" alt="Brasão de Khar Thal"></div><span class="overline">INSÍGNIA DO COMANDANTE</span><h2 id="clanDisplayName">REINO SEM CLÃ</h2><p id="clanDisplayMotto">Todo reino nasce de uma decisão.</p><span class="clan-status-chip">♜ ESTANDARTE LOCAL</span></div>
+  <div class="clan-console panel"><div class="clan-console-header"><span class="overline">SALÃO DO CLÃ</span><span class="online-pill">◉ MODO LOCAL</span></div>
+   <div id="clanCreator" class="clan-creator"><p>Monte seu estandarte de treino, salvo somente neste dispositivo.</p><label for="clanName">NOME DO CLÃ</label><input type="text" id="clanName" maxlength="25" placeholder="Nome do clã" autocomplete="off"><label for="clanMotto">LEMA</label><input type="text" id="clanMotto" maxlength="55" placeholder="Nosso reino, nossa história" autocomplete="off"><button class="gold" id="foundClan" type="button">♜ FUNDAR CLÃ LOCAL</button></div>
+   <div id="clanView" class="clan-view" hidden><div class="clan-stats"><div><small>MEMBROS</small><strong>01 / 30</strong></div><div><small>INSÍGNIA</small><strong>REINO</strong></div><div><small>STATUS</small><strong>LOCAL</strong></div></div><div class="clan-member"><img src="./origem-apk/assets/portrait_rei.webp" alt="Rei"><div><strong>Victoryno</strong><small>♛ Fundador</small></div><span>ATIVO</span></div><div class="clan-actions"><button type="button" id="editClan" class="secondary-btn">Editar estandarte</button></div></div>
+   <div class="clan-chat-stub"><b>♜ MURAL DO CLÃ</b><p>Mensagens e outros jogadores aparecerão aqui quando o servidor multiplayer estiver conectado.</p><div class="clan-chat-disabled">✦ CHAT ONLINE NÃO CONECTADO</div></div>
+  </div>
+ </div>
 </section>
 <section class="page" data-page="profile">
- <div class="view-heading"><div class="overline">SALA DO COMANDANTE</div><h1>PERFIL</h1></div>
- <div class="profile-stage panel"><img src="./origem-apk/assets/portrait_rei.webp" alt="Rei"><div><span class="overline">COMANDANTE</span><h2>Victoryno</h2><div class="vip-flag">♛ ACESSO A TODAS AS CARTAS NO TREINO</div><p>Este perfil é local e não substitui a conta, o VIP, as compras ou o progresso do jogo original.</p><div class="statline"><span>Vitórias de treino</span><b id="profileWins">0</b></div><div class="statline"><span>Cartas desbloqueadas no treino</span><b>11 / 11</b></div><button id="clearProgress" class="secondary-btn">Limpar apenas progresso de treino</button></div></div>
+ <div class="view-heading"><div class="overline">SALA DO COMANDANTE</div><h1>SEU PERFIL</h1><p>Conquistas locais de treinamento, independentes da conta original.</p></div>
+ <div class="profile-layout">
+  <div class="profile-identity panel"><div class="profile-banner"><img src="./origem-apk/assets/portrait_rei.webp" alt="Rei de Khar Thal"></div><div class="profile-content"><div class="overline">COMANDANTE</div><h2>VICTORYNO</h2><span class="vip-flag">♛ TODAS AS CARTAS LIBERADAS NO TREINO</span></div></div>
+  <div class="profile-records"><div class="profile-kpis"><div class="profile-kpi"><small>VITÓRIAS NO TREINO</small><strong id="profileWins">0</strong><span>Contra IA</span></div><div class="profile-kpi"><small>ARSENAL</small><strong>11 / 11</strong><span>Cartas de treino</span></div><div class="profile-kpi"><small>CARTAS EVOLUÍDAS</small><strong id="profileEvolved">0</strong><span>Progresso local</span></div></div>
+   <div class="profile-inventory panel"><div class="overline">INVENTÁRIO DO COMANDANTE</div><h3>Cartas em destaque</h3><div id="profileCards" class="profile-cards"></div></div>
+   <div class="profile-actions"><span class="profile-safety">♛ Conta, compras e VIP online não são acessados pelo treino.</span><button id="clearProgress" class="secondary-btn" type="button">Limpar progresso do treino</button></div>
+  </div>
+ </div>
 </section>
 </main>
 <script src="./app.js?v=3" defer></script>
