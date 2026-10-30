@@ -130,16 +130,88 @@ function aiCast(){
  addUnit(c,{x,y},'enemy');
  log('Exército rubro invocou '+c.name);
 }
+// O rio é uma barreira física. Somente as duas pontes permitem travessia.
+// A unidade pode nascer em qualquer ponto da arena; a restrição é sobre o
+// CAMINHO durante a travessia, nunca sobre a escolha da carta.
+const RIVER_TOP=H/2-24;
+const RIVER_BOTTOM=H/2+24;
+const BRIDGE_HALF_WIDTH=39;
+const SHORE_PADDING=11;
+function bridgeFor(x){
+ return LANES.reduce((best,lane,index)=>{
+  const cost=Math.abs(x-lane);
+  return cost<best.cost?{lane:index,cost}:best;
+ },{lane:0,cost:Infinity}).lane;
+}
+function onBridge(x){return LANES.some(b=>Math.abs(x-b)<=BRIDGE_HALF_WIDTH)}
+function riverSide(y){
+ if(y<=RIVER_TOP)return -1;
+ if(y>=RIVER_BOTTOM)return 1;
+ return 0;
+}
+function chooseBridge(from,to,lanePreference){
+ // Custo total considera a posição atual, a ponte e o destino: duas
+ // rotas possíveis, nenhuma travessia ilegal por água.
+ let choice=lanePreference===1?1:0,score=Infinity;
+ for(let i=0;i<LANES.length;i++){
+  const bx=LANES[i];
+  const enter={x:bx,y:from.y>H/2?RIVER_BOTTOM+SHORE_PADDING:RIVER_TOP-SHORE_PADDING};
+  const exit={x:bx,y:to.y>H/2?RIVER_BOTTOM+SHORE_PADDING:RIVER_TOP-SHORE_PADDING};
+  const cost=distance(from,enter)+distance(exit,to)+(i===lanePreference?0:13);
+  if(cost<score){score=cost;choice=i}
+ }
+ return choice;
+}
+function safeRiverStep(u,next){
+ // Evita ultrapassar lateralmente a margem e também protege do empurrão de aliados.
+ const previous=u.y,insideBefore=previous>RIVER_TOP&&previous<RIVER_BOTTOM;
+ const crossingUpper=previous<=RIVER_TOP&&next.y>RIVER_TOP;
+ const crossingLower=previous>=RIVER_BOTTOM&&next.y<RIVER_BOTTOM;
+ const insideAfter=next.y>RIVER_TOP&&next.y<RIVER_BOTTOM;
+ if(!onBridge(next.x)&&(crossingUpper||crossingLower||insideBefore||insideAfter)){
+  if(crossingUpper){next.y=RIVER_TOP;return}
+  if(crossingLower){next.y=RIVER_BOTTOM;return}
+  // Invocação no rio: conduzir à ponte próxima, sem atravessar por água.
+  next.y=previous;
+ }
+}
 function moveUnit(u,goal,dt){
  const dx=goal.x-u.x,dy=goal.y-u.y;
  const d=Math.hypot(dx,dy);
  if(d<.6){u.state='idle';return d}
+ let waypoint=goal;
+ const fromSide=riverSide(u.y),toSide=riverSide(goal.y);
+ const across=(fromSide!==0&&toSide!==0&&fromSide!==toSide);
+ const insideRiver=fromSide===0;
+ if(across||insideRiver){
+  const lane=chooseBridge(u,goal,u.lane);
+  const bx=LANES[lane];
+  u.bridgeLane=lane;
+  const approachY=fromSide<0?RIVER_TOP-SHORE_PADDING:fromSide>0?RIVER_BOTTOM+SHORE_PADDING:(u.y<H/2?RIVER_TOP-SHORE_PADDING:RIVER_BOTTOM+SHORE_PADDING);
+  const exitY=fromSide<0?RIVER_BOTTOM+SHORE_PADDING:fromSide>0?RIVER_TOP-SHORE_PADDING:(goal.y>H/2?RIVER_BOTTOM+SHORE_PADDING:RIVER_TOP-SHORE_PADDING);
+  const approach={x:bx,y:approachY};
+  if(!onBridge(u.x)||Math.abs(u.y-approachY)>SHORE_PADDING+5&&fromSide!==0){
+   // Aponta diretamente para a entrada da ponte. O próximo passo é
+   // validado contra a margem, então nunca corta o rio na diagonal.
+   waypoint=approach;
+  }else if(fromSide===0){
+   waypoint={x:bx,y:exitY};
+  }else{
+   waypoint={x:bx,y:exitY};
+  }
+ }
+ const wx=waypoint.x-u.x,wy=waypoint.y-u.y;
+ const wd=Math.hypot(wx,wy);
+ if(wd<.6){u.state='idle';return d}
  const speed=u.card.speed||20;
- const travel=Math.min(Math.max(0,d-1),speed*dt);
- u.x=clamp(u.x+dx/d*travel,SPAWN_MARGIN,W-SPAWN_MARGIN);
- u.y=clamp(u.y+dy/d*travel,SPAWN_MARGIN,H-SPAWN_MARGIN);
- u.state=travel>0?'walk':'idle';
- u.heading=Math.atan2(dy,dx);
+ const travel=Math.min(wd,Math.max(0,speed*dt));
+ const next={x:clamp(u.x+wx/wd*travel,SPAWN_MARGIN,W-SPAWN_MARGIN),
+             y:clamp(u.y+wy/wd*travel,SPAWN_MARGIN,H-SPAWN_MARGIN)};
+ safeRiverStep(u,next);
+ const moved=Math.hypot(next.x-u.x,next.y-u.y);
+ if(moved>.0001)u.heading=Math.atan2(next.y-u.y,next.x-u.x);
+ u.x=next.x;u.y=next.y;
+ u.state=moved>.005?'walk':'idle';
  return d;
 }
 function selectThreat(u){
@@ -208,10 +280,13 @@ function separateFriendlyUnits(){
    if(dist>=minDist)continue;
    const push=Math.min(4.4,(minDist-dist)/2);
    const ux=dist>.01?dx/dist:(a.id%2?1:-1),uy=dist>.01?dy/dist:0;
-   a.x=clamp(a.x-ux*push,SPAWN_MARGIN,W-SPAWN_MARGIN);
-   a.y=clamp(a.y-uy*push,SPAWN_MARGIN,H-SPAWN_MARGIN);
-   b.x=clamp(b.x+ux*push,SPAWN_MARGIN,W-SPAWN_MARGIN);
-   b.y=clamp(b.y+uy*push,SPAWN_MARGIN,H-SPAWN_MARGIN);
+   const nextA={x:clamp(a.x-ux*push,SPAWN_MARGIN,W-SPAWN_MARGIN),
+                y:clamp(a.y-uy*push,SPAWN_MARGIN,H-SPAWN_MARGIN)};
+   const nextB={x:clamp(b.x+ux*push,SPAWN_MARGIN,W-SPAWN_MARGIN),
+                y:clamp(b.y+uy*push,SPAWN_MARGIN,H-SPAWN_MARGIN)};
+   safeRiverStep(a,nextA);safeRiverStep(b,nextB);
+   a.x=nextA.x;a.y=nextA.y;
+   b.x=nextB.x;b.y=nextB.y;
   }
  }
 }
@@ -484,7 +559,23 @@ if(new URLSearchParams(location.search).has('test')){
     },
     reset:()=>reset(),
     animation:(id)=>{const u=game.units.find(u=>u.id===id);return u?{state:u.state,frame:motionFrame(u,u.attackPulse>0?'attack':u.state),clock:u.motionTime,attackPulse:u.attackPulse}:null},
-    motionReady:(name)=>{const im=motionSheets.get(name);return !!(im?.complete&&im.naturalWidth>0)}
+    motionReady:(name)=>{const im=motionSheets.get(name);return !!(im?.complete&&im.naturalWidth>0)},
+    traceRoute:(x,y,tx,ty,lane=0,steps=900)=>{
+      const u={id:-1,side:'ally',card:{speed:33},x,y,lane,state:'walk'};
+      const points=[{x:u.x,y:u.y}];
+      let previousSide=riverSide(y),crossings=[];
+      for(let i=0;i<Math.min(2000,steps);i++){
+        const before={x:u.x,y:u.y};
+        moveUnit(u,{x:tx,y:ty},.05);
+        const after={x:u.x,y:u.y};
+        if(Math.hypot(after.x-before.x,after.y-before.y)<.001&&i>25)break;
+        points.push(after);
+        const nextSide=riverSide(u.y);
+        if(nextSide!==previousSide){crossings.push({x:u.x,y:u.y,side:nextSide});previousSide=nextSide}
+        if(distance(u,{x:tx,y:ty})<1.4)break;
+      }
+      return {points,crossings,final:points[points.length-1],riverTop:RIVER_TOP,riverBottom:RIVER_BOTTOM,bridges:LANES,bridgeHalfWidth:BRIDGE_HALF_WIDTH};
+    }
   };
 }
 $('#pause').addEventListener('click',pause);$('#reset').addEventListener('click',reset);$('#clearProgress').addEventListener('click',()=>{if(!confirm('Limpar somente o progresso local de treinamento?'))return;local={cards:{},wins:0};save();reset();renderCards()});
