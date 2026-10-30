@@ -8,7 +8,7 @@
 <title>Cerco dos Reis · Khar Thal</title>
 <link rel="icon" href="./origem-apk/assets/emblem.svg">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="stylesheet" href="./game-ui.css?v=10">
+<link rel="stylesheet" href="./game-ui.css?v=11">
 </head>
 <body>
 <div class="aurora" aria-hidden="true"></div>
@@ -31,11 +31,13 @@
    <img class="commander-art" src="./origem-apk/assets/portrait_rei.webp" alt="Rei">
    <div class="commander-body"><div class="overline">COMANDANTE</div><h2>Victoryno</h2><small>Treinamento local</small><div class="statline"><span>Vitórias de treino</span><b id="wins">0</b></div><label class="difficulty-label" for="difficulty">Dificuldade</label><select id="difficulty"><option value="easy">Recruta · Fácil</option><option value="normal" selected>Comandante · Normal</option><option value="hard">Conquistador · Difícil</option></select></div>
   </aside>
-  <div class="battle">
+  <div class="battle" id="battleStage" role="region" aria-label="Batalha em tela inteira">
    <div class="scoreboard">
+    <button id="battleBack" class="battle-hud-button battle-back" type="button" aria-label="Voltar à tela inicial">‹</button>
     <div class="side enemy-side"><span class="side-emblem">♜</span><div><small>RUBRO</small><strong id="enemyCastle">2.600 PV</strong></div></div>
     <div class="clock"><small>O CERCO</small><b id="timer">03:00</b></div>
     <div class="side ally-side"><div><small>AZUL</small><strong id="allyCastle">2.600 PV</strong></div><span class="side-emblem">♜</span></div>
+    <button id="battleSound" class="battle-hud-button battle-mute" type="button" aria-label="Silenciar efeitos sonoros">♫</button>
    </div>
    <div class="canvas-box">
     <div id="arena3d" hidden aria-label="Campo tridimensional com personagens e castelos modelados"></div>
@@ -103,8 +105,8 @@
 </section>
 </main>
 <script src="./sfx.js?v=1" defer></script>
-<script src="./app.js?v=14" defer></script>
+<script src="./app.js?v=15" defer></script>
 <script src="./realm-ui.js?v=3" defer></script>
-<script type="module" src="./arena3d.js?v=9"></script>
+<script type="module" src="./arena3d.js?v=10"></script>
 </body>
 </html>
