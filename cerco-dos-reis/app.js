@@ -863,7 +863,10 @@ if(new URLSearchParams(location.search).has('test')){
         const target=game.units.find(v=>v.id===hostile[0]);
         if(u&&target){u.cooldown=0;combat(u,.02);}
       });
-      return {ids:friends,enemy:hostile[0],history:game.attackHistory.slice(-friends.length)};
+      window.Cerco3D?.syncNow?.(game);
+      return {ids:friends,enemy:hostile[0],history:game.attackHistory.slice(-friends.length),
+        shots:game.attackShots.map(shot=>({id:shot.id,kind:shot.kind})),
+        animated:window.Cerco3D?.info?.().troopShots??0};
     },
     towers:()=>({shots:game.towerShots.slice(),hits:game.defenseHits,projectiles:game.projectiles.slice(),timers:{...game.towerTimers}}),
     forceTowerTarget:(side='enemy',slot=0,target='colosso')=>{
