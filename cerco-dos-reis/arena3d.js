@@ -619,31 +619,35 @@ function syncActors(game){
 }
 
 function makeBolt(shot){
- const red=shot.source==='enemy';
- const glow=red?0xff879b:0x8ae6ff;
- const group=new THREE.Group();
- const head=sphere(.12,new THREE.MeshBasicMaterial({color:glow,transparent:true,opacity:.98,depthWrite:false}));
- const aura=sphere(.23,new THREE.MeshBasicMaterial({color:glow,transparent:true,opacity:.25,depthWrite:false}));
- group.add(head);group.add(aura);
- group.userData={head,aura};
- scene.add(group);
- return group;
+ // A flecha compartilha a mesma geometria detalhada usada pelos Arqueiros:
+ // haste de madeira, ponta de ferro e penas; não mais esferas brilhantes.
+ return attackProjectile({kind:'arrow',side:shot.source,source:shot.source});
 }
 function syncBolts(game){
  const valid=new Set((game.projectiles||[]).map(x=>x.id));
  for(const [id,mesh] of flyingBolts){
   if(!valid.has(id)){
-   scene.remove(mesh);mesh.traverse(obj=>{if(obj.isMesh){obj.material.dispose();obj.geometry.dispose()}});
+   scene.remove(mesh);
+   mesh.traverse(obj=>{if(obj.isMesh){obj.material?.dispose?.();obj.geometry?.dispose?.()}});
    flyingBolts.delete(id);
   }
  }
  for(const shot of game.projectiles||[]){
    let mesh=flyingBolts.get(shot.id);
    if(!mesh){mesh=makeBolt(shot);flyingBolts.set(shot.id,mesh)}
-   const pos=position(shot.x,shot.y);
-   const leap=Math.sin(Math.PI*shot.progress);
-   mesh.position.set(pos.x,1.02+leap*.65,pos.z);
-   mesh.scale.setScalar(.9+leap*.32);
+   // A origem visual é o parapeito real da fortificação, não um ponto
+   // artificial no chão. Isso também vale para os dois castelos centrais.
+   const fortress=forts.find(f=>f.team===shot.source&&f.lane===(shot.slot===2?-1:shot.slot));
+   const from=fortress?.mesh.position.clone()||position(shot.fromX,shot.fromY);
+   if(fortress&&shot.slot===2)from.x+=(shot.toX<W/2?-.4:.4);
+   from.y=shot.slot===2?3.24:2.44;
+   const to=position(shot.toX,shot.toY);to.y=.72;
+   const t=shot.progress,arc=.76,trajectory=to.clone().sub(from);
+   mesh.position.copy(from).lerp(to,t);
+   mesh.position.y+=Math.sin(t*Math.PI)*arc;
+   const tangent=trajectory.clone();
+   tangent.y+=Math.PI*arc*Math.cos(t*Math.PI);
+   if(tangent.lengthSq()>.001)mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),tangent.normalize());
  }
  const active=new Set((game.effects||[]).map(x=>x.id));
  for(const [id,obj] of impactRings){
@@ -687,7 +691,8 @@ function attackProjectile(shot){
   put(root,shaft,0,0,0);
   const tip=cone(.10,.26,mat(shot.kind==='mark'?0x91f3ff:0xdadce1,.45,.35),7);
   put(root,tip,0,length/2+.11,0);
-  const feathers=mat(shot.kind==='mark'?0x99e5f8:0xf3eee1);
+  const featherShade=shot.kind==='mark'?0x99e5f8:(shot.source||shot.side)==='ally'?0x68b9e5:(shot.source||shot.side)==='enemy'?0xce7790:0xf3eee1;
+  const feathers=mat(featherShade);
   for(const sign of [-1,1]){
     const quill=box(.14,.025,.06,feathers);
     quill.rotation.z=sign*.34;
