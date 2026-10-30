@@ -13,9 +13,9 @@ const teams={
  enemy:{cloth:0x9e3d50,glow:0xf9a0ad,flag:0xc1536c}
 };
 const mat=(color,metalness=.08,roughness=.83)=>new THREE.MeshStandardMaterial({color,metalness,roughness,flatShading:true});
-const stone=mat(0x8693a4),darkStone=mat(0x344354),stoneLight=mat(0xb4c0cb);
+const stone=mat(0x8194a8),darkStone=mat(0x344354),stoneLight=mat(0xb2c6d5);
 const iron=mat(0x8994a5,.8,.35),black=mat(0x131a27,.35),gold=mat(0xc6a569,.7,.34);
-const wood=mat(0x94734c),grass=mat(0x385e44),dirt=mat(0x4a6361),water=mat(0x236a80,.15,.4);
+const wood=mat(0xae8650),grass=mat(0x4a725b),dirt=mat(0x607b70),water=new THREE.MeshStandardMaterial({color:0x277a9d,metalness:.25,roughness:.3,transparent:true,opacity:.93});
 const skin=mat(0xd1a486),fur=mat(0x48403b),redHair=mat(0x9d452c),green=mat(0x64b87b);
 const box=(w,h,d,m)=>new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
 const sphere=(r,m)=>new THREE.Mesh(new THREE.IcosahedronGeometry(r,1),m);
@@ -46,7 +46,7 @@ function createRenderer(){
 }
 function terrain(){
  const board=box(11.9,.28,15.45,darkStone);put(scene,board,0,-.25,0);board.receiveShadow=true;
- const floor=box(10.9,.045,14.1,dirt);put(scene,floor,0,-.09,0);floor.receiveShadow=true;
+ const floor=box(11.15,.045,14.55,dirt);put(scene,floor,0,-.09,0);floor.receiveShadow=true;
  // Pedras reais, caminhos, rio escavado e duas pontes tridimensionais.
  for(let i=0;i<2;i++){
    const x=i===0?-2.5:2.5;
@@ -62,20 +62,40 @@ function terrain(){
      }
    }
  }
- const river=box(11.3,.035,1.25,water);
+ const river=box(11.3,.035,1.32,water);
  put(scene,river,0,.006,0);river.receiveShadow=true;
- for(let i=0;i<8;i++){
+ for(let i=0;i<13;i++){
   const wave=box(.6,.008,.032,mat(0x407b85));
-  put(scene,wave,-5+i*1.47,.036,(i%3-1)*.24);
+  put(scene,wave,-5.0+i*.82,.036,(i%3-1)*.23);
  }
  for(const x of [-2.5,2.5]){
-   const bridge=box(2.7,.19,1.63,wood);put(scene,bridge,x,.15,0);bridge.castShadow=true;
+   const bridge=box(2.67,.22,1.66,wood);put(scene,bridge,x,.15,0);bridge.castShadow=true;
    for(let i=0;i<7;i++){
      put(scene,box(2.66,.025,.035,darkStone),x,.259,-.75+i*.25);
    }
    for(const edge of [-1,1]){
-    const rail=box(.085,.25,1.62,gold);
-    put(scene,rail,x+edge*1.32,.34,0);
+    const rail=box(.095,.35,1.68,gold);
+    put(scene,rail,x+edge*1.32,.43,0);
+   }
+ }
+ // Pedras de margem impedem visualmente o atalho pelo rio.
+ for(const z of [-.72,.72]){
+  for(let n=0;n<20;n++){
+   const x=-5.15+(n+.5)*.54;
+   // Nenhuma barreira falsa sobre a entrada das duas pontes.
+   if(Math.abs(x+2.5)<1.42||Math.abs(x-2.5)<1.42)continue;
+   const rock=box(.46,.16,.24,stone);
+   put(scene,rock,x,.11,z);
+  }
+ }
+ // Marcação do caminho livre: distingue bem ponte, água e margem.
+ for(const x of [-2.5,2.5]){
+   for(const z of [-.6,.6]){
+     for(let i=0;i<2;i++){
+       const pillar=cyl(.09,.105,.48,stoneLight,8);
+       put(scene,pillar,x+(i?1.22:-1.22),.4,z);
+       put(scene,sphere(.12,gold),x+(i?1.22:-1.22),.7,z);
+     }
    }
  }
  // Bordas em pedra com torres menores e brasões.
@@ -106,10 +126,11 @@ function crenel(parent,x,z,w,count,h){
 function makeFortress(team,main){
  const colors=teams[team],group=new THREE.Group();
  const theme=mat(colors.cloth,.35),flag=mat(colors.flag,.14);
- const wide=main?2.2:1.65;
- const level=main?1.9:1.45;
- const base=box(wide,.3,1.35,darkStone);put(group,base,0,.18,0);
- const keep=box(wide*.78,level,1.04,stone);put(group,keep,0,level/2+.28,0);keep.castShadow=true;
+ const wide=main?2.45:1.7;
+ const level=main?2.15:1.55;
+ const base=box(wide,.3,1.45,darkStone);put(group,base,0,.18,0);
+ const fortressStone=mat(team==='ally'?0x698fae:0x947686,.26,.7);
+ const keep=box(wide*.78,level,1.04,fortressStone);put(group,keep,0,level/2+.28,0);keep.castShadow=true;
  // Muralhas com blocos, ameias e cincoiras.
  for(let row=0;row<5;row++){
   for(let col=0;col<3;col++){
@@ -121,9 +142,9 @@ function makeFortress(team,main){
  for(const side of [-1,1]){
    const turret=new THREE.Group();
    const x=side*wide*.49;
-   const shaft=cyl(.31,.34,level+0.42,stoneLight,8);
+   const shaft=cyl(.31,.34,level+0.42,fortressStone,8);
    put(turret,shaft,0,(level+.42)/2+.18,0);shaft.castShadow=true;
-   const crown=cyl(.43,.39,.28,darkStone,8);put(turret,crown,0,level+.38,0);
+   const crown=cyl(.43,.39,.28,theme,8);put(turret,crown,0,level+.38,0);
    for(let j=0;j<8;j++){
     const a=j*Math.PI/4;
     const merlon=box(.21,.32,.18,stone);
@@ -150,6 +171,10 @@ function makeFortress(team,main){
    const banner=box(.38,.38,.035,flag);put(group,banner,side+.16,level+1.34,.04);
    put(group,box(.2,.12,.04,gold),side+.16,level+1.36,.068);
  }
+ // Faixa luminosa de facção visível de longe, mesmo no celular.
+ const ribbon=box(wide*.79,.085,1.10,theme);put(group,ribbon,0,level+.12,0);
+ const crest=box(.28,.39,.09,gold);put(group,crest,0,level*.70,.63);
+ put(group,box(.12,.25,.10,theme),0,level*.70,.70);
  group.userData.material=theme;
  group.userData.castle=main;
  group.userData.team=team;
@@ -359,7 +384,7 @@ function size(){
  const h=host.clientHeight||gameCanvas.clientHeight||560;
  renderer.setSize(w,h,false);
  const aspect=w/h;
- const vertical=16.55;
+ const vertical=16.05;
  camera.left=-vertical*aspect/2;
  camera.right=vertical*aspect/2;
  camera.top=vertical/2;camera.bottom=-vertical/2;
@@ -375,7 +400,7 @@ function init(){
   scene.background=new THREE.Color(0x11283c);
   scene.fog=new THREE.Fog(0x11283c,23,48);
   camera=new THREE.OrthographicCamera(-6,6,8,-8,.1,90);
-  camera.position.set(0,19.5,19.5);
+  camera.position.set(0,27,12.5);
   camera.lookAt(0,0,0);
   const hemi=new THREE.HemisphereLight(0xe7f2ff,0x7d8293,2.5);scene.add(hemi);
   scene.add(new THREE.AmbientLight(0xf6e9d6,1.25));
