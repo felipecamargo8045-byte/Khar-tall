@@ -80,6 +80,7 @@ const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
 const hit=new THREE.Vector3();
 const actors=new Map(),forts=[];
+const flyingBolts=new Map(),impactRings=new Map();
 function createRenderer(){
  const r=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'low-power'});
  r.setPixelRatio(Math.min(1,window.devicePixelRatio||1));
@@ -265,7 +266,49 @@ function makeFortress(team,main){
  const ribbon=box(wide*.79,.085,1.10,theme);put(group,ribbon,0,level+.12,0);
  const crest=box(.28,.39,.09,gold);put(group,crest,0,level*.70,.63);
  put(group,box(.12,.25,.10,theme),0,level*.70,.70);
- group.userData.material=theme;
+
+ // Arquitetura realçada: telhado inclinado, parapeitos e emblema gravado.
+ const roofing=mat(team==='ally'?0x2379a6:0xa23b58,.17,.62);
+ const roofRidge=new THREE.Mesh(new THREE.ConeGeometry(wide*.455,main?.95:.64,4),roofing);
+ roofRidge.rotation.y=Math.PI/4;
+ put(group,roofRidge,0,level+(main?.75:.60),-.02);
+ roofRidge.castShadow=true;
+ put(group,box(wide*.67,.08,1.1,mat(0xe9c57f,.6,.33)),0,level+.29,-.03);
+ for(const dir of [-1,1]){
+   // Contrafortes em pedra clara, portas secundárias e janelas coloridas.
+   const buttress=box(.18,level*.66,.31,stoneLight);
+   put(group,buttress,dir*(wide*.35),level*.34,.56);
+   const slit=box(.075,.33,.075,mat(0x162c3e));
+   put(group,slit,dir*(wide*.26),level*.68,.594);
+   put(group,box(.036,.23,.08,mat(team==='ally'?0x77d7ff:0xf99cae)),dir*(wide*.26),level*.68,.635);
+   const ornament=box(.24,.24,.11,gold);
+   ornament.rotation.z=Math.PI/4;
+   put(group,ornament,dir*(wide*.33),level*.48,.675);
+ }
+ // Pórtico com arco de pedra e degraus sobrepostos.
+ const portal=new THREE.Group();
+ const upperArc=cyl(.43,.43,.16,stoneLight,10);
+ upperArc.rotation.x=Math.PI/2;
+ put(portal,upperArc,0,.98,.61);
+ put(portal,box(.75,.12,.25,stoneLight),0,1.33,.64);
+ put(portal,box(.91,.12,.36,mat(0xba9869)),0,.20,.77);
+ put(portal,box(1.07,.10,.44,mat(0xd3b886)),0,.10,.83);
+ group.add(portal);
+ if(main){
+  // Castelo principal: torre central mais alta e coroa distinta.
+  const highTower=cyl(.41,.45,1.16,fortressStone,10);
+  put(group,highTower,0,level+1.03,-.42);
+  const upperRoof=cone(.50,1.0,roofing,7);
+  put(group,upperRoof,0,level+1.95,-.42);
+  put(group,sphere(.12,gold),0,level+2.5,-.42);
+  for(const dir of [-1,1]){
+   const crownBanner=box(.22,.64,.045,flag);
+   put(group,crownBanner,dir*.27,level+1.15,-.04);
+   const cap=box(.27,.06,.07,gold);
+   put(group,cap,dir*.27,level+1.45,-.01);
+  }
+ }
+  group.userData.material=theme;
  group.userData.castle=main;
  group.userData.team=team;
  return group;
@@ -459,8 +502,8 @@ function detailedAppearance(u){
  if(!tex?.image)return null;
  const frameWidth=tex.image.width/24;
  const aspect=frameWidth/tex.image.height;
- const height=u.card.id==='colosso'?2.12:u.card.id==='lobo'?1.62:u.card.id==='rei'?2.03:u.card.id==='liliti'?2.05:1.84;
- const width=Math.min(2.05,height*aspect);
+ const height=u.card.id==='colosso'?1.50:u.card.id==='lobo'?.92:u.card.id==='rei'?1.30:u.card.id==='liliti'?1.28:u.card.id==='guardiao'?1.34:1.16;
+ const width=Math.min(1.48,height*aspect);
  const sheet=tex.clone();
  sheet.needsUpdate=true;
  sheet.wrapS=THREE.RepeatWrapping;
@@ -486,12 +529,12 @@ function detailedFrame(u){
 function createActor(u){
  const model=u.card.id==='lobo'?makeWolf(u.side):makeHuman(u.card.id,u.side);
  // Proporção de estratégia: tropas menores do que a estrutura que defendem.
- const unitScale=u.card.id==='colosso'?.73:u.card.id==='lobo'?.58:u.card.id==='rei'?.65:u.card.id==='liliti'?.63:.59;
+ const unitScale=u.card.id==='colosso'?.56:u.card.id==='lobo'?.40:u.card.id==='rei'?.49:u.card.id==='liliti'?.47:.44;
  model.scale.setScalar(unitScale);
  model.traverse(o=>{if(o.isMesh)o.castShadow=true});
  const bar=makeHealthBar(u.side,1.05);
  const appearance=detailedAppearance(u);
- const shadow=fakeShadow(u.card.id==='colosso'?1.3:u.card.id==='lobo'?1.2:.9);
+ const shadow=fakeShadow(u.card.id==='colosso'?.95:u.card.id==='lobo'?.75:.72);
  scene.add(model);scene.add(bar);scene.add(shadow);
  if(appearance)scene.add(appearance.mesh);
  return {model,bar,shadow,appearance,side:u.side,lastFrame:0,position:new THREE.Vector3()};
@@ -536,7 +579,8 @@ function syncActors(game){
   const step=walking?1:attacking?.48:.06;
   obj.position.y=walking?.042*Math.sin(phase*2):.012*Math.sin(clock*2);
   // Indicador flutuante, sempre legível, separado do corpo do personagem.
-  rec.bar.position.set(pos.x, u.card.id==='colosso'?2.20:u.card.id==='lobo'?1.25:1.58,pos.z);
+  const visibleHeight=rec.appearance?.height || (u.card.id==='colosso'?1.5:u.card.id==='lobo'?.92:1.18);
+  rec.bar.position.set(pos.x,visibleHeight+.18,pos.z);
   rec.bar.quaternion.copy(camera.quaternion);
   const fill=rec.bar.userData.fill;
   if(fill){
@@ -569,6 +613,58 @@ function syncActors(game){
    anim.body.rotation.x=attacking?-.13:0;
   }
   // O brilho no solo não é um token circular com retrato, apenas indicação de equipe.
+ }
+}
+
+function makeBolt(shot){
+ const red=shot.source==='enemy';
+ const glow=red?0xff879b:0x8ae6ff;
+ const group=new THREE.Group();
+ const head=sphere(.12,new THREE.MeshBasicMaterial({color:glow,transparent:true,opacity:.98,depthWrite:false}));
+ const aura=sphere(.23,new THREE.MeshBasicMaterial({color:glow,transparent:true,opacity:.25,depthWrite:false}));
+ group.add(head);group.add(aura);
+ group.userData={head,aura};
+ scene.add(group);
+ return group;
+}
+function syncBolts(game){
+ const valid=new Set((game.projectiles||[]).map(x=>x.id));
+ for(const [id,mesh] of flyingBolts){
+  if(!valid.has(id)){
+   scene.remove(mesh);mesh.traverse(obj=>{if(obj.isMesh){obj.material.dispose();obj.geometry.dispose()}});
+   flyingBolts.delete(id);
+  }
+ }
+ for(const shot of game.projectiles||[]){
+   let mesh=flyingBolts.get(shot.id);
+   if(!mesh){mesh=makeBolt(shot);flyingBolts.set(shot.id,mesh)}
+   const pos=position(shot.x,shot.y);
+   const leap=Math.sin(Math.PI*shot.progress);
+   mesh.position.set(pos.x,1.02+leap*.65,pos.z);
+   mesh.scale.setScalar(.9+leap*.32);
+ }
+ const active=new Set((game.effects||[]).map(x=>x.id));
+ for(const [id,obj] of impactRings){
+   if(!active.has(id)){
+     scene.remove(obj);
+     obj.geometry.dispose();obj.material.dispose();
+     impactRings.delete(id);
+   }
+ }
+ for(const effect of game.effects||[]){
+   let ring=impactRings.get(effect.id);
+   if(!ring){
+     const color=effect.color==='blue'?0x9fe8ff:0xffabb8;
+     const m=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.85,side:THREE.DoubleSide,depthWrite:false});
+     ring=new THREE.Mesh(new THREE.RingGeometry(.12,.22,24),m);
+     ring.rotation.x=-Math.PI/2;
+     scene.add(ring);impactRings.set(effect.id,ring);
+   }
+   const k=1-effect.life/effect.maxLife;
+   const p=position(effect.x,effect.y);
+   ring.position.set(p.x,.16,p.z);
+   ring.scale.setScalar(.6+3.1*k);
+   ring.material.opacity=Math.max(0,.8*(1-k));
  }
 }
 function syncForts(game){
@@ -640,7 +736,7 @@ function render(game){
  // Uma cadência de 24 fps para 3D preserva CPU para o motor da batalha.
  if(now-lastTime<41 && lastTime!==0)return;
  lastTime=now;
- syncForts(game);syncActors(game);
+ syncForts(game);syncActors(game);syncBolts(game);
  renderer.render(scene,camera);
 }
 function screenToBattle(clientX,clientY,rect){
@@ -655,8 +751,8 @@ function screenToBattle(clientX,clientY,rect){
 window.Cerco3D={
  get ready(){return ready},
  render,screenToBattle,
- syncNow:(game)=>{if(ready&&game){syncActors(game);syncForts(game)}},
- info:()=>({ready,actors:actors.size,meshes:scene?.children?.length||0,webgl:renderer?.capabilities?.isWebGL2||false}),
+ syncNow:(game)=>{if(ready&&game){syncActors(game);syncForts(game);syncBolts(game)}},
+ info:()=>({ready,actors:actors.size,projectiles:flyingBolts.size,meshes:scene?.children?.length||0,webgl:renderer?.capabilities?.isWebGL2||false}),
  debugActors:()=>[...actors.entries()].map(([id,rec])=>({id,kind:rec.model.userData.id,illustrated:!!rec.appearance,legs:rec.model.userData.legs?.length||0,
    rotations:rec.model.userData.legs?.map(l=>Number(l.rotation.x.toFixed(3)))||[]}))
 };
