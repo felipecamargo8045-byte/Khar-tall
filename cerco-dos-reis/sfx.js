@@ -55,7 +55,6 @@ function chord(notes,span=.12,volume=.11){
 function sound(kind,p={}){
  const now=performance.now()/1000;
  const limit=cooldowns[kind]||0;
- if(now-(last.get(kind)||-100)>limit===false)return;
  if(now-(last.get(kind)||-100)<limit)return;
  last.set(kind,now);
  try{
