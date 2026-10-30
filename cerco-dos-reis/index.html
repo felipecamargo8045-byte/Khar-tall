@@ -1,32 +1,94 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0a0e17"><meta name="description" content="Cerco dos Reis — edição de migração em desenvolvimento, criada por Victoryno"><title>Cerco dos Reis · Khar Thal</title><link rel="icon" href="./origem-apk/assets/emblem.svg"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="stylesheet" href="./theme.css"></head><body>
-<div class="ambient" aria-hidden="true"></div><header class="head"><a class="brand" href="#arena"><img src="./origem-apk/assets/emblem.svg" alt=""><span><b>CERCO DOS REIS</b><small>KHAR THAL · ECOS DA CHAMA</small></span></a><nav id="navigation" aria-label="Navegação"><button class="active" data-view="arena">Arena</button><button data-view="cards">Cartas</button><button data-view="shop">Loja</button><button data-view="clans">Clãs</button><button data-view="profile">Conta</button></nav><span class="tag">PRÉVIA DAS CARTAS</span></header>
-<main>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1424">
+<meta name="description" content="Cerco dos Reis, batalha de cartas do universo Khar Thal — Victoryno">
+<title>Cerco dos Reis · Khar Thal</title>
+<link rel="icon" href="./origem-apk/assets/emblem.svg">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="stylesheet" href="./game-ui.css?v=3">
+</head>
+<body>
+<div class="aurora" aria-hidden="true"></div>
+<header class="game-header">
+  <div class="brand-mark"><img src="./origem-apk/assets/emblem.svg" alt=""><div><strong>CERCO DOS REIS</strong><small>KHAR THAL · ECOS DA CHAMA</small></div></div>
+  <div class="header-right"><div class="mode-token"><span class="live-dot"></span> MODO TREINO</div><button type="button" id="installApp" class="install-btn" aria-label="Instalar aplicativo">⇩</button></div>
+</header>
+<nav id="navigation" class="game-nav" aria-label="Seções do jogo">
+ <button class="active" data-view="arena"><span class="nav-ico">⚔</span><span>Arena</span></button>
+ <button data-view="cards"><span class="nav-ico">▣</span><span>Cartas</span></button>
+ <button data-view="shop"><span class="nav-ico">✦</span><span>Loja</span></button>
+ <button data-view="clans"><span class="nav-ico">♜</span><span>Clãs</span></button>
+ <button data-view="profile"><span class="nav-ico">♛</span><span>Perfil</span></button>
+</nav>
+<main class="game-body">
 <section class="page active" data-page="arena">
-  <div class="section-head restored-heading">
-    <p class="overline">CERCO DOS REIS · ARENA ORIGINAL</p>
-    <h1>A arena que você já aprovou.</h1>
-    <p>O jogo de cartas original continua no portal anterior. Não substituímos as batalhas por um treinamento simplificado.</p>
-  </div>
-  <div class="restored-stage panel">
-    <div class="restored-art" aria-hidden="true">
-      <img src="./origem-apk/assets/khar_tall_rei.png" alt="">
-      <img src="./origem-apk/assets/khar_tall_guardiao.png" alt="">
+ <div class="arena-topline"><div><small class="overline">BATALHA DE CASTELOS</small><h1>ARENA REAL</h1></div><div class="rank-seal">⚔<span> IA </span></div></div>
+ <div class="arena-layout">
+  <aside class="commander panel">
+   <img class="commander-art" src="./origem-apk/assets/portrait_rei.webp" alt="Rei">
+   <div class="commander-body"><div class="overline">COMANDANTE</div><h2>Victoryno</h2><small>Treinamento local</small><div class="statline"><span>Vitórias de treino</span><b id="wins">0</b></div><label class="difficulty-label" for="difficulty">Dificuldade</label><select id="difficulty"><option value="easy">Recruta · Fácil</option><option value="normal" selected>Comandante · Normal</option><option value="hard">Conquistador · Difícil</option></select></div>
+  </aside>
+  <div class="battle">
+   <div class="scoreboard">
+    <div class="side enemy-side"><span class="side-emblem">♜</span><div><small>RUBRO</small><strong id="enemyCastle">2.600 PV</strong></div></div>
+    <div class="clock"><small>O CERCO</small><b id="timer">03:00</b></div>
+    <div class="side ally-side"><div><small>AZUL</small><strong id="allyCastle">2.600 PV</strong></div><span class="side-emblem">♜</span></div>
+   </div>
+   <div class="canvas-box">
+    <canvas id="arena" width="420" height="560" tabindex="0" aria-label="Arena de batalha com duas rotas: selecione carta e toque na rota para invocar"></canvas>
+    <div id="overlay" class="overlay">
+     <div class="overlay-glyph"><img src="./origem-apk/assets/emblem.svg" alt=""></div>
+     <span class="overline">DOIS REINOS · UM TRONO</span><h2>O cerco começa.</h2><p>Comande suas cartas, proteja as torres e conquiste o castelo inimigo.</p>
+     <button class="gold" id="start">⚔ ENTRAR NA BATALHA</button>
+     <small>Treinamento local • 3 minutos</small>
     </div>
-    <div class="restored-copy">
-      <p class="overline">CONTINUE A PARTIDA ORIGINAL</p>
-      <h2>O seu reino permanece de pé.</h2>
-      <p>Abra a arena anterior, com o sistema de batalha, contas e recursos que já existiam. As novas molduras e fichas de cartas estão disponíveis nesta prévia separada; não alteram seu progresso real.</p>
-      <a class="gold restored-primary" href="https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/game/">⚔ Abrir arena original</a>
-      <div class="restored-secondary">
-        <a href="https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/">Portal original do Cerco dos Reis</a>
-        <button type="button" data-view="cards" class="nav-action">Ver novas cartas e molduras</button>
-      </div>
-    </div>
+   </div>
+   <div class="hand-box"><div class="hand-head"><b>SEU BARALHO <span>4 CARTAS</span></b><span id="energy">6 / 10</span></div><div class="energybar"><div id="energyFill"></div></div>
+     <div id="hand" class="hand"></div>
+     <div class="battle-buttons"><button id="pause" disabled>Ⅱ Pausar</button><button id="reset">↻ Reiniciar</button><button data-view="cards">▣ Arsenal</button></div>
+   </div>
   </div>
-  <p class="restored-note">O modo simplificado de treinamento foi retirado desta tela porque não reproduzia a versão aprovada.</p>
+  <aside class="info panel">
+   <div class="overline">CARTA SELECIONADA</div>
+   <img id="selectedPortrait" class="portrait" src="./origem-apk/assets/portrait_lobo.webp" alt="Carta selecionada">
+   <h2 id="selectedName">Lobo</h2><p id="selectedDesc"></p><div id="selectedStats" class="stats"></div>
+   <div class="ability"><strong id="selectedSkill"></strong><p id="selectedSkillDesc"></p></div>
+   <div class="battle-log-title">✦ ECOS DA BATALHA</div><div id="battleLog" class="battle-log" aria-live="polite">A chama está viva.</div>
+  </aside>
+ </div>
 </section>
-<section class="page" data-page="cards"><div class="section-head"><p class="overline">ARSENAL REAL</p><h1>As cartas do reino</h1><p>A classificação aparece na moldura, nunca por cima da arte. Selecione uma carta para conferir sua ficha completa.</p></div><div class="catalog-layout"><aside class="panel card-list"><div class="overline">COLEÇÃO DE CARTAS</div><div id="cardGrid" class="card-grid"></div></aside><article class="panel detail"><div class="detail-row"><div class="art-outer" id="artOuter"><div class="art-inner"><img id="fullArt" src="" alt="Imagem completa da carta selecionada"></div></div><div class="facts"><div class="overline" id="cardType">TROPA</div><h2 id="cardName">Lobo</h2><p id="cardText"></p><div id="cardBadges" class="badges"></div><div id="cardStats" class="stats"></div><div class="ability"><b id="cardSkill"></b><span id="cardSkillText"></span></div><div class="exp-label"><span>Experiência</span><b id="xpLabel">0/100 XP</b></div><div class="exp-bar"><div id="xpFill"></div></div></div></div><div class="tabs" id="cardTabs"><button class="active" data-tab="tech">Ficha técnica</button><button data-tab="evolution">Evoluções</button><button data-tab="progress">Progresso</button></div><div id="tabContent" class="tab-content"></div></article></div></section>
-<section class="page" data-page="shop"><div class="section-head"><p class="overline">ARSENAL REAL</p><h1>Loja do reino</h1><p>Visual migrado. Nenhuma cobrança é realizada nesta versão.</p></div><div class="panel feature"><h2>Moedas, cartas e melhorias</h2><p>O catálogo da loja e a InfinityPay permanecem no sistema original. Não transferimos credenciais ou compras para uma simulação.</p><a class="gold linkbtn" href="https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/" target="_blank" rel="noopener noreferrer">Abrir loja original</a></div></section>
-<section class="page" data-page="clans"><div class="section-head"><p class="overline">SEU REINO</p><h1>Clãs e comunidade</h1><p>A comunidade real está no aplicativo original.</p></div><div class="panel feature"><h2>Encontre seus aliados</h2><p>Para preservar mensagens, membros e grupos, este espaço não cria dados fictícios durante a migração.</p><a class="gold linkbtn" href="https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/" target="_blank" rel="noopener noreferrer">Abrir comunidade original</a></div></section>
-<section class="page" data-page="profile"><div class="section-head"><p class="overline">COMANDANTE</p><h1>Seu perfil</h1><p>O modo de treinamento não acessa sua conta real.</p></div><div class="panel feature"><h2>Conta e VIP Victoryno</h2><p>Seu perfil, inventário, compras, progresso e acesso VIP continuam no jogo original. Esta prévia de molduras não acessa nem modifica sua conta.</p><a class="gold linkbtn" href="https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/">Abrir minha conta no jogo original</a></div></section>
-</main><footer><span>CERCO DOS REIS · CRIADO POR <b>VICTORYNO</b></span><span>A chama está viva.</span></footer><script src="./cards.js" defer></script></body></html>
+<section class="page" data-page="cards">
+ <div class="view-heading"><div class="overline">COLEÇÃO DO REINO</div><h1>ARSENAL DE CARTAS</h1><p>Arte completa, habilidades e evolução de cada personagem.</p></div>
+ <div class="catalog-layout"><aside class="panel card-list"><div class="overline">SUAS CARTAS</div><div id="cardGrid" class="card-grid"></div></aside>
+ <article class="panel detail"><div class="detail-row">
+  <div class="art-outer" id="artOuter"><div class="art-inner"><img id="fullArt" src="" alt="Personagem completo"></div></div>
+  <div class="facts"><div class="overline" id="cardType">TROPA</div><h2 id="cardName">Lobo</h2><p id="cardText"></p><div id="cardBadges" class="badges"></div><div id="cardStats" class="stats"></div>
+   <div class="ability"><b id="cardSkill"></b><span id="cardSkillText"></span></div>
+   <div class="exp-label"><span>PROGRESSO</span><b id="xpLabel">0 / 100 XP</b></div><div class="exp-bar"><div id="xpFill"></div></div>
+  </div>
+ </div><div class="tabs" id="cardTabs"><button class="active" data-tab="tech">Ficha técnica</button><button data-tab="evolution">Evolução</button><button data-tab="progress">Progresso</button></div><div id="tabContent" class="tab-content"></div></article></div>
+</section>
+<section class="page" data-page="shop">
+ <div class="view-heading"><div class="overline">FORJA DO REINO</div><h1>ARSENAL REAL</h1><p>Escolha o acabamento do seu estandarte de treinamento.</p></div>
+ <div class="shop-feature"><div class="shop-feature-art"><img src="./origem-apk/assets/khar_tall_guardiao.png" alt="Guardião de Khar Thal"></div><div><div class="overline">SUA FORJA</div><h2>O poder está no detalhe.</h2><p>Experimente os estilos aqui mesmo. Os cosméticos desta prévia são gratuitos e locais; compras reais ainda não estão conectadas.</p><div class="forge-note">✦ Prévia visual · sem Pix ou cartão</div></div></div>
+ <div class="shop-title-row"><h3>ESTANDARTES DISPONÍVEIS</h3><span id="shopStatus">ACABAMENTO ATUAL: AÇO REAL</span></div>
+ <div id="shopGrid" class="shop-grid"></div>
+ <div class="shop-title-row"><h3>CARTAS EM DESTAQUE</h3><span>TOQUE PARA EXAMINAR</span></div>
+ <div id="featuredCards" class="featured-grid"></div>
+</section>
+<section class="page" data-page="clans">
+ <div class="view-heading"><div class="overline">ALIANÇAS DE KHAR THAL</div><h1>CLÃS</h1><p>Um comandante é forte. Um clã é inesquecível.</p></div>
+ <div class="clan-stage panel"><img src="./origem-apk/assets/khar_tall_rei.png" alt="Rei"><div class="clan-stage-copy"><div class="overline">SALA DAS ALIANÇAS</div><h2>Seu estandarte. Seu reino.</h2><p>O salão já faz parte da interface. Para não criar clãs fictícios nem perder mensagens, o multiplayer e o chat aguardam a migração autorizada do servidor original.</p><div class="lock-state">♜ INTEGRAÇÃO ONLINE PENDENTE</div></div></div>
+</section>
+<section class="page" data-page="profile">
+ <div class="view-heading"><div class="overline">SALA DO COMANDANTE</div><h1>PERFIL</h1></div>
+ <div class="profile-stage panel"><img src="./origem-apk/assets/portrait_rei.webp" alt="Rei"><div><span class="overline">COMANDANTE</span><h2>Victoryno</h2><div class="vip-flag">♛ ACESSO A TODAS AS CARTAS NO TREINO</div><p>Este perfil é local e não substitui a conta, o VIP, as compras ou o progresso do jogo original.</p><div class="statline"><span>Vitórias de treino</span><b id="profileWins">0</b></div><div class="statline"><span>Cartas desbloqueadas no treino</span><b>11 / 11</b></div><button id="clearProgress" class="secondary-btn">Limpar apenas progresso de treino</button></div></div>
+</section>
+</main>
+<script src="./app.js?v=3" defer></script>
+<script src="./realm-ui.js?v=3" defer></script>
+</body>
+</html>
