@@ -1,44 +1,29 @@
-# Cerco dos Reis · migração independente
+# Cerco dos Reis — versão jogável na Render
+Autor identificado na interface: **Victoryno**. Universo de Khar Thal / Ecos da Chama.
 
-Criação: **Victoryno**. Universo de *Ecos da Chama / Khar Thal*.
+## Publicação
+- Site de testes: https://cerco-dos-reis-teste.onrender.com/
+- GitHub: branch `cerco-dos-reis-migracao-2026-10`, pasta `cerco-dos-reis`
+- Deploy automático na Render quando esta branch recebe commits. O Khar Tall de tabuleiro permanece no serviço próprio.
 
-## Situação desta versão
+## Interface do jogo (não é página institucional)
+- Navegação integrada por cinco telas: Arena, Cartas, Loja/Forja, Clãs e Perfil.
+- Arena local de treinamento (IA) com duas rotas, 3 minutos, feitiços, tropas, energia, torres, castelos e ilustrações originais recuperadas.
+- Coleção de onze cartas com imagem completa, molduras de nível, ficha individual, habilidade, XP e indicação de raridade.
+- Loja/Forja embutida com oito estilos cosméticos **gratuitos de visualização local** e cartas em destaque. Não há checkout ou cobrança nesta versão.
+- Clãs integrado visualmente com informação precisa sobre serviço multiplayer ainda não conectado; Perfil local de treinamento, sem fingir autenticação real.
+- Navegação compatível com Android e PWA instalável via navegador.
 
-**JOGÁVEL EM TREINAMENTO LOCAL, AINDA NÃO PUBLICADA NEM INTEGRADA AO BACKEND ORIGINAL.**
+## Limites conhecidos (importantes)
+Os arquivos públicos recuperados do APK de versão 1.0.0 incluíam HTML, arte e CSS da arena, mas não o motor `app.mjs` nem o código do servidor. O projeto original `chatgpt.site` respondeu HTTP 401 quando tentamos recuperar os fontes. Por isso esta versão possui **motor de treinamento reconstruído**, não é cópia integral do motor antigo. Os atributos em treino são valores provisórios e não equivalem necessariamente ao servidor original.
 
-A ramificação `cerco-dos-reis-migracao-2026-10` evita alterar o Khar Tall de tabuleiro. Esta nova pasta não substitui o jogo já publicado em `chatgpt.site`.
+Contas reais, VIP autenticado, inventário real, ranking online, matchmaking, compras via InfinityPay, dados de clãs e mensagens **ainda não estão migrados**. O jogo original não foi modificado nem teve seus dados transferidos.
 
-## Recursos implementados
-
-- Visual aprovado: fundo carvão/azul profundo, painéis com bordas e dourado suave.
-- Coleção com 11 cartas, incluindo Liliti (arte original recuperada do APK).
-- Imagem completa ao abrir carta (`object-fit: contain`) e nome fora da imagem.
-- Molduras por nível: Bronze 0–19; Prata 20–39; Ouro 40–59; Mítico 60–79; Divino 80–100. A raridade Lendária é independente da moldura.
-- Fichas técnicas individuais, habilidade, raridade, nível, XP e evoluções.
-- Arena **local de treinamento** 3 minutos, duas rotas, tropas e magias, IA em três dificuldades, energia, torres e castelos.
-- Progresso **local** de treinamento (+1 XP por uso de carta), sem autenticação. Nível 100 não é liberado nesta versão.
-- Navegação responsiva, controle por mouse/toque e atalho de teclado. Abas de Loja, Clãs e Conta informam que o serviço real ainda é o original.
-- Treinamento permite testar todas as cartas sem comprar.
-
-## Recuperação original
-
-A pasta `origem-apk/` foi recuperada do arquivo `downloads/cerco-dos-reis-1.0.0.apk` já presente no repositório e contém artes, CSS e HTML do módulo de batalha, **sem modificações**. Esses recursos não incluem o `app.mjs` original da arena nem o código de autenticação, dados dos usuários, loja, chat, clãs ou pagamentos. O site `chatgpt.site` respondeu **401** à consulta pública; não é correto afirmar que seu backend foi transferido.
-
-## Executar
-
-A partir da raiz do repositório:
-
+## Para manter e atualizar
+O projeto agora está independente para mudanças no GitHub e atualização na Render. Para desenvolvimento local:
 ```sh
 python -m http.server 8080 --directory cerco-dos-reis
 ```
+Abra `http://localhost:8080`. Os arquivos front-end atuais são `index.html`, `game-ui.css`, `app.js`, `realm-ui.js`, `manifest.webmanifest` e `sw.js`.
 
-Abra `http://localhost:8080`.
-
-Para hospedagem futura no Render, configure um **Static Site** com diretório de publicação `cerco-dos-reis` e sem comando de build. Antes de publicar, é necessário confirmar o workspace de destino e testar os recursos originais. Sem o backend oficial não haverá migração das contas, pagamentos ou progresso.
-
-## Próximos passos para concluir a transferência definitiva
-
-1. Exportar de maneira autorizada o código-fonte original e a estrutura do banco de dados do projeto Work (não estão no APK).
-2. Conectar conta, VIP de Victoryno, inventário, XP, loja InfinityPay, chat, clãs e ranking sem armazenar dados pessoais no repositório público.
-3. Verificar as regras oficiais e substituir os valores operacionais deste **motor de treinamento** por valores reais, com testes de regressão.
-4. Fazer testes de login, partidas, compras de teste e versão Android; só então substituir a publicação original ou apontar usuários para a nova.
+Para completar a migração online, é necessária uma exportação **autorizada** do servidor original, seus endpoints e dados de usuários. Não se deve substituir progresso real por dados do treinamento.
