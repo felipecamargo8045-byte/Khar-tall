@@ -233,14 +233,15 @@ function makeFortress(team,main){
    const x=side*wide*.49;
    const shaft=cyl(.31,.34,level+0.42,fortressStone,8);
    put(turret,shaft,0,(level+.42)/2+.18,0);shaft.castShadow=true;
-   const crown=cyl(.43,.39,.28,theme,8);put(turret,crown,0,level+.38,0);
+   const crown=cyl(.44,.40,.25,mat(0xf3d8a5),9);put(turret,crown,0,level+.38,0);
    for(let j=0;j<8;j++){
     const a=j*Math.PI/4;
     const merlon=box(.21,.32,.18,stone);
     merlon.position.set(Math.sin(a)*.37,level+.6,Math.cos(a)*.37);
     merlon.rotation.y=a;turret.add(merlon);
    }
-   const roof=cone(.45,.63,darkStone,8);put(turret,roof,0,level+.99,0);
+   const roof=cone(.42,.94,theme,9);put(turret,roof,0,level+1.09,0);
+   put(turret,sphere(.10,gold),0,level+1.61,0);
    put(group,turret,x,0,-.32);
  }
  // Portão arqueado com ferragens reais.
@@ -436,6 +437,23 @@ for(const id of ['lobo','arqueiro','soldado','colosso','guardiao','batedor','rei
     characterMotion.set(id,tex);
   },undefined,()=>{ /* Exibe modelo 3D quando WebP não é suportado */ });
 }
+
+const shadowCanvas=document.createElement('canvas');
+shadowCanvas.width=64;shadowCanvas.height=64;
+const shadowCtx=shadowCanvas.getContext('2d');
+const shadowGradient=shadowCtx.createRadialGradient(32,32,3,32,32,31);
+shadowGradient.addColorStop(0,'rgba(6,22,25,.43)');
+shadowGradient.addColorStop(.5,'rgba(6,22,25,.23)');
+shadowGradient.addColorStop(1,'rgba(6,22,25,0)');
+shadowCtx.fillStyle=shadowGradient;shadowCtx.fillRect(0,0,64,64);
+const shadowMap=new THREE.CanvasTexture(shadowCanvas);
+function fakeShadow(width){
+ const material=new THREE.MeshBasicMaterial({map:shadowMap,transparent:true,depthWrite:false,opacity:.65,toneMapped:false});
+ const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,width*.68),material);
+ mesh.rotation.x=-Math.PI/2;
+ mesh.renderOrder=2;
+ return mesh;
+}
 function detailedAppearance(u){
  const tex=characterMotion.get(u.card.id);
  if(!tex?.image)return null;
@@ -473,15 +491,16 @@ function createActor(u){
  model.traverse(o=>{if(o.isMesh)o.castShadow=true});
  const bar=makeHealthBar(u.side,1.05);
  const appearance=detailedAppearance(u);
- scene.add(model);scene.add(bar);
+ const shadow=fakeShadow(u.card.id==='colosso'?1.3:u.card.id==='lobo'?1.2:.9);
+ scene.add(model);scene.add(bar);scene.add(shadow);
  if(appearance)scene.add(appearance.mesh);
- return {model,bar,appearance,side:u.side,lastFrame:0,position:new THREE.Vector3()};
+ return {model,bar,shadow,appearance,side:u.side,lastFrame:0,position:new THREE.Vector3()};
 }
 function syncActors(game){
  const live=new Set(game.units.filter(u=>u.hp>0).map(u=>u.id));
  for(const [id,rec] of actors){
   if(!live.has(id)){
-    scene.remove(rec.model);scene.remove(rec.bar);
+    scene.remove(rec.model);scene.remove(rec.bar);scene.remove(rec.shadow);
     if(rec.appearance){scene.remove(rec.appearance.mesh);rec.appearance.mesh.material.dispose();rec.appearance.sheet.dispose();}
     actors.delete(id);
   }
@@ -493,6 +512,7 @@ function syncActors(game){
   const obj=rec.model,anim=obj.userData;
   const pos=position(u.x,u.y);
   obj.position.copy(pos);
+  rec.shadow.position.set(pos.x,.085,pos.z);
   // O modelo físico continua na cena, enquanto a arte animada dá
   // acabamento de personagem real sobre a silhueta geométrica.
   if(!rec.appearance && characterMotion.has(u.card.id)){
