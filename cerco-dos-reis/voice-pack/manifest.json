@@ -1,0 +1,179 @@
+{
+  "version": 1,
+  "provider": "Kokoro-82M / pt-BR (Apache-2.0) + FFmpeg",
+  "engine": "pre-generated-static-audio",
+  "characters": {
+    "arqueiro": {
+      "style": "jovem, ágil, valente",
+      "voice": "pm_alex",
+      "clips": {
+        "attack": [
+          "arqueiro-attack-0.ogg",
+          "arqueiro-attack-1.ogg"
+        ],
+        "hurt": [
+          "arqueiro-hurt-0.ogg"
+        ],
+        "victory": []
+      },
+      "dialogue": {
+        "attack": [
+          "Alvo à vista!",
+          "Disparo certeiro!"
+        ],
+        "hurt": [
+          "Preciso de cobertura!"
+        ],
+        "victory": []
+      }
+    },
+    "soldado": {
+      "style": "guerreiro firme, golpe decidido",
+      "voice": "pm_alex",
+      "clips": {
+        "attack": [
+          "soldado-attack-0.ogg",
+          "soldado-attack-1.ogg"
+        ],
+        "hurt": [
+          "soldado-hurt-0.ogg"
+        ],
+        "victory": []
+      },
+      "dialogue": {
+        "attack": [
+          "Pela linha de frente!",
+          "Minha espada não falha!"
+        ],
+        "hurt": [
+          "Ainda estou de pé!"
+        ],
+        "victory": []
+      }
+    },
+    "colosso": {
+      "style": "enorme, cavernoso e ameaçador",
+      "voice": "pm_santa",
+      "clips": {
+        "attack": [
+          "colosso-attack-0.ogg",
+          "colosso-attack-1.ogg"
+        ],
+        "hurt": [
+          "colosso-hurt-0.ogg"
+        ],
+        "victory": []
+      },
+      "dialogue": {
+        "attack": [
+          "Vou esmagar!",
+          "O chão vai tremer!"
+        ],
+        "hurt": [
+          "Isso não me detém!"
+        ],
+        "victory": []
+      }
+    },
+    "guardiao": {
+      "style": "ancião austero, voz de guardião",
+      "voice": "pm_santa",
+      "clips": {
+        "attack": [
+          "guardiao-attack-0.ogg",
+          "guardiao-attack-1.ogg"
+        ],
+        "hurt": [
+          "guardiao-hurt-0.ogg"
+        ],
+        "victory": []
+      },
+      "dialogue": {
+        "attack": [
+          "Nada passa!",
+          "Protegerei o reino!"
+        ],
+        "hurt": [
+          "Minha defesa resiste!"
+        ],
+        "victory": []
+      }
+    },
+    "batedor": {
+      "style": "veloz e sarcástico, ataque preciso",
+      "voice": "pm_alex",
+      "clips": {
+        "attack": [
+          "batedor-attack-0.ogg",
+          "batedor-attack-1.ogg"
+        ],
+        "hurt": [
+          "batedor-hurt-0.ogg"
+        ],
+        "victory": []
+      },
+      "dialogue": {
+        "attack": [
+          "Você está marcado!",
+          "Não existe fuga!"
+        ],
+        "hurt": [
+          "Ainda posso lutar!"
+        ],
+        "victory": []
+      }
+    },
+    "rei": {
+      "style": "monarca nobre, comando firme",
+      "voice": "pm_santa",
+      "clips": {
+        "attack": [
+          "rei-attack-0.ogg",
+          "rei-attack-1.ogg"
+        ],
+        "hurt": [
+          "rei-hurt-0.ogg"
+        ],
+        "victory": [
+          "rei-victory-0.ogg"
+        ]
+      },
+      "dialogue": {
+        "attack": [
+          "Pelo meu reino!",
+          "O trono será defendido!"
+        ],
+        "hurt": [
+          "Não me derrotarão!"
+        ],
+        "victory": [
+          "A vitória é nossa!"
+        ]
+      }
+    },
+    "liliti": {
+      "style": "mulher poderosa, sedutora e misteriosa",
+      "voice": "pf_dora",
+      "clips": {
+        "attack": [
+          "liliti-attack-0.ogg",
+          "liliti-attack-1.ogg"
+        ],
+        "hurt": [
+          "liliti-hurt-0.ogg"
+        ],
+        "victory": []
+      },
+      "dialogue": {
+        "attack": [
+          "Sua vontade é minha.",
+          "Sinta o meu encanto."
+        ],
+        "hurt": [
+          "Você vai se arrepender!"
+        ],
+        "victory": []
+      }
+    }
+  }
+}
