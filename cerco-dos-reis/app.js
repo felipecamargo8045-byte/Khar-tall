@@ -49,12 +49,33 @@ function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.ener
 function step(now){if(!game.running||game.paused)return;const dt=Math.min(.05,(now-game.last)/1000||0);game.last=now;tick(dt);draw();updateClock();if(game.running)loop=requestAnimationFrame(step)}
 function updateClock(){const sec=Math.ceil(game.time);$('#timer').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');$('#energy').textContent=game.energy.toFixed(1)+' / 10 energia';$('#energyFill').style.width=(game.energy*10)+'%';$('#enemyCastle').textContent=fmt(Math.ceil(game.castles.enemy))+' PV';$('#allyCastle').textContent=fmt(Math.ceil(game.castles.ally))+' PV';}
 const boardArt=new Image();boardArt.src=ASSET+'arena_atmosfera.webp';
+// Castelo ilustrado em camadas góticas, com pedra e brasões próprios de cada time.
+const fortressArt={};
+for(const side of ['ally','enemy']){
+ for(const kind of ['tower','keep']){
+  const image=new Image();
+  image.src='./assets/fortress_'+kind+'_'+side+'.svg';
+  fortressArt[kind+'_'+side]=image;
+ }
+}
 // Sprites recortados das artes existentes: personagens inteiros, nunca bolinhas.
 const spriteNames=['lobo','arqueiro','soldado','colosso','guardiao','batedor','rei','liliti'];
 const unitSprites=new Map(spriteNames.map(id=>{
  const image=new Image();image.src='./sprites/sprite_'+id+'.png';return[id,image];
 }));
 function drawFortress(g,x,y,side,kind,hp){
+ const asset=fortressArt[(kind==='castle'?'keep':'tower')+'_'+side];
+ if(asset?.complete&&asset.naturalWidth){
+  const width=kind==='castle'?84:85;
+  const height=kind==='castle'?94:105;
+  g.save();
+  g.globalAlpha=hp<=0?.28:1;
+  g.shadowColor='#020912b8';g.shadowBlur=6;g.shadowOffsetY=3;
+  g.drawImage(asset,x-width/2,y-height,width,height);
+  g.restore();
+  return;
+ }
+
  const enemy=side==='enemy';
  const accent=enemy?'#b85a69':'#559fc1';
  const highlight=enemy?'#f5b1ae':'#a6e0f2';
@@ -163,7 +184,7 @@ function draw(){
    const enemy=side==='enemy',y=enemy?129:H-49;
    const arr=game.towers[side];
    // Castelo real separado das duas torres de defesa.
-   drawFortress(g,W/2,enemy?67:H-4,side,'castle',game.castles[side]);
+   drawFortress(g,W/2,enemy?96:H+2,side,'castle',game.castles[side]);
    for(let lane=0;lane<2;lane++){
      const x=lane?310:110,hp=arr[lane];
      drawFortress(g,x,y,side,'tower',hp);
