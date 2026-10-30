@@ -35,10 +35,10 @@ function selectedCard(){const c=chosen;$('#selectedPortrait').src=cardImage(c);$
 const canvas=$('#arena'),ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height;
 const sprites=new Map(cardData.map(c=>{const i=new Image();i.src=cardImage(c);return[c.id,i]}));const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,n));
 let game,loop=0,ticker=0;let hand=['lobo','arqueiro','soldado','colosso'];let next=4;const queue=cardData.map(c=>c.id);let activeIndex=0;
-function reset(){cancelAnimationFrame(loop);clearInterval(ticker);game={running:false,paused:false,time:180,energy:6,max:10,last:0,units:[],towers:{ally:[1400,1400],enemy:[1400,1400]},castles:{ally:2600,enemy:2600},counter:0,aiTimer:0,message:'',result:null};hand=['lobo','arqueiro','soldado','colosso'];next=4;activeIndex=0;$('#overlay').hidden=false;$('#overlay').innerHTML='<span class="overline">DOIS EXÉRCITOS · UM TRONO</span><h2>O cerco começa com você.</h2><p>3 minutos, duas rotas e cartas com habilidades próprias.</p><button class="gold" id="start">⚔ Iniciar treinamento</button>';$('#start').addEventListener('click',start);$('#pause').disabled=true;$('#pause').textContent='Pausar';updateUI();draw()}
-function start(){game.running=true;game.paused=false;game.result=null;game.last=performance.now();$('#overlay').hidden=true;$('#pause').disabled=false;log('O cerco começou. Defenda suas torres!');loop=requestAnimationFrame(step)}
-function result(winner){if(!game.running)return;game.running=false;cancelAnimationFrame(loop);$('#overlay').hidden=false;const win=winner==='ally';if(win){local.wins++;save()}$('#overlay').innerHTML='';const over=document.createElement('span');over.className='overline';over.textContent='O CERCO TERMINOU';const t=document.createElement('h2');t.textContent=win?'Vitória':'Derrota';const p=document.createElement('p');p.textContent=win?'Seu reino venceu o treinamento.':'Reorganize as cartas e tente novamente.';const b=document.createElement('button');b.className='gold';b.textContent='Jogar novamente';b.addEventListener('click',()=>{reset();start()});$('#overlay').append(over,t,p,b);updateUI()}
-function pause(){if(!game.running)return;game.paused=!game.paused;$('#pause').textContent=game.paused?'Continuar':'Pausar';if(game.paused){$('#overlay').hidden=false;$('#overlay').innerHTML='<h2>Batalha pausada</h2><p>Seu reino pode esperar.</p><button class="gold" id="resume">Continuar batalha</button>';$('#resume').addEventListener('click',pause)}else{$('#overlay').hidden=true;game.last=performance.now();loop=requestAnimationFrame(step)}}
+function reset(){cancelAnimationFrame(loop);clearInterval(ticker);game={running:false,paused:false,time:180,energy:6,max:10,last:0,units:[],towers:{ally:[1400,1400],enemy:[1400,1400]},castles:{ally:2600,enemy:2600},counter:0,aiTimer:0,message:'',result:null,projectiles:[],effects:[],towerTimers:{},towerShots:[],defenseHits:0};hand=['lobo','arqueiro','soldado','colosso'];next=4;activeIndex=0;$('#overlay').hidden=false;$('#overlay').innerHTML='<span class="overline">DOIS EXÉRCITOS · UM TRONO</span><h2>O cerco começa com você.</h2><p>3 minutos, duas rotas e cartas com habilidades próprias.</p><button class="gold" id="start">⚔ Iniciar treinamento</button>';$('#start').addEventListener('click',start);$('#pause').disabled=true;$('#pause').textContent='Pausar';updateUI();draw()}
+function start(){window.CercoAudio?.play('place');game.running=true;game.paused=false;game.result=null;game.last=performance.now();$('#overlay').hidden=true;$('#pause').disabled=false;log('O cerco começou. Defenda suas torres!');loop=requestAnimationFrame(step)}
+function result(winner){if(!game.running)return;window.CercoAudio?.play(winner==='ally'?'victory':'defeat');game.running=false;cancelAnimationFrame(loop);$('#overlay').hidden=false;const win=winner==='ally';if(win){local.wins++;save()}$('#overlay').innerHTML='';const over=document.createElement('span');over.className='overline';over.textContent='O CERCO TERMINOU';const t=document.createElement('h2');t.textContent=win?'Vitória':'Derrota';const p=document.createElement('p');p.textContent=win?'Seu reino venceu o treinamento.':'Reorganize as cartas e tente novamente.';const b=document.createElement('button');b.className='gold';b.textContent='Jogar novamente';b.addEventListener('click',()=>{reset();start()});$('#overlay').append(over,t,p,b);updateUI()}
+function pause(){if(!game.running)return;window.CercoAudio?.play('ui');game.paused=!game.paused;$('#pause').textContent=game.paused?'Continuar':'Pausar';if(game.paused){$('#overlay').hidden=false;$('#overlay').innerHTML='<h2>Batalha pausada</h2><p>Seu reino pode esperar.</p><button class="gold" id="resume">Continuar batalha</button>';$('#resume').addEventListener('click',pause)}else{$('#overlay').hidden=true;game.last=performance.now();loop=requestAnimationFrame(step)}}
 function log(s){const line=document.createElement('p');line.textContent=s;$('#battleLog').prepend(line);while($('#battleLog').children.length>8)$('#battleLog').lastElementChild.remove()}
 
 const LANES=[110,310];
@@ -106,6 +106,7 @@ function cast(id){
  const c=cardData.find(x=>x.id===id);
  if(!c||game.energy<c.cost){log('Energia insuficiente para '+(c?.name||'esta carta'));return}
  game.energy-=c.cost;
+ window.CercoAudio?.play(c.spell?'magic':'place');
  const spot=point(game.spawn?.x??W/2,game.spawn?.y??H*.7);
  if(c.spell){
    const targets=game.units.filter(u=>u.side===(c.id==='cura'?'ally':'enemy')&&
@@ -122,6 +123,8 @@ function cast(id){
    }
  }else{
    const created=addUnit(c,spot,'ally');
+   if(c.id==='lobo')window.CercoAudio?.play('wolf');
+   if(c.id==='colosso')window.CercoAudio?.play('colossus');
    const lanes=created.map(i=>game.units.find(u=>u.id===i)?.lane);
    if(created.length>1&&lanes.includes(0)&&lanes.includes(1))
       log(c.name+': grupo dividido entre esquerda e direita.');
@@ -140,6 +143,7 @@ function aiCast(){
  const x=Math.random()<.16?W/2:(Math.random()<.5?110:310);
  const y=clamp(78+Math.random()*92,SPAWN_MARGIN,H-SPAWN_MARGIN);
  addUnit(c,{x,y},'enemy');
+ window.CercoAudio?.play('place');
  log('Exército rubro invocou '+c.name);
 }
 // O rio é uma barreira física. Somente as duas pontes permitem travessia.
@@ -256,7 +260,8 @@ function combat(u,dt){
        target.hp-=damage;
        if(u.card.id==='liliti')u.hp=Math.min(u.maxHp,u.hp+damage*.5);
        u.mark=target.id;u.first=false;u.cooldown=u.card.attackSpeed||1.25;
-       u.state='attack';u.attackPulse=MOTION_ATTACK_SECONDS;u.attacks=(u.attacks||0)+1;
+       u.state='attack';u.attackPulse=MOTION_ATTACK_SECONDS;
+       window.CercoAudio?.play(u.card.id==='lobo'?'wolf':u.card.id==='colosso'?'colossus':'attack',{card:u.card.id});u.attacks=(u.attacks||0)+1;
      }else{u.state='idle'}
    }else moveUnit(u,target,dt);
    return;
@@ -275,7 +280,8 @@ function combat(u,dt){
      if(towerStanding)game.towers[opponent][lane]=Math.max(0,game.towers[opponent][lane]-u.card.dmg);
      else game.castles[opponent]=Math.max(0,game.castles[opponent]-u.card.dmg);
      u.cooldown=u.card.attackSpeed||1.1;
-     u.state='attack';u.attackPulse=MOTION_ATTACK_SECONDS;u.attacks=(u.attacks||0)+1;
+     u.state='attack';u.attackPulse=MOTION_ATTACK_SECONDS;
+       window.CercoAudio?.play(u.card.id==='lobo'?'wolf':u.card.id==='colosso'?'colossus':'attack',{card:u.card.id});u.attacks=(u.attacks||0)+1;
    }else u.state='idle';
  }else moveUnit(u,goal,dt);
 }
@@ -302,7 +308,75 @@ function separateFriendlyUnits(){
   }
  }
 }
-function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.energy+dt*(game.time<60?1.2:.7),0,10);game.aiTimer+=dt;const speed=$('#difficulty').value;const interval=speed==='easy'?6.2:speed==='hard'?2.9:4.4;if(game.aiTimer>=interval){game.aiTimer=0;aiCast()}for(const u of game.units){u.motionTime=(u.motionTime||0)+dt;u.attackPulse=Math.max(0,(u.attackPulse||0)-dt);combat(u,dt);if(u.attackPulse>0&&u.stun<=0)u.state='attack';}separateFriendlyUnits();game.units=game.units.filter(u=>u.hp>0);if(game.castles.enemy<=0)result('ally');else if(game.castles.ally<=0)result('enemy');else if(game.time===0){let ally=game.castles.ally+game.towers.ally.reduce((a,b)=>a+b,0),enemy=game.castles.enemy+game.towers.enemy.reduce((a,b)=>a+b,0);result(ally>=enemy?'ally':'enemy')}}
+
+// Defesa automática das quatro torres e dos dois castelos centrais.
+// Nenhuma cobrança, inventário ou partida online envolvida.
+const DEFENSE_RANGE={tower:146,castle:118};
+const DEFENSE_DAMAGE={tower:76,castle:95};
+const DEFENSE_INTERVAL={tower:1.55,castle:1.95};
+const TOWER_POSITIONS={
+ enemy:[{x:110,y:124},{x:310,y:124},{x:210,y:69}],
+ ally:[{x:110,y:H-49},{x:310,y:H-49},{x:210,y:H-19}]
+};
+function defendFromTowers(dt){
+ for(const side of ['ally','enemy']){
+  for(let slot=0;slot<3;slot++){
+   const isKeep=slot===2,key=side+'-'+slot;
+   const alive=isKeep?game.castles[side]>0:game.towers[side][slot]>0;
+   if(!alive)continue;
+   game.towerTimers[key]=Math.max(0,(game.towerTimers[key]??(slot*.19))-dt);
+   if(game.towerTimers[key]>0)continue;
+   const origin=TOWER_POSITIONS[side][slot],range=DEFENSE_RANGE[isKeep?'castle':'tower'];
+   // Torres priorizam inimigos mais próximos, com tie-break em menor vida.
+   const visible=game.units.filter(u=>u.hp>0&&u.side!==side&&distance(u,origin)<=range);
+   visible.sort((a,b)=>(distance(a,origin)-distance(b,origin)) || (a.hp-b.hp));
+   if(!visible.length)continue;
+   const target=visible[0];
+   const travel=Math.max(.25,Math.min(.66,distance(origin,target)/240));
+   const shot={
+      id:++game.counter,source:side,slot,targetId:target.id,
+      x:origin.x,y:origin.y,fromX:origin.x,fromY:origin.y,
+      toX:target.x,toY:target.y,progress:0,travel,
+      damage:DEFENSE_DAMAGE[isKeep?'castle':'tower'],
+      color:side==='ally'?'blue':'red'
+   };
+   game.projectiles.push(shot);
+   if(game.projectiles.length>28)game.projectiles.shift();
+   game.towerShots.push({side,slot,targetId:target.id,time:game.time});
+   if(game.towerShots.length>90)game.towerShots.shift();
+   game.towerTimers[key]=DEFENSE_INTERVAL[isKeep?'castle':'tower'];
+   window.CercoAudio?.play('tower',{side});
+  }
+ }
+}
+function advanceProjectiles(dt){
+ for(let i=game.projectiles.length-1;i>=0;i--){
+   const shot=game.projectiles[i];
+   shot.progress=Math.min(1,shot.progress+dt/shot.travel);
+   const target=game.units.find(u=>u.id===shot.targetId&&u.hp>0&&u.side!==shot.source);
+   if(target){shot.toX=target.x;shot.toY=target.y}
+   const t=shot.progress;
+   shot.x=shot.fromX+(shot.toX-shot.fromX)*t;
+   shot.y=shot.fromY+(shot.toY-shot.fromY)*t;
+   if(t>=1){
+     if(target&&distance(shot,target)<26){
+       target.hp=Math.max(0,target.hp-shot.damage);
+       target.hitPulse=.20;
+       game.defenseHits++;
+       window.CercoAudio?.play('towerHit');
+       game.effects.push({id:shot.id,x:target.x,y:target.y,color:shot.color,life:.32,maxLife:.32});
+     }else{
+       game.effects.push({id:shot.id,x:shot.x,y:shot.y,color:shot.color,life:.16,maxLife:.16});
+     }
+     game.projectiles.splice(i,1);
+   }
+ }
+ for(let i=game.effects.length-1;i>=0;i--){
+  game.effects[i].life-=dt;
+  if(game.effects[i].life<=0)game.effects.splice(i,1);
+ }
+}
+function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.energy+dt*(game.time<60?1.2:.7),0,10);game.aiTimer+=dt;const speed=$('#difficulty').value;const interval=speed==='easy'?6.2:speed==='hard'?2.9:4.4;if(game.aiTimer>=interval){game.aiTimer=0;aiCast()}defendFromTowers(dt);for(const u of game.units){u.motionTime=(u.motionTime||0)+dt;u.attackPulse=Math.max(0,(u.attackPulse||0)-dt);combat(u,dt);if(u.attackPulse>0&&u.stun<=0)u.state='attack';u.hitPulse=Math.max(0,(u.hitPulse||0)-dt);}advanceProjectiles(dt);separateFriendlyUnits();game.units=game.units.filter(u=>u.hp>0);if(game.castles.enemy<=0)result('ally');else if(game.castles.ally<=0)result('enemy');else if(game.time===0){let ally=game.castles.ally+game.towers.ally.reduce((a,b)=>a+b,0),enemy=game.castles.enemy+game.towers.enemy.reduce((a,b)=>a+b,0);result(ally>=enemy?'ally':'enemy')}}
 function step(now){
  if(!game.running||game.paused)return;
  // Simulação independente do FPS: celulares com WebGL lento não perdem tempo de
@@ -546,6 +620,21 @@ function draw(){
    g.fillStyle=color;g.fillRect(px-bw/2,by,bw*clamp(u.hp/u.maxHp,0,1),4);
  }
 
+ // No modo compatível 2D, os disparos também são visíveis.
+ for(const shot of game.projectiles){
+   ctx.save();ctx.lineWidth=3;ctx.strokeStyle=shot.color==='blue'?'#80d9fa':'#ffa6b5';
+   ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=12;
+   ctx.beginPath();ctx.arc(shot.x,shot.y,5.2,0,Math.PI*2);ctx.fillStyle=ctx.strokeStyle;ctx.fill();
+   ctx.restore();
+ }
+ for(const fx of game.effects){
+   ctx.save();ctx.strokeStyle=fx.color==='blue'?'#8be4fa':'#f5a0b5';
+   ctx.globalAlpha=Math.min(1,fx.life/fx.maxLife);
+   ctx.lineWidth=2.4;
+   ctx.beginPath();ctx.arc(fx.x,fx.y,10+(1-fx.life/fx.maxLife)*13,0,Math.PI*2);ctx.stroke();
+   ctx.restore();
+ }
+
 }
 function updateHand(){const node=$('#hand');node.replaceChildren();hand.forEach((id,i)=>{const c=cardData.find(x=>x.id===id);const b=document.createElement('button');b.type='button';b.className=i===activeIndex?'selected':'';b.setAttribute('aria-label',`Selecionar ${c.name}, ${c.cost} energia`);const im=document.createElement('img');im.src=cardImage(c);im.alt='';im.onerror=imgFallback;const label=document.createElement('b');label.textContent=c.name;const co=document.createElement('small');co.textContent=c.cost;b.append(im,label,co);b.addEventListener('click',()=>{activeIndex=i;chosen=c;selectedCard();updateHand()});node.append(b)})}
 function updateUI(){updateClock();$('#wins').textContent=String(local.wins);updateHand();selectedCard()}
@@ -583,6 +672,14 @@ if(new URLSearchParams(location.search).has('test')){
       return [];
     },
     reset:()=>reset(),
+    towers:()=>({shots:game.towerShots.slice(),hits:game.defenseHits,projectiles:game.projectiles.slice(),timers:{...game.towerTimers}}),
+    forceTowerTarget:(side='enemy',slot=0,target='colosso')=>{
+      const card=cardData.find(c=>c.id===target);
+      const position=TOWER_POSITIONS[side][slot];
+      if(!card)return [];
+      const opposite=side==='enemy'?'ally':'enemy';
+      return addUnit(card,{x:position.x,y:position.y+(side==='enemy'?64:-64)},opposite);
+    },
     animation:(id)=>{const u=game.units.find(u=>u.id===id);return u?{state:u.state,frame:motionFrame(u,u.attackPulse>0?'attack':u.state),clock:u.motionTime,attackPulse:u.attackPulse,attacks:u.attacks||0}:null},
     motionReady:(name)=>{const im=motionSheets.get(name);return !!(im?.complete&&im.naturalWidth>0)},
     traceRoute:(x,y,tx,ty,lane=0,steps=900)=>{
