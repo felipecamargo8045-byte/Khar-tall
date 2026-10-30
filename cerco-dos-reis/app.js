@@ -256,7 +256,7 @@ function combat(u,dt){
        target.hp-=damage;
        if(u.card.id==='liliti')u.hp=Math.min(u.maxHp,u.hp+damage*.5);
        u.mark=target.id;u.first=false;u.cooldown=u.card.attackSpeed||1.25;
-       u.state='attack';u.attackPulse=MOTION_ATTACK_SECONDS;
+       u.state='attack';u.attackPulse=MOTION_ATTACK_SECONDS;u.attacks=(u.attacks||0)+1;
      }else{u.state='idle'}
    }else moveUnit(u,target,dt);
    return;
@@ -275,7 +275,7 @@ function combat(u,dt){
      if(towerStanding)game.towers[opponent][lane]=Math.max(0,game.towers[opponent][lane]-u.card.dmg);
      else game.castles[opponent]=Math.max(0,game.castles[opponent]-u.card.dmg);
      u.cooldown=u.card.attackSpeed||1.1;
-     u.state='attack';u.attackPulse=MOTION_ATTACK_SECONDS;
+     u.state='attack';u.attackPulse=MOTION_ATTACK_SECONDS;u.attacks=(u.attacks||0)+1;
    }else u.state='idle';
  }else moveUnit(u,goal,dt);
 }
@@ -583,7 +583,7 @@ if(new URLSearchParams(location.search).has('test')){
       return [];
     },
     reset:()=>reset(),
-    animation:(id)=>{const u=game.units.find(u=>u.id===id);return u?{state:u.state,frame:motionFrame(u,u.attackPulse>0?'attack':u.state),clock:u.motionTime,attackPulse:u.attackPulse}:null},
+    animation:(id)=>{const u=game.units.find(u=>u.id===id);return u?{state:u.state,frame:motionFrame(u,u.attackPulse>0?'attack':u.state),clock:u.motionTime,attackPulse:u.attackPulse,attacks:u.attacks||0}:null},
     motionReady:(name)=>{const im=motionSheets.get(name);return !!(im?.complete&&im.naturalWidth>0)},
     traceRoute:(x,y,tx,ty,lane=0,steps=900)=>{
       const u={id:-1,side:'ally',card:{speed:33},x,y,lane,state:'walk'};
