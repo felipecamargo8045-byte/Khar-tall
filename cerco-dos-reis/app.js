@@ -470,7 +470,7 @@ function defendFromTowers(dt){
    const target=visible[0];
    const travel=Math.max(.25,Math.min(.66,distance(origin,target)/240));
    const shot={
-      id:++game.counter,source:side,slot,targetId:target.id,
+      id:++game.counter,source:side,slot,targetId:target.id,kind:'arrow',fortress:isKeep?'castle':'tower',
       x:origin.x,y:origin.y,fromX:origin.x,fromY:origin.y,
       toX:target.x,toY:target.y,progress:0,travel,
       damage:DEFENSE_DAMAGE[isKeep?'castle':'tower'],
@@ -478,7 +478,7 @@ function defendFromTowers(dt){
    };
    game.projectiles.push(shot);
    if(game.projectiles.length>28)game.projectiles.shift();
-   game.towerShots.push({side,slot,targetId:target.id,time:game.time});
+   game.towerShots.push({side,slot,targetId:target.id,kind:'arrow',fortress:isKeep?'castle':'tower',time:game.time});
    if(game.towerShots.length>90)game.towerShots.shift();
    game.towerTimers[key]=DEFENSE_INTERVAL[isKeep?'castle':'tower'];
    window.CercoAudio?.play('tower',{side});
@@ -760,11 +760,24 @@ function draw(){
    g.fillStyle=color;g.fillRect(px-bw/2,by,bw*clamp(u.hp/u.maxHp,0,1),4);
  }
 
- // No modo compatível 2D, os disparos também são visíveis.
+ // Flechas físicas das fortalezas, inclusive no fallback 2D.
  for(const shot of game.projectiles){
-   ctx.save();ctx.lineWidth=3;ctx.strokeStyle=shot.color==='blue'?'#80d9fa':'#ffa6b5';
-   ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=12;
-   ctx.beginPath();ctx.arc(shot.x,shot.y,5.2,0,Math.PI*2);ctx.fillStyle=ctx.strokeStyle;ctx.fill();
+   const angle=Math.atan2(shot.toY-shot.fromY,shot.toX-shot.fromX);
+   const t=shot.progress;
+   ctx.save();
+   ctx.translate(shot.x,shot.y-Math.sin(Math.PI*t)*8);
+   ctx.rotate(angle);
+   ctx.lineCap='round';
+   ctx.lineWidth=2.8;
+   ctx.strokeStyle='#684b2c';
+   ctx.beginPath();ctx.moveTo(-14,0);ctx.lineTo(10,0);ctx.stroke();
+   ctx.fillStyle='#c7d2de';
+   ctx.beginPath();ctx.moveTo(15,0);ctx.lineTo(7,-4);ctx.lineTo(7,4);ctx.closePath();ctx.fill();
+   ctx.strokeStyle=shot.color==='blue'?'#79d9fc':'#f29aaa';
+   ctx.lineWidth=2;
+   for(const d of [-1,1]){
+     ctx.beginPath();ctx.moveTo(-13,0);ctx.lineTo(-7,d*5);ctx.stroke();
+   }
    ctx.restore();
  }
  for(const fx of game.effects){
