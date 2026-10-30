@@ -9,7 +9,7 @@ let prefs={on:true,volume:.55};
 try{const saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved){prefs.on=saved.on!==false;prefs.volume=Math.max(0,Math.min(1,Number(saved.volume) || 0));}}catch{}
 let context=null,master=null,noiseBuffer=null;
 const last=new Map();
-const cooldowns={tower:.12,towerHit:.095,attack:.07,impact:.075,step:.30,wolf:.7,colossus:.45,damage:.2,place:.06,ui:.055};
+const cooldowns={tower:.12,towerHit:.095,attack:.065,arrow:.055,slash:.07,bite:.12,shield:.1,mark:.09,royal:.1,enchant:.12,impact:.075,step:.30,wolf:.19,colossus:.3,damage:.2,place:.06,ui:.055};
 function ac(){
  if(context)return context;
  const Ctx=window.AudioContext||window.webkitAudioContext;
@@ -64,7 +64,13 @@ function sound(kind,p={}){
   case 'tower':tone(p.side==='enemy'?265:350,.17,'sawtooth',.12,.52);noise(.12,.08,780);tone(115,.13,'triangle',.05,.77,.045);break;
   case 'towerHit':noise(.11,.15,650);tone(138,.13,'triangle',.12,.46);break;
   case 'attack':tone(p.card==='arqueiro'?750:p.card==='colosso'?146:415,.10,'triangle',.09,.51);noise(.045,.035,2300);break;
-  case 'wolf':tone(285,.2,'sawtooth',.085,1.42);tone(200,.18,'triangle',.08,1.06,.045);break;
+  case 'arrow':tone(790,.075,'sine',.045,1.36);noise(.07,.024,2600);tone(390,.12,'triangle',.028,.72,.055);break;
+  case 'slash':noise(.105,.055,2800);tone(505,.12,'sawtooth',.085,.42);break;
+  case 'shield':tone(260,.16,'triangle',.1,1.2);tone(510,.14,'sine',.075,.69,.045);noise(.08,.035,1800);break;
+  case 'mark':tone(680,.10,'square',.04,1.18);tone(920,.12,'sine',.055,.68,.04);break;
+  case 'royal':chord([[294,0],[392,.045],[588,.09]],.17,.095);noise(.09,.045,1900,.06);break;
+  case 'enchant':tone(430,.25,'sine',.08,1.75);tone(690,.3,'triangle',.07,1.22,.09);break;
+    case 'wolf':tone(285,.2,'sawtooth',.085,1.42);tone(200,.18,'triangle',.08,1.06,.045);break;
   case 'colossus':tone(96,.22,'sawtooth',.115,.54);noise(.18,.095,380);break;
   case 'impact':noise(.08,.065,1400);tone(178,.11,'triangle',.075,.56);break;
   case 'damage':tone(190,.15,'triangle',.12,.57);break;
