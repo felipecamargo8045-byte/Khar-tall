@@ -41,6 +41,20 @@ const lastByCharacter=new Map();
 const counters=new Map();
 const history=[];
 let lastGlobal=-Infinity,activeUntil=0,lastNativeVoice='',voiceNames=[];
+let primed=false;
+// A ativação da voz precisa acontecer dentro do toque de iniciar batalha:
+// alguns navegadores Android bloqueiam a primeira fala fora do gesto do usuário.
+function unlock(){
+ if(primed||!enabled||!supported||!synthesis)return false;
+ try{
+  const silent=new SpeechSynthesisUtterance('');
+  silent.lang='pt-BR';silent.volume=0;
+  synthesis.speak(silent);
+  primed=true;
+  return true;
+ }catch{return false}
+}
+
 function clock(){return typeof performance!=='undefined'?performance.now():Date.now()}
 function selectedVoice(id){
  if(!synthesis)return null;
@@ -117,7 +131,7 @@ function setEnabled(value){
  try{localStorage.setItem(STORAGE,JSON.stringify({enabled}))}catch{}
  syncButtons();
 }
-function toggle(){setEnabled(!enabled)}
+function toggle(){setEnabled(!enabled);if(enabled)unlock()}
 function syncButtons(){
  for(const id of ['voiceToggle','battleVoice']){
   const button=document.getElementById(id);
@@ -140,7 +154,7 @@ function init(){
  }
 }
 window.CercoVoices={
- profiles:CHARACTERS,speak,stop,toggle,setEnabled,enabled:()=>enabled,
+ profiles:CHARACTERS,speak,stop,unlock,toggle,setEnabled,enabled:()=>enabled,
  status:()=>({supported,enabled,voiceCount:voiceNames.length,selected:lastNativeVoice,characters:Object.keys(CHARACTERS),speechOnly:true}),
  history:()=>history.map(x=>({...x})),
  // Somente para inspeção nos testes; não emite falas.
