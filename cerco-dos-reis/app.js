@@ -95,6 +95,9 @@ function addUnit(c,location,side){
    game.units.push(unit);
    ids.push(id);
  }
+ // Sincronizar as instâncias 3D assim que o grupo nasce, não só no próximo frame.
+ // Mantém duplas separadas mesmo quando o celular demora a redesenhar.
+ window.Cerco3D?.syncNow?.(game);
  return ids;
 }
 function cryptoRandom(){game.counter++;return game.counter}
