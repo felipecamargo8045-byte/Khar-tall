@@ -691,7 +691,7 @@ function size(){
  const aspect=Math.max(.28,w/Math.max(1,h));
  // Enquadramento inteligente: mostra toda a largura da arena no celular,
  // aproveita a tela em retrato e preserva as duas pontes + os castelos.
- const vertical=Math.max(16.7,12.35/aspect);
+ const vertical=Math.max(14.8,9.55/aspect);
  camera.left=-vertical*aspect/2;
  camera.right=vertical*aspect/2;
  camera.top=vertical/2;camera.bottom=-vertical/2;
