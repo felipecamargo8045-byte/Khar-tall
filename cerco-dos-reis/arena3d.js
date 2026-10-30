@@ -190,13 +190,16 @@ function buildForts(){
     fortress.rotation.y=flip;
     fortress.position.set(lane===0?-2.5:2.5,0,z);
     scene.add(fortress);
-    forts.push({mesh:fortress,team,lane});
+    const bar=makeHealthBar(team,1.9);
+    scene.add(bar);
+    forts.push({mesh:fortress,bar,team,lane});
   }
   const big=makeFortress(team,true);
   big.position.set(0,0,enemy?-6.35:6.35);
   big.rotation.y=flip;
   scene.add(big);
-  forts.push({mesh:big,team,lane:-1});
+  const bar=makeHealthBar(team,2.3);scene.add(bar);
+  forts.push({mesh:big,bar,team,lane:-1});
  }
 }
 function torches(){
@@ -318,15 +321,32 @@ function makeWolf(team){
  group.userData={legs,arms:[],body,head,tail,hasWolf:true,size:.95,id:'lobo'};
  return group;
 }
+function makeHealthBar(team,width=.84){
+ const node=new THREE.Group();
+ const bg=box(width,.105,.025,mat(0x16273c));
+ put(node,bg,0,0,0);
+ const border=box(width+.07,.155,.016,gold);
+ put(node,border,0,0,-.023);
+ const fillMat=mat(team==='ally'?0x80e0e8:0xed879a);
+ const fill=box(width-.06,.075,.036,fillMat);
+ put(node,fill,0,0,.035);
+ node.userData.fill=fill;
+ node.userData.width=width-.06;
+ return node;
+}
 function createActor(u){
  const model=u.card.id==='lobo'?makeWolf(u.side):makeHuman(u.card.id,u.side);
+ // Proporção de estratégia: tropas menores do que a estrutura que defendem.
+ const unitScale=u.card.id==='colosso'?.73:u.card.id==='lobo'?.58:u.card.id==='rei'?.65:u.card.id==='liliti'?.63:.59;
+ model.scale.setScalar(unitScale);
  model.traverse(o=>{if(o.isMesh)o.castShadow=true});
- scene.add(model);
- return {model,side:u.side,lastFrame:0,position:new THREE.Vector3()};
+ const bar=makeHealthBar(u.side,1.05);
+ scene.add(model);scene.add(bar);
+ return {model,bar,side:u.side,lastFrame:0,position:new THREE.Vector3()};
 }
 function syncActors(game){
  const live=new Set(game.units.filter(u=>u.hp>0).map(u=>u.id));
- for(const [id,rec] of actors){if(!live.has(id)){scene.remove(rec.model);actors.delete(id)}}
+ for(const [id,rec] of actors){if(!live.has(id)){scene.remove(rec.model);scene.remove(rec.bar);actors.delete(id)}}
  for(const u of game.units){
   if(u.hp<=0)continue;
   let rec=actors.get(u.id);
@@ -341,7 +361,16 @@ function syncActors(game){
   const rate=u.card.id==='lobo'?10.5:u.card.id==='colosso'?4.1:u.card.id==='batedor'?8.9:7.1;
   const phase=clock*rate+u.id*.18;
   const step=walking?1:attacking?.48:.06;
-  obj.position.y=walking?.055*Math.sin(phase*2):.018*Math.sin(clock*2);
+  obj.position.y=walking?.042*Math.sin(phase*2):.012*Math.sin(clock*2);
+  // Indicador flutuante, sempre legível, separado do corpo do personagem.
+  rec.bar.position.set(pos.x, u.card.id==='colosso'?2.20:u.card.id==='lobo'?1.25:1.58,pos.z);
+  rec.bar.quaternion.copy(camera.quaternion);
+  const fill=rec.bar.userData.fill;
+  if(fill){
+   const ratio=clamp(u.hp/u.maxHp,0,1);
+   fill.scale.x=Math.max(.01,ratio);
+   fill.position.x=-rec.bar.userData.width*(1-ratio)/2;
+  }
   const polarity=u.side==='ally'?-1:1;
   // Frontal para alvo real, ou em direção ao castelo adversário.
   const yaw=Number.isFinite(u.heading)?Math.atan2(Math.cos(u.heading),Math.sin(u.heading)):(polarity===-1?Math.PI:0);
@@ -376,6 +405,13 @@ function syncForts(game){
   const ratio=clamp(hp/max,0,1);
   fort.mesh.scale.y=.84+.16*ratio;
   fort.mesh.visible=hp>0;
+  if(fort.bar){
+    fort.bar.visible=hp>0;
+    fort.bar.position.set(fort.mesh.position.x,fort.lane===-1?3.6:2.65,fort.mesh.position.z);
+    fort.bar.quaternion.copy(camera.quaternion);
+    fort.bar.userData.fill.scale.x=Math.max(.01,ratio);
+    fort.bar.userData.fill.position.x=-fort.bar.userData.width*(1-ratio)/2;
+  }
  }
 }
 function size(){
