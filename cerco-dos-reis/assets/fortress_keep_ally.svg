@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="230" viewBox="0 0 200 230">
+ <defs>
+  <linearGradient id="wall" x1="0" y1="0" x2="1" y2=".24"><stop stop-color="#17212e"/><stop offset=".16" stop-color="#384455"/><stop offset=".43" stop-color="#6c7580"/><stop offset=".67" stop-color="#505d6a"/><stop offset="1" stop-color="#1c2636"/></linearGradient>
+  <linearGradient id="stone" x1="0" y1="0" x2="1" y2=".3"><stop stop-color="#303a49"/><stop offset=".33" stop-color="#8993a0"/><stop offset=".60" stop-color="#697584"/><stop offset="1" stop-color="#2a3442"/></linearGradient>
+  <linearGradient id="roof" x1="0" x2="1"><stop stop-color="#141e2b"/><stop offset=".5" stop-color="#3c4658"/><stop offset="1" stop-color="#0a1320"/></linearGradient>
+  <radialGradient id="light"><stop stop-color="#9bdff4" stop-opacity=".9"/><stop offset=".5" stop-color="#418cb4" stop-opacity=".32"/><stop offset="1" stop-color="#418cb4" stop-opacity="0"/></radialGradient>
+  <pattern id="bricks" patternUnits="userSpaceOnUse" width="33" height="20"><path d="M0 0H33M0 20H33M16 0v10M0 10h33M30 10v10" stroke="#0c1826" stroke-width="1.2" fill="none" opacity=".26"/></pattern>
+  <filter id="shadow" x="-40%" y="-40%" width="180%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+ </defs>
+ <ellipse cx="101" cy="208" rx="81" ry="12" fill="#050c15" opacity=".8" filter="url(#shadow)"/>
+ <!-- Foundation and rear buttress -->
+ <path d="M18 201 L29 186 L170 185 L182 201 L161 210 L35 210Z" fill="#1b2839" stroke="#82909b" stroke-width="2"/>
+ <path d="M36 60L50 40H150L164 60V198H36Z" fill="url(#wall)" stroke="#121b28" stroke-width="4"/>
+ <path d="M42 69H158V196H42Z" fill="url(#bricks)" opacity=".7"/>
+ <!-- Central fortified keep with depth -->
+ <path d="M46 49L55 42H145L154 49V189H46Z" fill="url(#stone)" opacity=".82"/>
+ <path d="M53 59H147V190H53Z" fill="url(#bricks)"/>
+ <!-- Wall ornament -->
+ <path d="M56 76H145 M57 123H145 M57 168H145" fill="none" stroke="#1e2a38" stroke-width="2" opacity=".6"/>
+ <path d="M56 83 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M82 83 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M108 83 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M68 102 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M94 102 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M120 102 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M56 121 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M82 121 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M108 121 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M68 140 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M94 140 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M120 140 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M56 159 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M82 159 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M108 159 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M68 178 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M94 178 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/><path d="M120 178 v17" stroke="#1b2736" stroke-width="1.2" opacity=".56"/>
+ <!-- Side cylindrical turrets -->
+ <g>
+ <path d="M27 63H58V189L53 204H31L27 191Z" fill="url(#wall)" stroke="#121d2b" stroke-width="3"/>
+ <path d="M143 63H173V190L168 204H148L143 189Z" fill="url(#wall)" stroke="#121d2b" stroke-width="3"/>
+ <path d="M31 70H53V184H31Z M147 70H168V184H147Z" fill="url(#bricks)" opacity=".65"/>
+ <path d="M24 58L27 43H59L63 58H24Z M139 58L143 43H173L177 58H139Z" fill="#3c4958" stroke="#172332" stroke-width="3"/>
+ <path d="M27 43V31H35V42H43V31H51V42H59V31H64V55H24V43Z" fill="url(#stone)" stroke="#162231" stroke-width="2"/>
+ <path d="M140 43V31H148V42H156V31H164V42H173V31H178V55H138V43Z" fill="url(#stone)" stroke="#162231" stroke-width="2"/>
+ <path d="M34 87v19m14-19v19m106-19v19m12-19v19" stroke="#0b111a" stroke-width="5" stroke-linecap="round"/>
+ <path d="M34 87v12m14-12v12m106-12v12m12-12v12" stroke="#dcbf7f" stroke-width="1" opacity=".4"/>
+ </g>
+ <!-- Crown battlements -->
+ <path d="M48 53h104v18H48Z" fill="#586474" stroke="#111b2b" stroke-width="2"/>
+ <path d="M52 53 v-14 h9 v14" fill="url(#stone)" stroke="#182331" stroke-width="1.6"/><path d="M66 53 v-14 h9 v14" fill="url(#stone)" stroke="#182331" stroke-width="1.6"/><path d="M80 53 v-14 h9 v14" fill="url(#stone)" stroke="#182331" stroke-width="1.6"/><path d="M94 53 v-14 h9 v14" fill="url(#stone)" stroke="#182331" stroke-width="1.6"/><path d="M108 53 v-14 h9 v14" fill="url(#stone)" stroke="#182331" stroke-width="1.6"/><path d="M122 53 v-14 h9 v14" fill="url(#stone)" stroke="#182331" stroke-width="1.6"/><path d="M136 53 v-14 h9 v14" fill="url(#stone)" stroke="#182331" stroke-width="1.6"/>
+ <path d="M80 56V29L91 16H109L120 29V56Z" fill="url(#roof)" stroke="#152131" stroke-width="3"/><path d="M87 28h26v10H87Z" fill="#4b5668"/>
+ <!-- Twin gothic arched windows -->
+ <g fill="#09121c" stroke="#c3ad7e" stroke-width="2.2">
+  <path d="M64 92v33h12V92q-6-12-12 0z"/><path d="M125 92v33h12V92q-6-12-12 0z"/>
+ </g>
+ <g opacity=".55"><ellipse cx="70" cy="115" rx="18" ry="32" fill="url(#light)"/><ellipse cx="130" cy="115" rx="18" ry="32" fill="url(#light)"/></g>
+ <g fill="#9bdff4" opacity=".85"><path d="M68 103h4v18h-4zM128 103h4v18h-4z"/></g>
+ <!-- Heavy arched gate -->
+ <path d="M77 194V164Q77 139 100 137Q123 139 123 164V194Z" fill="#070d15" stroke="#a58e64" stroke-width="4"/>
+ <path d="M83 194v-30q0-19 17-20q17 1 17 20v30Z" fill="#382b2e" stroke="#1a1b20" stroke-width="2"/>
+ <path d="M100 147v45M85 174h30M88 165h24" stroke="#b39b71" stroke-width="2" opacity=".7"/>
+ <circle cx="96" cy="176" r="2" fill="#e4bd74"/>
+ <!-- Emblem and colored glowing banners -->
+ <path d="M94 68L106 68L104 84L100 89L96 84Z" fill="#418cb4" stroke="#9bdff4" stroke-width="1.3"/>
+ <path d="M44 117h11v44l-6-8-5 8Z M146 117h11v44l-6-8-5 8Z" fill="#418cb4" stroke="#9bdff4" stroke-width="1" opacity=".93"/>
+ <path d="M49 125v24M151 125v24" stroke="#9bdff4" opacity=".6"/>
+ <path d="M99 7 V39" stroke="#d2b480" stroke-width="3"/><path d="M101 11 l38 9 -10 15 -28 -6z" fill="#418cb4" stroke="#9bdff4" stroke-width="1.5"/>
+ <!-- Ground edge inlaid bronze -->
+ <path d="M30 199H170" stroke="#a68e61" stroke-width="3"/>
+ </svg>
