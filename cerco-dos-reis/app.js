@@ -49,17 +49,83 @@ function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.ener
 function step(now){if(!game.running||game.paused)return;const dt=Math.min(.05,(now-game.last)/1000||0);game.last=now;tick(dt);draw();updateClock();if(game.running)loop=requestAnimationFrame(step)}
 function updateClock(){const sec=Math.ceil(game.time);$('#timer').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');$('#energy').textContent=game.energy.toFixed(1)+' / 10 energia';$('#energyFill').style.width=(game.energy*10)+'%';$('#enemyCastle').textContent=fmt(Math.ceil(game.castles.enemy))+' PV';$('#allyCastle').textContent=fmt(Math.ceil(game.castles.ally))+' PV';}
 const boardArt=new Image();boardArt.src=ASSET+'arena_atmosfera.webp';
-const towerAllyArt=new Image();towerAllyArt.src=ASSET+'tower_ally.svg';
-const towerEnemyArt=new Image();towerEnemyArt.src=ASSET+'tower_enemy.svg';
-const castleAllyArt=new Image();castleAllyArt.src=ASSET+'castle_ally.svg';
-const castleEnemyArt=new Image();castleEnemyArt.src=ASSET+'castle_enemy.svg';
-const tokenArt={
- lobo:'token_wolf.webp',arqueiro:'token_archer.webp',soldado:'token_soldier.webp',
- colosso:'token_colossus.webp',guardiao:'token_guardian.webp',
- batedor:'token_scout.webp',rei:'token_king.webp',liliti:'token_lilith_ruiva.webp'
-};
-const unitIcons=new Map(Object.entries(tokenArt).map(([id,p])=>{const i=new Image();i.src=ASSET+p;return[id,i]}));
-function paintImage(g,img,x,y,w,h){if(img.complete&&img.naturalWidth){g.drawImage(img,x,y,w,h);return true}return false}
+// Sprites recortados das artes existentes: personagens inteiros, nunca bolinhas.
+const spriteNames=['lobo','arqueiro','soldado','colosso','guardiao','batedor','rei','liliti'];
+const unitSprites=new Map(spriteNames.map(id=>{
+ const image=new Image();image.src='./sprites/sprite_'+id+'.png';return[id,image];
+}));
+function drawFortress(g,x,y,side,kind,hp){
+ const enemy=side==='enemy';
+ const accent=enemy?'#b85a69':'#559fc1';
+ const highlight=enemy?'#f5b1ae':'#a6e0f2';
+ const w=kind==='castle'?67:69;
+ const h=kind==='castle'?65:83;
+ const left=-w/2,top=-h;
+ g.save();g.translate(x,y);
+ g.globalAlpha=hp<=0?.3:1;
+ // Base projetada sobre o chão e muralhas em perspectiva.
+ g.fillStyle='#04090fb0';g.beginPath();g.ellipse(0,3,w*.57,10,0,0,Math.PI*2);g.fill();
+ g.fillStyle='#273344';g.beginPath();g.moveTo(left+7,-9);g.lineTo(-w*.62,-1);g.lineTo(w*.62,-1);g.lineTo(w/2-7,-9);g.closePath();g.fill();
+ const stone=g.createLinearGradient(left,0,w/2,0);
+ stone.addColorStop(0,'#171e2b');stone.addColorStop(.16,'#556072');
+ stone.addColorStop(.48,'#758091');stone.addColorStop(.72,'#3d4659');stone.addColorStop(1,'#151b28');
+ g.fillStyle=stone;g.strokeStyle='#111724';g.lineWidth=2;
+ g.fillRect(left+8,top+19,w-16,h-21);g.strokeRect(left+8,top+19,w-16,h-21);
+ // Duas torres de vigia e seteiras, estética de fortaleza de pedra.
+ for(const direction of [-1,1]){
+   const bx=direction*(w/2-10)-9;
+   g.fillStyle='#293343';g.fillRect(bx,top+15,18,h-19);
+   g.fillStyle='#606b79';g.fillRect(bx+2,top+16,10,h-24);
+   g.strokeStyle='#151c29';g.strokeRect(bx,top+15,18,h-19);
+   g.fillStyle='#172130';g.fillRect(bx+6,top+30,3,13);
+   g.fillStyle=highlight;g.globalAlpha=.38;g.fillRect(bx+7,top+31,1,11);g.globalAlpha=hp<=0?.3:1;
+   for(let merlon=0;merlon<3;merlon++){
+      g.fillStyle=merlon%2?'#626c7c':'#3d4656';
+      g.fillRect(bx+merlon*6,top+7,5,11);
+      g.strokeStyle='#202839';g.strokeRect(bx+merlon*6,top+7,5,11);
+   }
+ }
+ // Corpo central, tijolos e linhas de pedra desiguais.
+ g.strokeStyle='#202a38';g.lineWidth=1;
+ for(let row=0;row<5;row++){
+   const by=top+26+row*9;
+   g.beginPath();g.moveTo(left+17,by);g.lineTo(w/2-17,by);g.stroke();
+   for(let col=0;col<3;col++){
+     const xx=left+18+col*10+(row%2)*5;
+     g.beginPath();g.moveTo(xx,by);g.lineTo(xx,by+8);g.stroke();
+   }
+ }
+ // Topo com muralhas e estandarte, sem "telhado de brinquedo".
+ g.fillStyle='#243043';g.fillRect(left+13,top+12,w-26,12);
+ g.fillStyle='#788292';g.fillRect(left+13,top+11,w-26,4);
+ for(let merlon=0;merlon<5;merlon++){
+  const mx=left+14+merlon*8;
+  g.fillStyle=merlon%2?'#7a8490':'#4f5b6a';
+  g.fillRect(mx,top+5,6,13);
+  g.strokeStyle='#253040';g.strokeRect(mx,top+5,6,13);
+ }
+ // Portão profundo de pedra com arco e reflexos de metal.
+ g.fillStyle='#090d15';g.beginPath();g.moveTo(-10,0);g.lineTo(-10,-19);g.quadraticCurveTo(0,-33,10,-19);g.lineTo(10,0);g.closePath();g.fill();
+ g.strokeStyle='#b89d6c';g.lineWidth=2;
+ g.beginPath();g.moveTo(-10,0);g.lineTo(-10,-19);g.quadraticCurveTo(0,-33,10,-19);g.lineTo(10,0);g.stroke();
+ g.fillStyle='#4a3440';g.fillRect(-6,-15,12,15);
+ g.strokeStyle='#b4a17b';g.lineWidth=1;g.beginPath();g.moveTo(0,-14);g.lineTo(0,-1);g.stroke();
+ // Bandeira estreita indica facção e nível de vida da estrutura.
+ g.strokeStyle='#e4d19a';g.lineWidth=2;g.beginPath();g.moveTo(0,top+7);g.lineTo(0,top-15);g.stroke();
+ g.fillStyle=accent;g.beginPath();g.moveTo(1,top-13);g.lineTo(24,top-9);g.lineTo(17,top);g.lineTo(1,top-2);g.closePath();g.fill();
+ g.strokeStyle=highlight;g.lineWidth=1;g.stroke();
+ // Janelas iluminadas.
+ for(const px of [-20,20]){
+   g.fillStyle='#0e1420';g.beginPath();g.roundRect(px-3,top+35,6,15,2);g.fill();
+   g.fillStyle=highlight;g.globalAlpha=.7;g.fillRect(px-1,top+38,2,8);
+   g.globalAlpha=hp<=0?.3:1;
+ }
+ if(hp<=0){
+   g.strokeStyle='#f29f6a';g.lineWidth=2;
+   g.beginPath();g.moveTo(-14,top+17);g.lineTo(-2,top+38);g.lineTo(10,top+53);g.stroke();
+ }
+ g.restore();
+}
 function draw(){
  const g=ctx;
  g.clearRect(0,0,W,H);
@@ -92,49 +158,57 @@ function draw(){
    for(let i=-2;i<=2;i++){g.beginPath();g.moveTo(x+i*18,H/2-18);g.lineTo(x+i*18,H/2+18);g.stroke()}
    g.strokeStyle='#e9d7b8';g.lineWidth=3;g.strokeRect(x-46,H/2-20,92,40);
  }
- // Fortalezas com arte original, em vez de caixas genericas.
+ // Fortalezas em pedra. Cada estrutura usa seu próprio valor de vida.
  for(const side of ['enemy','ally']){
-   const enemy=side==='enemy',y=enemy?76:H-76;
-   const arr=game.towers[side],towerImg=enemy?towerEnemyArt:towerAllyArt;
-   const castle=enemy?castleEnemyArt:castleAllyArt;
-   g.globalAlpha=.95;
-   paintImage(g,castle,W/2-28,enemy?0:H-56,56,56);
-   g.globalAlpha=1;
+   const enemy=side==='enemy',y=enemy?129:H-49;
+   const arr=game.towers[side];
+   // Castelo real separado das duas torres de defesa.
+   drawFortress(g,W/2,enemy?67:H-4,side,'castle',game.castles[side]);
    for(let lane=0;lane<2;lane++){
-     const x=lane?310:110, hp=arr[lane];
-     g.save();
-     if(hp<=0){g.globalAlpha=.42;g.fillStyle='#202534';g.fillRect(x-35,y-29,70,65)}
-     else if(!paintImage(g,towerImg,x-38,y-43,76,82)){
-       g.fillStyle=enemy?'#743643':'#2f6986';g.strokeStyle=enemy?'#d98f94':'#8ddbe3';
-       g.lineWidth=3;g.beginPath();g.roundRect(x-28,y-30,56,59,6);g.fill();g.stroke();
-       g.font='28px Georgia';g.fillStyle='#f0d7a4';g.textAlign='center';g.fillText('♜',x,y+7);
-     }
-     g.restore();
-     const bx=x-36,by=enemy?y+40:y-46;
-     g.fillStyle='#0b1828';g.fillRect(bx,by,72,7);
-     g.fillStyle=enemy?'#d47686':'#80d7e7';g.fillRect(bx+1,by+1,70*clamp(hp/1400,0,1),5);
-     g.strokeStyle='#eee8d279';g.strokeRect(bx,by,72,7);
+     const x=lane?310:110,hp=arr[lane];
+     drawFortress(g,x,y,side,'tower',hp);
+     const by=enemy?y+11:y-94;
+     g.fillStyle='#111a29';g.fillRect(x-34,by,68,6);
+     g.fillStyle=enemy?'#ca7180':'#74c6df';g.fillRect(x-33,by+1,66*clamp(hp/1400,0,1),4);
    }
-   g.textAlign='center';g.font='bold 13px system-ui';
-   g.shadowColor='#060c15';g.shadowBlur=4;
-   g.fillStyle=enemy?'#f3b3b8':'#caeffb';
-   g.fillText('♛ '+fmt(Math.ceil(game.castles[side])),W/2,enemy?20:H-9);
+   g.textAlign='center';g.font='bold 12px system-ui';
+   g.shadowColor='#000';g.shadowBlur=5;
+   g.fillStyle=enemy?'#f3bdbe':'#c4ecf7';
+   g.fillText('♛ '+fmt(Math.ceil(game.castles[side])),W/2,enemy?18:H-8);
    g.shadowBlur=0;
  }
- // Tokens individuais em cima da arena.
+ // Personagens com pernas, mantos, armaduras, lobo e proporções reais.
+ // Movimento do jogo é mantido: apenas a representação muda.
  for(const u of game.units){
-   const blue=u.side==='ally',im=unitIcons.get(u.card.id)||sprites.get(u.card.id);
-   const ring=blue?'#a0dbe9':'#f1a0a1';
-   g.save();g.shadowColor='#0009';g.shadowBlur=8;
-   g.fillStyle=blue?'#264e67':'#70384b';g.strokeStyle=ring;g.lineWidth=2.5;
-   g.beginPath();g.arc(u.x,u.y,19,0,Math.PI*2);g.fill();g.stroke();g.shadowBlur=0;
+   const blue=u.side==='ally',im=unitSprites.get(u.card.id);
+   const t=game.running?Math.sin((180-game.time)*8+u.id*2)*1.1:0;
+   const px=u.x+((u.id%3)-1)*7;
+   const feet=u.y+8+t;
+   const height=u.card.id==='colosso'?69:u.card.id==='lobo'?55:u.card.id==='liliti'?65:u.card.id==='rei'?62:58;
+   const width=im?.naturalWidth?Math.min(72,im.naturalWidth/im.naturalHeight*height):40;
+   const color=blue?'#76d0ef':'#f28e95';
+   g.save();
+   // Sombras projetadas e base de facção, sem retrato circular.
+   g.fillStyle='#030a12a6';g.beginPath();g.ellipse(px,feet+1,width*.42,7,0,0,Math.PI*2);g.fill();
+   g.fillStyle=blue?'#69cce04a':'#dd677d4c';g.beginPath();g.ellipse(px,feet,width*.41,4,0,0,Math.PI*2);g.fill();
+   g.shadowColor='#03060ec9';g.shadowBlur=6;g.shadowOffsetY=3;
    if(im?.complete&&im.naturalWidth){
-     g.beginPath();g.arc(u.x,u.y,15.8,0,Math.PI*2);g.clip();g.drawImage(im,u.x-16,u.y-16,32,32);
-   }else{g.fillStyle='#f7e2b1';g.font='bold 17px Georgia';g.textAlign='center';g.fillText(u.card.name[0],u.x,u.y+5)}
+     g.drawImage(im,px-width/2,feet-height,width,height);
+   }else{
+     // Asset ainda carregando: silhueta legível, nunca a foto em bolinha.
+     g.fillStyle=blue?'#5982a0':'#a55c67';
+     g.beginPath();g.moveTo(px-11,feet);g.lineTo(px-10,feet-26);
+     g.lineTo(px-15,feet-33);g.lineTo(px,feet-43);g.lineTo(px+15,feet-33);
+     g.lineTo(px+10,feet-26);g.lineTo(px+11,feet);g.closePath();g.fill();
+     g.fillStyle='#d7c19d';g.beginPath();g.arc(px,feet-41,7,0,Math.PI*2);g.fill();
+   }
    g.restore();
-   g.fillStyle='#081321';g.fillRect(u.x-19,u.y+20,38,5);
-   g.fillStyle=blue?'#7fdfaa':'#e58e98';g.fillRect(u.x-18,u.y+21,36*clamp(u.hp/u.maxHp,0,1),3);
+   // Barra fina acima da cabeça com cor do exército.
+   const by=feet-height-8,bw=Math.max(27,Math.min(44,width*.9));
+   g.fillStyle='#07101c';g.fillRect(px-bw/2-1,by-1,bw+2,6);
+   g.fillStyle=color;g.fillRect(px-bw/2,by,bw*clamp(u.hp/u.maxHp,0,1),4);
  }
+
 }
 function updateHand(){const node=$('#hand');node.replaceChildren();hand.forEach((id,i)=>{const c=cardData.find(x=>x.id===id);const b=document.createElement('button');b.type='button';b.className=i===activeIndex?'selected':'';b.setAttribute('aria-label',`Selecionar ${c.name}, ${c.cost} energia`);const im=document.createElement('img');im.src=cardImage(c);im.alt='';im.onerror=imgFallback;const label=document.createElement('b');label.textContent=c.name;const co=document.createElement('small');co.textContent=c.cost;b.append(im,label,co);b.addEventListener('click',()=>{activeIndex=i;chosen=c;selectedCard();updateHand()});node.append(b)})}
 function updateUI(){updateClock();$('#wins').textContent=String(local.wins);updateHand();selectedCard()}
