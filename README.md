@@ -170,3 +170,10 @@ A integração de cotações pelo Melhor Envio substitui o frete fixo. Há sele�
 O painel registra o aceite e o envio, exige rastreamento para enviar e mantém mensagens privadas em Meus pedidos. O e-mail transacional Brevo é opcional, com credencial criptografada, confirmação de plano gratuito, limite local de 250 tentativas/dia e reenvio de pendências pelo administrador. Nenhuma etiqueta ou saldo é comprado automaticamente.
 
 Configuração, limites e fontes: [FRETE_E_AVISOS.md](FRETE_E_AVISOS.md). `tests/test_shipping.js` cobre cotações adulteradas/vencidas, falhas do provedor, regras de aceite/envio, avisos privados, concorrência, limite de e-mail e persistência, sem transação ou mensagem real.
+
+## APK do jogo de cartas Cerco dos Reis
+
+O aplicativo separado de cartas está disponível no link público `/baixar/cerco-dos-reis.apk`.
+O arquivo assinado usa o pacote `br.com.victoryno.cercodosreis`; o Khar Tall mantém seu APK, pacote e assinatura próprios.
+A metadata com versão, tamanho, SHA-256 e certificado público está em `/baixar/cerco-dos-reis.json`.
+Apenas o download reutiliza este servidor; a conta e os recursos online continuam no app Cerco dos Reis.

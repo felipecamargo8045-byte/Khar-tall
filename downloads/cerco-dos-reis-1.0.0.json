@@ -1,0 +1,13 @@
+{
+  "file": "cerco-dos-reis-1.0.0.apk",
+  "version": "1.0.0",
+  "versionCode": 1,
+  "package": "br.com.victoryno.cercodosreis",
+  "minAndroid": "8.0",
+  "targetSdk": 36,
+  "sizeBytes": 3912581,
+  "sha256": "ef171a823f7e824b1b78a0e6b300c0257702f2f79f7ea9e3e4ab33a2fdfa7e4d",
+  "certificateSha256": "2C:78:3E:99:05:D1:0D:60:53:B6:65:55:4B:88:DA:24:D4:4A:97:3B:58:01:9C:86:9F:2D:F3:29:85:F7:C2:33",
+  "offlineAssetsVerified": 53,
+  "signed": true
+}

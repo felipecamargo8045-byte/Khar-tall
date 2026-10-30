@@ -1,5 +1,5 @@
 'use strict';
-const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http'),zlib=require('node:zlib');
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http'),zlib=require('node:zlib'),crypto=require('node:crypto');
 const origin=process.env.KT_URL||'http://127.0.0.1:8765';
 function request(route,headers={},method='GET'){
  return new Promise((resolve,reject)=>{const req=http.request(origin+route,{headers,method},res=>{const chunks=[];res.on('data',c=>chunks.push(c));res.on('end',()=>resolve({status:res.statusCode,headers:res.headers,body:Buffer.concat(chunks)}));});req.on('error',reject);req.end();});
@@ -22,6 +22,14 @@ function request(route,headers={},method='GET'){
   assert.equal(refused.headers['content-encoding'],undefined);assert.deepEqual(refused.body,expected);
   const stale=await request(route,{'If-None-Match':'"older-deploy"'});assert.equal(stale.status,200);assert.deepEqual(stale.body,expected);
  }
+ const cardMeta=JSON.parse(fs.readFileSync(path.join(__dirname,'../downloads/cerco-dos-reis-1.0.0.json'),'utf8'));
+ const apk=await request('/baixar/cerco-dos-reis.apk');
+ assert.equal(apk.status,200);assert.equal(apk.headers['content-type'],'application/vnd.android.package-archive');assert.equal(apk.headers['content-disposition'],'attachment; filename="cerco-dos-reis-1.0.0.apk"');assert.equal(apk.headers['set-cookie'],undefined);
+ assert.equal(apk.body.length,cardMeta.sizeBytes);assert.equal(crypto.createHash('sha256').update(apk.body).digest('hex'),cardMeta.sha256);
+ const apkHead=await request('/baixar/cerco-dos-reis.apk',{},'HEAD');assert.equal(apkHead.status,200);assert.equal(apkHead.body.length,0);assert.equal(Number(apkHead.headers['content-length']),cardMeta.sizeBytes);
+ const apkCached=await request('/baixar/cerco-dos-reis.apk',{'If-None-Match':apk.headers.etag});assert.equal(apkCached.status,304);assert.equal(apkCached.body.length,0);
+ const cardManifest=await request('/baixar/cerco-dos-reis.json');assert.equal(cardManifest.status,200);assert.deepEqual(JSON.parse(cardManifest.body),cardMeta);assert.equal(cardMeta.package,'br.com.victoryno.cercodosreis');
+ const boardApk=await request('/baixar/khar-tall.apk',{},'HEAD');assert.equal(boardApk.status,200);assert.equal(boardApk.headers['content-type'],'application/vnd.android.package-archive');assert.notEqual(Number(boardApk.headers['content-length']),cardMeta.sizeBytes);
  const health=await request('/api/health');assert.equal(health.headers['cache-control'],'no-store');assert.equal(health.headers.etag,undefined);
- console.log('Transfer OK: lossless gzip, unchanged WAVs, 304 revalidation, stale cache, HEAD and private API exclusion.');
+ console.log('Transfer OK: lossless gzip, unchanged WAVs, 304 revalidation, stale cache, HEAD, private API exclusion and independent public signed APK downloads.');
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});
