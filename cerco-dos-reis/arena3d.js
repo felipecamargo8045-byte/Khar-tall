@@ -12,15 +12,15 @@ const teams={
  ally:{cloth:0x2c78a8,glow:0x7cdeee,flag:0x348cc4},
  enemy:{cloth:0x9e3d50,glow:0xf9a0ad,flag:0xc1536c}
 };
-const mat=(color,metalness=.08,roughness=.83)=>new THREE.MeshStandardMaterial({color,metalness,roughness,flatShading:true});
+const mat=(color,metalness=.08,roughness=.83)=>new THREE.MeshStandardMaterial({color,metalness,roughness,flatShading:false});
 const stone=mat(0x8194a8),darkStone=mat(0x344354),stoneLight=mat(0xb2c6d5);
 const iron=mat(0x8994a5,.8,.35),black=mat(0x131a27,.35),gold=mat(0xc6a569,.7,.34);
 const wood=mat(0xae8650),grass=mat(0x4a725b),dirt=mat(0x607b70),water=new THREE.MeshStandardMaterial({color:0x277a9d,metalness:.25,roughness:.3,transparent:true,opacity:.93});
 const skin=mat(0xd1a486),fur=mat(0x48403b),redHair=mat(0x9d452c),green=mat(0x64b87b);
 const box=(w,h,d,m)=>new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
-const sphere=(r,m)=>new THREE.Mesh(new THREE.IcosahedronGeometry(r,1),m);
-const cyl=(r1,r2,h,m,sides=7)=>new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,sides),m);
-const cone=(r,h,m,sides=6)=>new THREE.Mesh(new THREE.ConeGeometry(r,h,sides),m);
+const sphere=(r,m)=>new THREE.Mesh(new THREE.SphereGeometry(r,14,10),m);
+const cyl=(r1,r2,h,m,sides=10)=>new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,sides),m);
+const cone=(r,h,m,sides=9)=>new THREE.Mesh(new THREE.ConeGeometry(r,h,sides),m);
 const put=(group,obj,x,y,z)=>{obj.position.set(x,y,z);group.add(obj);return obj;};
 // Materiais próprios com variação de pedra e piso: a arena não depende de
 // imagens externas nem usa objetos ou desenhos do jogo de referência.
@@ -90,77 +90,120 @@ function createRenderer(){
  r.toneMappingExposure=1.15;
  return r;
 }
-function terrain(){
- const board=box(11.9,.28,15.45,darkStone);put(scene,board,0,-.25,0);board.receiveShadow=true;
- const floor=box(11.15,.045,14.55,dirt);put(scene,floor,0,-.09,0);floor.receiveShadow=true;
- // Pedras reais, caminhos, rio escavado e duas pontes tridimensionais.
- for(let i=0;i<2;i++){
-   const x=i===0?-2.5:2.5;
-   const road=box(2.55,.035,13.7,texturedStone('road'));
-   put(scene,road,x,-.04,0);road.receiveShadow=true;
-   for(let k=0;k<17;k++){
-     const z=-6.4+k*.78;
-     const tile=box(2.17,.02,.035,mat(k%2?0x303945:0x859095));
-     put(scene,tile,x,-.014,z);
-     if(k%2===0){
-       const seam=box(.028,.024,.42,darkStone);
-       put(scene,seam,x+(.5-k%3)*.65,-.012,z+.27);
-     }
-   }
- }
- const river=box(11.3,.035,1.32,water);
- put(scene,river,0,.006,0);river.receiveShadow=true;
- for(let i=0;i<13;i++){
-  const wave=box(.6,.008,.032,mat(0x407b85));
-  put(scene,wave,-5.0+i*.82,.036,(i%3-1)*.23);
- }
- for(const x of [-2.5,2.5]){
-   const bridge=box(2.67,.22,1.66,wood);put(scene,bridge,x,.15,0);bridge.castShadow=true;
-   for(let i=0;i<7;i++){
-     put(scene,box(2.66,.025,.035,darkStone),x,.259,-.75+i*.25);
-   }
-   for(const edge of [-1,1]){
-    const rail=box(.095,.35,1.68,gold);
-    put(scene,rail,x+edge*1.32,.43,0);
-   }
- }
- // Pedras de margem impedem visualmente o atalho pelo rio.
- for(const z of [-.72,.72]){
-  for(let n=0;n<20;n++){
-   const x=-5.15+(n+.5)*.54;
-   // Nenhuma barreira falsa sobre a entrada das duas pontes.
-   if(Math.abs(x+2.5)<1.42||Math.abs(x-2.5)<1.42)continue;
-   const rock=box(.46,.16,.24,stone);
-   put(scene,rock,x,.11,z);
+// Direção de arte: fantasia estilizada, limpa e legível. Iluminação de
+// maquete, detalhes vivos e pontes grandes; assets e padrões são originais.
+function surfaceTexture(style){
+ const canvas=document.createElement('canvas');
+ canvas.width=512;canvas.height=512;
+ const ctx=canvas.getContext('2d'),seed=style==='grass'?1931:2701;
+ let n=seed;
+ function rnd(){n=(Math.imul(n,1664525)+1013904223)>>>0;return n/4294967296}
+ const green=style==='grass';
+ ctx.fillStyle=green?'#83bc72':'#c6ba9b';
+ ctx.fillRect(0,0,512,512);
+ for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+  const x=c*64,y=r*64;
+  const shades=green?['#8dcf77','#80bf72','#94ce81','#7cb96c','#a0d48b']:['#c3b9a2','#d5c9aa','#b2aea0','#d8ceb7','#bdbda8'];
+  ctx.fillStyle=shades[Math.floor(rnd()*shades.length)];
+  ctx.fillRect(x+1,y+1,62,62);
+  ctx.fillStyle=green?'rgba(39,101,48,.12)':'rgba(52,62,66,.13)';
+  ctx.fillRect(x+1,y+61,62,2);
+  ctx.strokeStyle=green?'rgba(245,255,206,.28)':'rgba(253,248,211,.22)';
+  ctx.lineWidth=1;ctx.strokeRect(x+2,y+2,60,60);
+  for(let z=0;z<14;z++){
+   const xx=x+4+rnd()*55,yy=y+4+rnd()*55;
+   ctx.fillStyle=green?(rnd()>.5?'rgba(36,113,54,.18)':'rgba(245,246,173,.17)'):'rgba(92,88,78,.12)';
+   ctx.fillRect(xx,yy,2+rnd()*2,1+rnd()*3);
   }
  }
- // Marcação do caminho livre: distingue bem ponte, água e margem.
+ const tex=new THREE.CanvasTexture(canvas);
+ tex.colorSpace=THREE.SRGBColorSpace;
+ tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
+ tex.anisotropy=2;
+ tex.repeat.set(green?1.7:1,green?2.4:4);
+ return tex;
+}
+function terrain(){
+ // Grande plataforma 3D com contorno dourado, piso pastel e duas pistas.
+ const base=box(12.05,.38,15.45,mat(0x334a5b));put(scene,base,0,-.31,0);
+ const edge=box(11.76,.13,15.17,gold);put(scene,edge,0,-.12,0);
+ const field=box(11.48,.07,14.88,new THREE.MeshStandardMaterial({map:surfaceTexture('grass'),roughness:.9}));
+ put(scene,field,0,-.024,0);field.receiveShadow=true;
+ // Caminhos em pedra clara, com bordas bem definidas.
+ const roadMat=new THREE.MeshStandardMaterial({map:surfaceTexture('path'),roughness:.82});
  for(const x of [-2.5,2.5]){
-   for(const z of [-.6,.6]){
-     for(let i=0;i<2;i++){
-       const pillar=cyl(.09,.105,.48,stoneLight,8);
-       put(scene,pillar,x+(i?1.22:-1.22),.4,z);
-       put(scene,sphere(.12,gold),x+(i?1.22:-1.22),.7,z);
+   const path=box(2.54,.045,13.48,roadMat);
+   put(scene,path,x,.018,0);path.receiveShadow=true;
+   const sideLine=mat(0xdacda9);
+   for(const d of [-1,1]){
+     put(scene,box(.075,.038,13.5,sideLine),x+d*1.32,.052,0);
+   }
+   for(let z=-6.3;z<6.4;z+=.8){
+     put(scene,box(2.5,.02,.032,mat(0x8b8c80)),x,.052,z);
+   }
+ }
+ // Água ciano contrastante: rio intransponível, salvo pelas pontes.
+ const brightWater=new THREE.MeshStandardMaterial({color:0x3fb9d7,metalness:.12,roughness:.27,emissive:0x0a354c,emissiveIntensity:.16});
+ put(scene,box(11.45,.06,1.35,brightWater),0,.085,0);
+ const foam=mat(0xa7ecdf);
+ for(let z of [-.61,.61]){
+   put(scene,box(11.25,.024,.085,foam),0,.13,z);
+ }
+ for(let i=0;i<12;i++){
+  const ripple=box(.55,.018,.025,mat(i%2?0x81e5eb:0x70d4e5));
+  put(scene,ripple,-5.2+i*.92,.13,(i%3-1)*.26);
+ }
+ // Pontes largas, madeira dourada com tabuas salientes e corrimão.
+ for(const x of [-2.5,2.5]){
+   const apron=box(2.78,.13,2.08,mat(0xd5c49e));put(scene,apron,x,.14,0);
+   const deck=box(2.62,.18,1.80,mat(0x9e6b41));put(scene,deck,x,.245,0);
+   for(let i=0;i<9;i++){
+     const plank=box(2.54,.045,.18,mat(i%2?0xd4a36b:0xbd8a52));
+     put(scene,plank,x,.36,-.77+i*.19);
+     put(scene,box(2.55,.025,.023,mat(0x76533b)),x,.383,-.86+i*.19);
+   }
+   for(const d of [-1,1]){
+     const side=x+d*1.31;
+     put(scene,box(.095,.13,1.84,mat(0xffdf96)),side,.43,0);
+     for(const z of [-.75,0,.75]){
+       const post=box(.18,.48,.18,gold);put(scene,post,side,.53,z);
+       put(scene,sphere(.13,mat(0xffd985)),side,.84,z);
      }
    }
  }
- // Bordas em pedra com torres menores e brasões.
- for(const x of [-5.72,5.72]){
-   put(scene,box(.34,.4,15.2,stone),x,.1,0);
-   for(let z=-6.9;z<=7;z+=1.75){
-    const stump=cyl(.22,.26,.55,stone);put(scene,stump,x,.35,z);stump.castShadow=true;
-    put(scene,cone(.3,.18,darkStone),x,.7,z);
+ // Rochas de margem com contraste; entradas das pontes ficam totalmente livres.
+ const bankStone=mat(0xc1c9be),bankShade=mat(0x789998);
+ for(const z of [-.79,.79]){
+  for(let k=0;k<24;k++){
+   const x=-5.3+(k+.5)*.45;
+   if(Math.abs(x-2.5)<1.44||Math.abs(x+2.5)<1.44)continue;
+   const rock=cyl(.22,.29,.21,k%3===0?bankShade:bankStone,7);
+   put(scene,rock,x,.20,z);
+  }
+ }
+ // Parapeitos coloridos: limite real do campo (visual).
+ for(const x of [-5.76,5.76]){
+   put(scene,box(.30,.39,15.1,mat(0x849cad)),x,.19,0);
+   put(scene,box(.38,.12,15.2,mat(0xe6cf9b)),x,.43,0);
+   for(let z=-6.7;z<6.9;z+=1.7){
+     put(scene,box(.48,.40,.47,mat(0xc1d1d7)),x,.60,z);
+     put(scene,cone(.26,.34,mat(0x5b778c),6),x,.96,z);
    }
  }
- for(const z of [-7.24,7.24]){
-   put(scene,box(11.3,.35,.4,stone),0,.08,z);
+ for(const z of [-7.36,7.36]){
+   const m=z<0?mat(0xaa6078):mat(0x498eb4);
+   put(scene,box(11.7,.30,.37,m),0,.18,z);
+   put(scene,box(11.7,.06,.45,gold),0,.36,z);
  }
- // Detalhes do solo: brasões, grama entre blocos.
- for(let i=0;i<30;i++){
-    const x=Math.sin(i*7.67)*4.8;
-    const z=Math.cos(i*13.7)*6.5;
-    if(Math.abs(x)>3.95){
-      put(scene,cone(.11,.2,grass,4),x,.06,z);
+ // Mosaicos laterais, arbustos, tochas e bandeiras, mantendo o centro limpo.
+ for(let i=0;i<24;i++){
+    const x=(i%2?1:-1)*(4.3+(i%4)*.30);
+    const z=-6.55+(i%12)*1.16;
+    if(i%3===0){
+      put(scene,sphere(.28,mat(i%2?0x5c9d56:0x4f9e70)),x,.26,z);
+      put(scene,sphere(.2,mat(0x9ccd80)),x+.16,.25,z-.1);
+    }else{
+      put(scene,cone(.15,.33,mat(0x3e885c)),x,.23,z);
     }
  }
 }
