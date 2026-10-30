@@ -327,7 +327,7 @@ function applyAttackDamage(shot,target){
      if(caster)caster.hp=Math.min(caster.maxHp,caster.hp+shot.damage*.5);
    }
    attackVisual(shot.kind,target.x,target.y,shot.side);
-   window.CercoAudio?.play(shot.kind==='slam'?'colossus':'impact',{card:shot.cardId});
+   window.CercoAudio?.play(shot.kind==='slam'?'colossus':'impact',{card:shot.cardId,variant:shot.variant});
    return true;
  }
  if(shot.structureSide){
@@ -348,6 +348,7 @@ function applyAttackDamage(shot,target){
 function startTroopAttack(u,target,damage,structureSide=null,structureLane=null,position=null){
  const profile=ATTACK_STYLES[u.card.id]||ATTACK_STYLES.soldado;
  const aim=target?{x:target.x,y:target.y}:position||{x:u.x,y:u.y-40};
+ const finishMark=u.card.id==='batedor'&&!!target&&u.mark===target.id;
  u.heading=Math.atan2(aim.y-u.y,aim.x-u.x);
  u.attackKind=profile.kind;u.state='attack';u.attackPulse=MOTION_ATTACK_SECONDS;
  u.attacks=(u.attacks||0)+1;
@@ -355,7 +356,7 @@ function startTroopAttack(u,target,damage,structureSide=null,structureLane=null,
  u.mark=target?.id||null;u.first=false;
  const shot={
    id:++game.counter,sourceId:u.id,side:u.side,cardId:u.card.id,
-   kind:profile.kind,damage,targetId:target?.id??null,
+   kind:profile.kind,variant:finishMark?'red':'blue',damage,targetId:target?.id??null,
    structureSide,structureLane,
    x:u.x,y:u.y,fromX:u.x,fromY:u.y,toX:aim.x,toY:aim.y,progress:0,
    duration:Math.min(.64,Math.max(.23,distance(u,aim)/(u.card.id==='arqueiro'?225:290))),
@@ -364,7 +365,7 @@ function startTroopAttack(u,target,damage,structureSide=null,structureLane=null,
  game.attackHistory.push({id:shot.id,sourceId:u.id,card:u.card.id,kind:profile.kind,ranged:profile.ranged,targetId:shot.targetId,time:game.time});
  if(game.attackHistory.length>90)game.attackHistory.shift();
  attackVisual(profile.kind,u.x,u.y,u.side,'release');
- window.CercoAudio?.play(profile.audio,{card:u.card.id});
+ window.CercoAudio?.play(finishMark?'markRed':profile.audio,{card:u.card.id});
  if(profile.ranged){
    game.attackShots.push(shot);
    if(game.attackShots.length>38)game.attackShots.shift();
