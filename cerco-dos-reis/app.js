@@ -40,11 +40,158 @@ function start(){game.running=true;game.paused=false;game.result=null;game.last=
 function result(winner){if(!game.running)return;game.running=false;cancelAnimationFrame(loop);$('#overlay').hidden=false;const win=winner==='ally';if(win){local.wins++;save()}$('#overlay').innerHTML='';const over=document.createElement('span');over.className='overline';over.textContent='O CERCO TERMINOU';const t=document.createElement('h2');t.textContent=win?'Vitória':'Derrota';const p=document.createElement('p');p.textContent=win?'Seu reino venceu o treinamento.':'Reorganize as cartas e tente novamente.';const b=document.createElement('button');b.className='gold';b.textContent='Jogar novamente';b.addEventListener('click',()=>{reset();start()});$('#overlay').append(over,t,p,b);updateUI()}
 function pause(){if(!game.running)return;game.paused=!game.paused;$('#pause').textContent=game.paused?'Continuar':'Pausar';if(game.paused){$('#overlay').hidden=false;$('#overlay').innerHTML='<h2>Batalha pausada</h2><p>Seu reino pode esperar.</p><button class="gold" id="resume">Continuar batalha</button>';$('#resume').addEventListener('click',pause)}else{$('#overlay').hidden=true;game.last=performance.now();loop=requestAnimationFrame(step)}}
 function log(s){const line=document.createElement('p');line.textContent=s;$('#battleLog').prepend(line);while($('#battleLog').children.length>8)$('#battleLog').lastElementChild.remove()}
-function addUnit(c,lane,side){let count=c.units||1;for(let i=0;i<count;i++)game.units.push({id:cryptoRandom(),card:c,side,lane,x:lane===0?110:310,y:side==='ally'?H-116-i*13:116+i*13,hp:c.hp,maxHp:c.hp,cooldown:0,first:true,mark:null,stun:0})}
+
+const LANES=[110,310];
+const SPAWN_MARGIN=22;
+const TARGET_AWARENESS=165;
+const point=(x,y)=>({x:clamp(x,SPAWN_MARGIN,W-SPAWN_MARGIN),y:clamp(y,SPAWN_MARGIN,H-SPAWN_MARGIN)});
+const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function closestEnemyAt(side,pos,maxDistance=TARGET_AWARENESS){
+ let result=null,best=maxDistance;
+ for(const unit of game.units){
+   if(unit.side===side||unit.hp<=0)continue;
+   const d=distance(pos,unit);
+   if(d<best){result=unit;best=d}
+ }
+ return result;
+}
+function tacticalLane(x,y,side,index,count){
+ const closeEnemy=closestEnemyAt(side,{x,y},TARGET_AWARENESS);
+ if(closeEnemy)return closeEnemy.x<W/2?0:1;
+ if(Math.abs(x-W/2)<=62){
+   // Dois personagens no centro: cada um avança para um lado.
+   if(count>1)return index%2;
+   // Unidade sozinha: escolhe o caminho estratégico com menor vida na torre.
+   const towers=game.towers[side==='ally'?'enemy':'ally'];
+   return towers[0]===towers[1]?(game.counter%2):towers[0]<towers[1]?0:1;
+ }
+ return x<W/2?0:1;
+}
+function addUnit(c,location,side){
+ const spot=point(location.x,location.y);
+ const count=c.units||1;
+ const ids=[];
+ for(let i=0;i<count;i++){
+   const jitter=(i-(count-1)/2)*17;
+   const x=clamp(spot.x+jitter,SPAWN_MARGIN,W-SPAWN_MARGIN);
+   const y=clamp(spot.y+(i%2===0?-5:5),SPAWN_MARGIN,H-SPAWN_MARGIN);
+   const lane=tacticalLane(spot.x,spot.y,side,i,count);
+   const nearby=closestEnemyAt(side,{x,y},TARGET_AWARENESS);
+   const id=cryptoRandom();
+   const unit={id,card:c,side,lane,x,y,hp:c.hp,maxHp:c.hp,cooldown:0,
+     first:true,mark:null,stun:0,targetId:nearby?.id||null,state:'walk'};
+   game.units.push(unit);
+   ids.push(id);
+ }
+ return ids;
+}
 function cryptoRandom(){game.counter++;return game.counter}
-function cast(id){if(!game.running||game.paused)return;const c=cardData.find(x=>x.id===id);if(!c||game.energy<c.cost){log('Energia insuficiente para '+(c?.name||'esta carta'));return}game.energy-=c.cost;const lane=game.lane??0;if(c.spell){const targets=game.units.filter(u=>u.lane===lane&&u.side===(c.id==='cura'?'ally':'enemy'));if(c.id==='cura'){targets.forEach(u=>u.hp=Math.min(u.maxHp,u.hp+180));log('Campo de Cura restaurou '+targets.length+' tropa(s).')}else if(c.id==='chama'){targets.forEach(u=>u.hp-=c.dmg);log('Chama Viva atingiu '+targets.length+' inimigo(s).')}else{const u=targets[0];if(u){u.hp-=c.dmg;u.stun=1.4}log('Armadilha ativada!')}}else addUnit(c,lane,'ally');const p=prog(c.id);if(p.level<99){p.xp++;if(p.xp>=100){p.xp=0;p.level++}local.cards[c.id]=p;save()}const index=hand.indexOf(id);if(index>=0){hand[index]=queue[next%queue.length];next++}log(c.name+' invocado na rota '+(lane?'direita':'esquerda')+'.');activeIndex=0;updateUI()}
-function aiCast(){const level=$('#difficulty').value;const choices=cardData.filter(c=>!c.spell&&c.cost<7);let c=choices[Math.floor(Math.random()*choices.length)];addUnit(c,Math.random()<.5?0:1,'enemy');log('Exército rubro invocou '+c.name)}
-function combat(u,dt){if(u.stun>0){u.stun-=dt;return}u.cooldown-=dt;const sign=u.side==='ally'?-1:1;const opponents=game.units.filter(x=>x.side!==u.side&&x.lane===u.lane&&x.hp>0);let target=null,best=Infinity;for(const op of opponents){const d=Math.abs(u.y-op.y);if(d<best){best=d;target=op}}if(target&&best<u.card.range+9){if(u.cooldown<=0){let d=u.card.dmg;if(u.first&&u.card.id==='lobo')d*=1.6;if(u.first&&u.card.id==='colosso')d*=1.4;if(u.card.id==='batedor'&&u.mark===target.id)d*=1.4;target.hp-=d;if(u.card.id==='liliti')u.hp=Math.min(u.maxHp,u.hp+d*.5);u.mark=target.id;u.first=false;u.cooldown=u.card.attackSpeed||1.25}return}const towerY=u.side==='ally'?90:H-90;const towerDist=Math.abs(u.y-towerY);if(towerDist<u.card.range+12){if(u.cooldown<=0){const opposing=u.side==='ally'?'enemy':'ally';if(game.towers[opposing][u.lane]>0)game.towers[opposing][u.lane]=Math.max(0,game.towers[opposing][u.lane]-u.card.dmg);else game.castles[opposing]=Math.max(0,game.castles[opposing]-u.card.dmg);u.cooldown=u.card.attackSpeed||1.1}}else u.y+=sign*u.card.speed*dt;}
+function cast(id){
+ if(!game.running||game.paused)return;
+ const c=cardData.find(x=>x.id===id);
+ if(!c||game.energy<c.cost){log('Energia insuficiente para '+(c?.name||'esta carta'));return}
+ game.energy-=c.cost;
+ const spot=point(game.spawn?.x??W/2,game.spawn?.y??H*.7);
+ if(c.spell){
+   const targets=game.units.filter(u=>u.side===(c.id==='cura'?'ally':'enemy')&&
+     distance(u,spot)<=Math.max(65,c.range||85));
+   if(c.id==='cura'){
+     targets.forEach(u=>u.hp=Math.min(u.maxHp,u.hp+180));
+     log('Campo de Cura restaurou '+targets.length+' tropa(s).');
+   }else if(c.id==='chama'){
+     targets.forEach(u=>u.hp-=c.dmg);
+     log('Chama Viva atingiu '+targets.length+' inimigo(s).');
+   }else{
+     const u=targets.sort((a,b)=>distance(a,spot)-distance(b,spot))[0];
+     if(u){u.hp-=c.dmg;u.stun=1.4}log('Armadilha ativada!');
+   }
+ }else{
+   const created=addUnit(c,spot,'ally');
+   const lanes=created.map(i=>game.units.find(u=>u.id===i)?.lane);
+   if(created.length>1&&lanes.includes(0)&&lanes.includes(1))
+      log(c.name+': grupo dividido entre esquerda e direita.');
+   else log(c.name+' invocado onde você tocou.');
+ }
+ const p=prog(c.id);
+ if(p.level<99){p.xp++;if(p.xp>=100){p.xp=0;p.level++}local.cards[c.id]=p;save()}
+ const index=hand.indexOf(id);
+ if(index>=0){hand[index]=queue[next%queue.length];next++}
+ activeIndex=0;updateUI();
+}
+function aiCast(){
+ const choices=cardData.filter(c=>!c.spell&&c.cost<7);
+ const c=choices[Math.floor(Math.random()*choices.length)];
+ // A IA também usa um ponto, não uma posição artificial na frente do castelo.
+ const x=Math.random()<.16?W/2:(Math.random()<.5?110:310);
+ const y=clamp(78+Math.random()*92,SPAWN_MARGIN,H-SPAWN_MARGIN);
+ addUnit(c,{x,y},'enemy');
+ log('Exército rubro invocou '+c.name);
+}
+function moveUnit(u,goal,dt){
+ const dx=goal.x-u.x,dy=goal.y-u.y;
+ const d=Math.hypot(dx,dy);
+ if(d<.6){u.state='idle';return d}
+ const speed=u.card.speed||20;
+ const travel=Math.min(Math.max(0,d-1),speed*dt);
+ u.x=clamp(u.x+dx/d*travel,SPAWN_MARGIN,W-SPAWN_MARGIN);
+ u.y=clamp(u.y+dy/d*travel,SPAWN_MARGIN,H-SPAWN_MARGIN);
+ u.state=travel>0?'walk':'idle';
+ u.heading=Math.atan2(dy,dx);
+ return d;
+}
+function selectThreat(u){
+ const awareness=Math.max(TARGET_AWARENESS,(u.card.range||0)*1.55);
+ let existing=game.units.find(o=>o.id===u.targetId&&o.side!==u.side&&o.hp>0);
+ if(existing&&distance(u,existing)>awareness*1.18)existing=null;
+ let best=existing;
+ let bestDistance=existing?distance(u,existing)*.82:awareness;
+ for(const other of game.units){
+   if(other.side===u.side||other.hp<=0)continue;
+   const d=distance(u,other);
+   if(d<bestDistance){best=other;bestDistance=d}
+ }
+ u.targetId=best?.id??null;
+ if(best)u.lane=best.x<W/2?0:1;
+ return best;
+}
+function combat(u,dt){
+ if(u.stun>0){u.stun=Math.max(0,u.stun-dt);u.state='stun';return}
+ u.cooldown-=dt;
+ const target=selectThreat(u);
+ if(target){
+   const d=distance(u,target),reach=(u.card.range||32)+8;
+   if(d<=reach){
+     if(u.cooldown<=0){
+       let damage=u.card.dmg;
+       if(u.first&&u.card.id==='lobo')damage*=1.6;
+       if(u.first&&u.card.id==='colosso')damage*=1.4;
+       if(u.card.id==='batedor'&&u.mark===target.id)damage*=1.4;
+       target.hp-=damage;
+       if(u.card.id==='liliti')u.hp=Math.min(u.maxHp,u.hp+damage*.5);
+       u.mark=target.id;u.first=false;u.cooldown=u.card.attackSpeed||1.25;
+       u.state='attack';u.attackPulse=.25;
+     }else{u.state='idle'}
+   }else moveUnit(u,target,dt);
+   return;
+ }
+ // Sem inimigos próximos, a unidade segue à fortaleza da rota que escolheu.
+ // A posição do nascimento é mantida, inclusive no centro ou na área adversária.
+ const opponent=u.side==='ally'?'enemy':'ally';
+ const lane=u.lane??(u.x<W/2?0:1);
+ const towerStanding=game.towers[opponent][lane]>0;
+ const goal=towerStanding?
+   {x:LANES[lane],y:opponent==='enemy'?126:H-46}:
+   {x:W/2,y:opponent==='enemy'?73:H-19};
+ const reach=(u.card.range||32)+12;
+ if(distance(u,goal)<=reach){
+   if(u.cooldown<=0){
+     if(towerStanding)game.towers[opponent][lane]=Math.max(0,game.towers[opponent][lane]-u.card.dmg);
+     else game.castles[opponent]=Math.max(0,game.castles[opponent]-u.card.dmg);
+     u.cooldown=u.card.attackSpeed||1.1;
+     u.state='attack';u.attackPulse=.25;
+   }else u.state='idle';
+ }else moveUnit(u,goal,dt);
+}
 function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.energy+dt*(game.time<60?1.2:.7),0,10);game.aiTimer+=dt;const speed=$('#difficulty').value;const interval=speed==='easy'?6.2:speed==='hard'?2.9:4.4;if(game.aiTimer>=interval){game.aiTimer=0;aiCast()}for(const u of game.units)combat(u,dt);game.units=game.units.filter(u=>u.hp>0);if(game.castles.enemy<=0)result('ally');else if(game.castles.ally<=0)result('enemy');else if(game.time===0){let ally=game.castles.ally+game.towers.ally.reduce((a,b)=>a+b,0),enemy=game.castles.enemy+game.towers.enemy.reduce((a,b)=>a+b,0);result(ally>=enemy?'ally':'enemy')}}
 function step(now){if(!game.running||game.paused)return;const dt=Math.min(.05,(now-game.last)/1000||0);game.last=now;tick(dt);draw();updateClock();if(game.running)loop=requestAnimationFrame(step)}
 function updateClock(){const sec=Math.ceil(game.time);$('#timer').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');$('#energy').textContent=game.energy.toFixed(1)+' / 10 energia';$('#energyFill').style.width=(game.energy*10)+'%';$('#enemyCastle').textContent=fmt(Math.ceil(game.castles.enemy))+' PV';$('#allyCastle').textContent=fmt(Math.ceil(game.castles.ally))+' PV';}
@@ -233,9 +380,40 @@ function draw(){
 }
 function updateHand(){const node=$('#hand');node.replaceChildren();hand.forEach((id,i)=>{const c=cardData.find(x=>x.id===id);const b=document.createElement('button');b.type='button';b.className=i===activeIndex?'selected':'';b.setAttribute('aria-label',`Selecionar ${c.name}, ${c.cost} energia`);const im=document.createElement('img');im.src=cardImage(c);im.alt='';im.onerror=imgFallback;const label=document.createElement('b');label.textContent=c.name;const co=document.createElement('small');co.textContent=c.cost;b.append(im,label,co);b.addEventListener('click',()=>{activeIndex=i;chosen=c;selectedCard();updateHand()});node.append(b)})}
 function updateUI(){updateClock();$('#wins').textContent=String(local.wins);updateHand();selectedCard()}
-function setLane(l){game.lane=l;cast(hand[activeIndex])}
-canvas.addEventListener('click',e=>{const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*W/r.width;setLane(x<W/2?0:1)});
-window.addEventListener('keydown',e=>{if(!$('.page[data-page="arena"]').classList.contains('active'))return;if(['1','2','3','4'].includes(e.key)){activeIndex=Number(e.key)-1;chosen=cardData.find(x=>x.id===hand[activeIndex]);updateHand();selectedCard()}else if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();setLane(e.key==='ArrowLeft'?0:1)}});
+function placeCardAt(x,y){
+ game.spawn=point(x,y);
+ cast(hand[activeIndex]);
+}
+canvas.addEventListener('click',e=>{
+ const r=canvas.getBoundingClientRect();
+ const x=(e.clientX-r.left)*W/r.width;
+ const y=(e.clientY-r.top)*H/r.height;
+ placeCardAt(x,y);
+});
+window.addEventListener('keydown',e=>{
+ if(!$('.page[data-page="arena"]').classList.contains('active'))return;
+ if(['1','2','3','4'].includes(e.key)){
+   activeIndex=Number(e.key)-1;chosen=cardData.find(x=>x.id===hand[activeIndex]);
+   updateHand();selectedCard();
+ }else if(e.key==='ArrowLeft'||e.key==='ArrowRight'){
+   e.preventDefault();
+   // Teclado escolhe o ponto sugerido; toque permite qualquer posição.
+   placeCardAt(e.key==='ArrowLeft'?110:310,H*.65);
+ }
+});
+if(new URLSearchParams(location.search).has('test')){
+  // Observabilidade local para checagens automáticas, sem alterar partidas.
+  window.__cercoTest={
+    units:()=>game.units.map(u=>({id:u.id,side:u.side,lane:u.lane,x:u.x,y:u.y,
+      state:u.state,targetId:u.targetId,card:u.card.id})),
+    createEnemy:(cardId,x,y)=>{
+      const c=cardData.find(c=>c.id===cardId);
+      if(c&&!c.spell)return addUnit(c,{x,y},'enemy');
+      return [];
+    },
+    reset:()=>reset()
+  };
+}
 $('#pause').addEventListener('click',pause);$('#reset').addEventListener('click',reset);$('#clearProgress').addEventListener('click',()=>{if(!confirm('Limpar somente o progresso local de treinamento?'))return;local={cards:{},wins:0};save();reset();renderCards()});
 window.addEventListener('hashchange',()=>{const key=location.hash.replace('#','');if(['arena','cards','shop','clans','profile'].includes(key))show(key)});reset();renderCards();if(location.hash)show(location.hash.slice(1));
 })();
