@@ -655,6 +655,7 @@ function screenToBattle(clientX,clientY,rect){
 window.Cerco3D={
  get ready(){return ready},
  render,screenToBattle,
+ syncNow:(game)=>{if(ready&&game){syncActors(game);syncForts(game)}},
  info:()=>({ready,actors:actors.size,meshes:scene?.children?.length||0,webgl:renderer?.capabilities?.isWebGL2||false}),
  debugActors:()=>[...actors.entries()].map(([id,rec])=>({id,kind:rec.model.userData.id,illustrated:!!rec.appearance,legs:rec.model.userData.legs?.length||0,
    rotations:rec.model.userData.legs?.map(l=>Number(l.rotation.x.toFixed(3)))||[]}))
