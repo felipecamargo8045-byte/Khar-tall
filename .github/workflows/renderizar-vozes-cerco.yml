@@ -8,6 +8,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: cerco-vozes-kokoro
+  cancel-in-progress: true
 jobs:
   produce:
     runs-on: ubuntu-24.04
@@ -55,5 +58,7 @@ jobs:
           git add cerco-dos-reis/voice-pack/
           if ! git diff --cached --quiet; then
             git commit -m "assets(cerco): dublagens portugues original fantasia gravadas para sete classes"
+            git fetch origin cerco-dos-reis-migracao-2026-10
+            git rebase origin/cerco-dos-reis-migracao-2026-10
             git push origin HEAD:cerco-dos-reis-migracao-2026-10
           fi
