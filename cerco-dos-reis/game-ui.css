@@ -378,3 +378,20 @@ body.battle-mode .battle #arena3d canvas{width:100%!important;height:100%!import
  body.battle-mode .battle .hand{grid-template-columns:repeat(2,minmax(0,1fr))!important}
  body.battle-mode .battle .hand img{height:clamp(42px,16vh,75px)}
 }
+
+/* Vozes individuais, acessíveis sem esconder a arena nos celulares estreitos. */
+.voice-button{font-size:17px!important;width:28px!important;line-height:1}
+body.battle-mode .battle .battle-voice,.battle:fullscreen .battle-voice{font-size:18px!important}
+#voiceToggle[aria-pressed="false"],#battleVoice[aria-pressed="false"]{opacity:.50;filter:grayscale(1)}
+@media(max-width:430px){
+ .game-header .sound-controls{gap:1px;padding:2px 2px}
+ .game-header .sound-controls #soundVolume{width:clamp(29px,9vw,42px)}
+ body.battle-mode .battle .scoreboard,.battle:fullscreen .scoreboard{gap:2px;padding-left:4px;padding-right:4px}
+ body.battle-mode .battle .battle-hud-button,.battle:fullscreen .battle-hud-button{min-width:27px;width:28px;height:33px;font-size:20px}
+ body.battle-mode .battle .scoreboard .clock,.battle:fullscreen .scoreboard .clock{min-width:51px}
+ body.battle-mode .battle .side-emblem,.battle:fullscreen .side-emblem{display:none}
+}
+@media(max-width:350px){
+ body.battle-mode .battle .scoreboard .side,.battle:fullscreen .scoreboard .side{font-size:8px}
+ body.battle-mode .battle .battle-hud-button,.battle:fullscreen .battle-hud-button{width:25px;min-width:25px}
+}
