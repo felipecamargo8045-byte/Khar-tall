@@ -365,6 +365,10 @@ function drawFortress(g,x,y,side,kind,hp){
  g.restore();
 }
 function draw(){
+ if(window.Cerco3D?.ready){
+   window.Cerco3D.render(game);
+   return;
+ }
  const g=ctx;
  g.clearRect(0,0,W,H);
  // Dois caminhos, rio central, fortificacoes e atmosfera de arena.
@@ -451,8 +455,10 @@ function placeCardAt(x,y){
 }
 canvas.addEventListener('click',e=>{
  const r=canvas.getBoundingClientRect();
- const x=(e.clientX-r.left)*W/r.width;
- const y=(e.clientY-r.top)*H/r.height;
+ // No modo 3D, o raio da câmera determina o ponto real sobre o terreno.
+ const p=window.Cerco3D?.ready?window.Cerco3D.screenToBattle(e.clientX,e.clientY,r):null;
+ const x=p?.x??(e.clientX-r.left)*W/r.width;
+ const y=p?.y??(e.clientY-r.top)*H/r.height;
  placeCardAt(x,y);
 });
 window.addEventListener('keydown',e=>{
@@ -482,5 +488,5 @@ if(new URLSearchParams(location.search).has('test')){
   };
 }
 $('#pause').addEventListener('click',pause);$('#reset').addEventListener('click',reset);$('#clearProgress').addEventListener('click',()=>{if(!confirm('Limpar somente o progresso local de treinamento?'))return;local={cards:{},wins:0};save();reset();renderCards()});
-window.addEventListener('hashchange',()=>{const key=location.hash.replace('#','');if(['arena','cards','shop','clans','profile'].includes(key))show(key)});reset();renderCards();if(location.hash)show(location.hash.slice(1));
+window.addEventListener('hashchange',()=>{const key=location.hash.replace('#','');if(['arena','cards','shop','clans','profile'].includes(key))show(key)});window.Cerco3DGame={getState:()=>game};reset();renderCards();if(location.hash)show(location.hash.slice(1));
 })();
