@@ -1,0 +1,29 @@
+name: Inspecionar APK Cerco dos Reis
+on:
+  push:
+    branches: [cerco-dos-reis-migracao-2026-10]
+    paths: ['.github/workflows/inspecionar-cerco.yml']
+  workflow_dispatch:
+jobs:
+  inspecionar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspecionar estrutura do APK sem publicar seu conteúdo
+        run: |
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          import json
+          p='downloads/cerco-dos-reis-1.0.0.apk'
+          with ZipFile(p) as z:
+              entries=z.infolist()
+          print('TOTAL',len(entries))
+          print('WEB_ENTRIES')
+          for e in entries:
+              name=e.filename.lower()
+              if name.endswith(('.html','.js','.css','.json','.webp','.png','.svg','.txt')) and any(k in name for k in ('asset','game','web','public')):
+                  print(e.filename, e.file_size)
+          print('TOP_LEVEL', sorted(set(e.filename.split('/')[0] for e in entries)))
+          PY
