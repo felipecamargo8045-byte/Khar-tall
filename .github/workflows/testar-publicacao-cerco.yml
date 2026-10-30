@@ -79,7 +79,7 @@ jobs:
             assert.ok(sounds && typeof sounds.volume==='number','Audio local nao inicializou');
             // Dublagem real: não depender da fala genérica do Android.
             // Cada arquivo OGG foi gerado com Kokoro pt-BR e mixagem própria.
-            await page.waitForFunction(()=>window.CercoVoices?.status().loaded>=20,{timeout:45000});
+            await page.waitForFunction(()=>window.CercoVoices?.status().loaded>=22,{timeout:45000});
             const voiceAudit=await page.evaluate(async()=>{
               const engine=window.CercoVoices;
               const response=await fetch('/voice-pack/manifest.json');
