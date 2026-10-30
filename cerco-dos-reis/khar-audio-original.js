@@ -9,7 +9,7 @@ const FILES=Object.freeze({
  giantStep:'colosso_passo_estrondoso.wav',groundSmash:'colosso_esmagamento_rachadura.wav',
  royalWound:'rei_primeira_vida_tam_tam_taam.wav',royalSuspense:'rei_morto_guardiao_vivo_suspense.wav',
  royalGuardian:'guardiao_trombeta_aviso.wav',royalVictory:'vitoria_trompetas_marcha.wav',
- wolfHowl:'lobo_uivo_real.wav',
+ wolfHowl:'lobo_uivo_real.wav',wolfGrowl:'lobo_matilha_rosnado.wav',wolfBite:'lobo_mordida_impacto.wav',
  kingBlast:'rei_ataque_explosao.wav',guardianArea:'guardiao_ataque_area_ancestral.wav',guardianLine:'guardiao_ventania_magica.wav'
 });
 const VOLUMES=Object.freeze({blueLaunch:.87,blueImpact:.94,redLaunch:.87,redImpact:.94,
