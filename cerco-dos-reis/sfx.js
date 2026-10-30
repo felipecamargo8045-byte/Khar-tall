@@ -1,107 +1,115 @@
-/* Cerco dos Reis — áudio local baseado nas categorias do Khar Tall.
- * Sem gravações externas, sem streaming, sem APIs pagas e sem autoplay.
- * Sons gerados por Web Audio depois de uma interação do jogador.
- */
+/* Sons ORIGINAIS de Khar Tall. Reutiliza seu motor original e suas gravações,
+   sem substituir efeitos por samples inventados ou síntese para ataques.
+   Fonte: ../audio.js + asset-bundle e audio-assets versionados no GitHub. */
 (()=>{
 'use strict';
 const KEY='cerco-dos-reis-audio-v1';
 let prefs={on:true,volume:.55};
-try{const saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved){prefs.on=saved.on!==false;prefs.volume=Math.max(0,Math.min(1,Number(saved.volume) || 0));}}catch{}
-let context=null,master=null,noiseBuffer=null;
-const last=new Map();
-const cooldowns={tower:.12,towerHit:.095,attack:.065,arrow:.055,slash:.07,bite:.12,shield:.1,mark:.09,royal:.1,enchant:.12,impact:.075,step:.30,wolf:.19,colossus:.3,damage:.2,place:.06,ui:.055};
-function ac(){
- if(context)return context;
- const Ctx=window.AudioContext||window.webkitAudioContext;
- if(!Ctx)return null;
- context=new Ctx();
- master=context.createGain();master.gain.value=.48*prefs.volume;
- const limiter=context.createDynamicsCompressor();
- limiter.threshold.value=-12;limiter.knee.value=7;limiter.ratio.value=8;
- limiter.attack.value=.003;limiter.release.value=.13;
- master.connect(limiter);limiter.connect(context.destination);
- return context;
-}
-function unlock(){if(!prefs.on)return;try{const c=ac();if(c?.state==='suspended')c.resume().catch(()=>{});}catch{}}
-document.addEventListener('pointerdown',unlock,{passive:true,capture:true});
-document.addEventListener('keydown',unlock,{passive:true,capture:true});
-function tone(freq,dur=.11,kind='triangle',volume=.11,shift=.83,delay=0){
- const c=ac();if(!c||c.state!=='running')return;
- const t=c.currentTime+delay,source=c.createOscillator(),gain=c.createGain();
- source.type=kind;source.frequency.setValueAtTime(Math.max(55,freq),t);
- source.frequency.exponentialRampToValueAtTime(Math.max(55,freq*shift),t+dur);
- gain.gain.setValueAtTime(.0001,t);
- gain.gain.exponentialRampToValueAtTime(volume,t+.009);
- gain.gain.exponentialRampToValueAtTime(.0001,t+dur);
- source.connect(gain);gain.connect(master);
- source.start(t);source.stop(t+dur+.01);
-}
-function noise(duration=.1,volume=.06,cutoff=1200,delay=0){
- const c=ac();if(!c||c.state!=='running')return;
- if(!noiseBuffer){
-  noiseBuffer=c.createBuffer(1,c.sampleRate,c.sampleRate);const data=noiseBuffer.getChannelData(0);
-  let s=9811;
-  for(let i=0;i<data.length;i++){s=(Math.imul(s,1664525)+1013904223)>>>0;data[i]=(s/2147483648-1)*.72;}
+try{
+ const saved=JSON.parse(localStorage.getItem(KEY)||'null');
+ if(saved){
+  prefs.on=saved.on!==false;
+  prefs.volume=Math.max(0,Math.min(1,Number(saved.volume)||0));
  }
- const src=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain(),t=c.currentTime+delay;
- src.buffer=noiseBuffer;filter.type='lowpass';filter.frequency.value=cutoff;
- gain.gain.setValueAtTime(volume,t);gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
- src.connect(filter);filter.connect(gain);gain.connect(master);
- src.start(t);src.stop(t+duration+.015);
+}catch{}
+const api=window.KharTallAudio;
+if(!api?.Player){console.error('Motor de áudio original Khar Tall ausente');return}
+const player=new api.Player({enabled:prefs.on});
+const recent=new Map();
+const minGap={
+ wolf:1.45,bite:1.45,arrow:.10,slash:.12,shield:.31,mark:.23,royal:.32,
+ enchant:.42,colossus:.32,impact:.065,tower:.28,towerHit:.15,
+ victory:4,defeat:4,place:.10,ui:.06,damage:.26
+};
+function refreshMaster(){
+ if(player.output)player.output.gain.value=.90*prefs.volume;
 }
-function chord(notes,span=.12,volume=.11){
- notes.forEach(([freq,offset=0])=>tone(freq,span,'sine',volume,.97,offset));
+function unlock(){
+ if(!prefs.on)return;
+ player.unlock().then(refreshMaster).catch(()=>{});
 }
-function sound(kind,p={}){
- const now=performance.now()/1000;
- const limit=cooldowns[kind]||0;
- if(now-(last.get(kind)||-100)<limit)return;
- last.set(kind,now);
- try{
+function uniqueSample(kind,details){
  switch(kind){
-  case 'ui':tone(550,.05,'triangle',.075,.74);break;
-  case 'place':chord([[310,0],[465,.048],[620,.09]],.085,.075);noise(.055,.025,1900);break;
-  case 'tower':tone(p.side==='enemy'?265:350,.17,'sawtooth',.12,.52);noise(.12,.08,780);tone(115,.13,'triangle',.05,.77,.045);break;
-  case 'towerHit':noise(.11,.15,650);tone(138,.13,'triangle',.12,.46);break;
-  case 'attack':tone(p.card==='arqueiro'?750:p.card==='colosso'?146:415,.10,'triangle',.09,.51);noise(.045,.035,2300);break;
-  case 'arrow':tone(790,.075,'sine',.045,1.36);noise(.07,.024,2600);tone(390,.12,'triangle',.028,.72,.055);break;
-  case 'slash':noise(.105,.055,2800);tone(505,.12,'sawtooth',.085,.42);break;
-  case 'shield':tone(260,.16,'triangle',.1,1.2);tone(510,.14,'sine',.075,.69,.045);noise(.08,.035,1800);break;
-  case 'mark':tone(680,.10,'square',.04,1.18);tone(920,.12,'sine',.055,.68,.04);break;
-  case 'royal':chord([[294,0],[392,.045],[588,.09]],.17,.095);noise(.09,.045,1900,.06);break;
-  case 'enchant':tone(430,.25,'sine',.08,1.75);tone(690,.3,'triangle',.07,1.22,.09);break;
-    case 'wolf':tone(285,.2,'sawtooth',.085,1.42);tone(200,.18,'triangle',.08,1.06,.045);break;
-  case 'colossus':tone(96,.22,'sawtooth',.115,.54);noise(.18,.095,380);break;
-  case 'impact':noise(.08,.065,1400);tone(178,.11,'triangle',.075,.56);break;
-  case 'damage':tone(190,.15,'triangle',.12,.57);break;
-  case 'magic':chord([[460,0],[630,.05],[840,.08]],.2,.06);break;
-  case 'victory':chord([[392,0],[494,.13],[587,.27],[784,.42]],.27,.13);break;
-  case 'defeat':chord([[330,0],[277,.17],[220,.34]],.3,.12);break;
-  default:tone(400,.07,'triangle',.065,.8);
+  case 'arrow':return 'arrowLaunch';
+  case 'slash':return 'swordSwing';
+  case 'wolf':case 'bite':return 'wolfHowl';
+  case 'colossus':return 'giantStep';
+  case 'shield':return 'guardianLine';
+  case 'mark':return 'blueLaunch';
+  case 'royal':return 'kingBlast';
+  case 'enchant':return 'guardianArea'; // Liliti não existia no Khar Tall de tabuleiro.
+  case 'tower':return 'guardianLine';
+  case 'towerHit':return 'blueImpact';
+  case 'victory':return 'royalVictory';
+  case 'defeat':return 'royalSuspense';
+  case 'damage':return 'royalWound';
+  case 'attack':return details.card==='arqueiro'?'arrowLaunch':'swordSwing';
+  case 'impact':
+   return ({arqueiro:'arrowImpact',soldado:'swordImpact',lobo:'wolfHowl',
+     colosso:'groundSmash',guardiao:'guardianArea',batedor:'blueImpact',
+     rei:'kingBlast',liliti:'guardianArea'})[details.card]||'swordImpact';
+  default:return null;
  }
- }catch{}
 }
-function play(kind,info){if(!prefs.on||prefs.volume===0)return;unlock();sound(kind,info||{});}
-function updateUI(){
- const btn=document.getElementById('soundToggle');
- const slider=document.getElementById('soundVolume');
- if(btn){
-  btn.textContent=prefs.on?'♫':'♪̸';
-  btn.setAttribute('aria-label',prefs.on?'Silenciar sons do jogo':'Ativar sons do jogo');
-  btn.setAttribute('aria-pressed',String(prefs.on));
-  btn.title=prefs.on?'Desligar sons':'Ligar sons';
+function play(kind,details={}){
+ if(!prefs.on||prefs.volume<=0)return false;
+ const now=performance.now()/1000;
+ const gap=minGap[kind]||0;
+ if(now-(recent.get(kind)||-999)<gap)return false;
+ recent.set(kind,now);
+ if(kind==='ui'||kind==='place'){
+  unlock();player.ui(kind==='place'?'place':'tap').catch(()=>{});
+  return true;
  }
- if(slider){slider.value=Math.round(prefs.volume*100);slider.disabled=!prefs.on}
+ if(kind==='magic'){
+  unlock();player.utility('magic').catch(()=>{});
+  return true;
+ }
+ const sample=uniqueSample(kind,details||{});
+ if(!sample)return false;
+ unlock();player.play(sample).catch(()=>{});
+ return true;
 }
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(prefs))}catch{};if(master)master.gain.value=.48*prefs.volume;updateUI();}
-function setup(){
- const toggle=document.getElementById('soundToggle');
- const slider=document.getElementById('soundVolume');
- toggle?.addEventListener('click',()=>{prefs.on=!prefs.on;persist();if(prefs.on){unlock();play('ui')}});
- slider?.addEventListener('input',()=>{prefs.volume=Math.max(0,Math.min(1,Number(slider.value)/100));persist()});
- document.querySelectorAll('#navigation button').forEach(btn=>btn.addEventListener('click',()=>play('ui')));
+function persist(){
+ try{localStorage.setItem(KEY,JSON.stringify(prefs))}catch{}
+ player.setEnabled(prefs.on);
+ refreshMaster();
  updateUI();
 }
-window.CercoAudio={play,unlock,getSettings:()=>({...prefs}),isReady:()=>context?.state==='running',setEnabled:v=>{prefs.on=Boolean(v);persist()}};
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup,{once:true});else setup();
+function updateUI(){
+ const button=document.getElementById('soundToggle'),slider=document.getElementById('soundVolume');
+ if(button){
+  button.textContent=prefs.on?'♫':'♪̸';
+  button.setAttribute('aria-label',prefs.on?'Silenciar os sons originais':'Ativar os sons originais');
+  button.setAttribute('aria-pressed',String(prefs.on));
+ }
+ if(slider){slider.value=Math.round(prefs.volume*100);slider.disabled=!prefs.on}
+ const battleButton=document.getElementById('battleSound');
+ if(battleButton){battleButton.textContent=prefs.on?'♫':'♪̸';battleButton.setAttribute('aria-pressed',String(prefs.on))}
+}
+function setup(){
+ document.getElementById('soundToggle')?.addEventListener('click',()=>{
+  prefs.on=!prefs.on;persist();
+  if(prefs.on){unlock();play('ui')}
+ });
+ document.getElementById('soundVolume')?.addEventListener('input',event=>{
+  prefs.volume=Math.max(0,Math.min(1,Number(event.target.value)/100));
+  persist();
+ });
+ document.querySelectorAll('#navigation button').forEach(button=>{
+  button.addEventListener('click',()=>play('ui'));
+ });
+ updateUI();
+ // Carregamento antecipado de WAVs originais; áudio só toca após gesto do usuário.
+ player.preload().catch(()=>{});
+}
+window.CercoAudio={
+ play,unlock,getSettings:()=>({...prefs}),isReady:()=>player.ctx?.state==='running',
+ setEnabled:value=>{prefs.on=Boolean(value);persist()},
+ status:()=>({original:true,recordings:Object.keys(api.FILES).length,loaded:player.buffers.size,
+   failed:[...player.failed],fileNames:api.FILES}),
+ player
+};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup,{once:true});
+else setup();
 })();
