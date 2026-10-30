@@ -22,6 +22,52 @@ const sphere=(r,m)=>new THREE.Mesh(new THREE.IcosahedronGeometry(r,1),m);
 const cyl=(r1,r2,h,m,sides=7)=>new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,sides),m);
 const cone=(r,h,m,sides=6)=>new THREE.Mesh(new THREE.ConeGeometry(r,h,sides),m);
 const put=(group,obj,x,y,z)=>{obj.position.set(x,y,z);group.add(obj);return obj;};
+// Materiais próprios com variação de pedra e piso: a arena não depende de
+// imagens externas nem usa objetos ou desenhos do jogo de referência.
+const materialCache=new Map();
+function texturedStone(style){
+ if(materialCache.has(style))return materialCache.get(style);
+ const palettes={
+  ally:['#7899b6','#9db2c6','#55748f','#b6c7d7'],
+  enemy:['#977989','#b69dac','#6c5265','#cab1bd'],
+  road:['#6b7c7b','#879494','#53666c','#a1a9a3']
+ };
+ const cols=palettes[style]||palettes.road;
+ const canvas=document.createElement('canvas');
+ canvas.width=256;canvas.height=256;
+ const p=canvas.getContext('2d'),seed=style.length+19;
+ let rand=seed;
+ function random(){rand=(rand*1664525+1013904223)>>>0;return rand/4294967296}
+ p.fillStyle=cols[2];p.fillRect(0,0,256,256);
+ const blockHeight=style==='road'?37:31;
+ const blockWidth=style==='road'?61:72;
+ for(let row=0,y=0;y<256;row++,y+=blockHeight){
+   const shift=row%2?blockWidth/2:0;
+   for(let x=-blockWidth;x<256+blockWidth;x+=blockWidth){
+    const px=x+shift, inset=1.2+random()*1.2;
+    p.fillStyle=cols[Math.floor(random()*cols.length)];
+    p.fillRect(px+inset,y+inset,blockWidth-2*inset,blockHeight-2*inset);
+    p.fillStyle='rgba(245,238,212,.16)';p.fillRect(px+inset+2,y+inset+2,blockWidth-5,2);
+    p.fillStyle='rgba(14,25,35,.21)';p.fillRect(px+inset,y+blockHeight-4,blockWidth-4,2);
+    p.strokeStyle='rgba(12,26,40,.15)';p.lineWidth=1;
+    for(let n=0;n<3;n++){
+      const crackX=px+8+random()*(blockWidth-17);
+      const crackY=y+6+random()*(blockHeight-12);
+      p.beginPath();p.moveTo(crackX,crackY);
+      p.lineTo(crackX+random()*9-4,crackY+random()*5);
+      p.stroke();
+    }
+   }
+ }
+ const tex=new THREE.CanvasTexture(canvas);
+ tex.colorSpace=THREE.SRGBColorSpace;
+ tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
+ tex.anisotropy=2;
+ const result=new THREE.MeshStandardMaterial({map:tex,roughness:.87,metalness:.06,flatShading:true});
+ materialCache.set(style,result);
+ return result;
+}
+
 const pivot=(group,x,y,z)=>put(group,new THREE.Group(),x,y,z);
 function horizontalPath(parent,points,r,m){
  const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));
@@ -50,7 +96,7 @@ function terrain(){
  // Pedras reais, caminhos, rio escavado e duas pontes tridimensionais.
  for(let i=0;i<2;i++){
    const x=i===0?-2.5:2.5;
-   const road=box(2.55,.035,13.7,mat(i===0?0x616970:0x5c626c));
+   const road=box(2.55,.035,13.7,texturedStone('road'));
    put(scene,road,x,-.04,0);road.receiveShadow=true;
    for(let k=0;k<17;k++){
      const z=-6.4+k*.78;
@@ -129,7 +175,7 @@ function makeFortress(team,main){
  const wide=main?2.45:1.7;
  const level=main?2.15:1.55;
  const base=box(wide,.3,1.45,darkStone);put(group,base,0,.18,0);
- const fortressStone=mat(team==='ally'?0x698fae:0x947686,.26,.7);
+ const fortressStone=texturedStone(team);
  const keep=box(wide*.78,level,1.04,fortressStone);put(group,keep,0,level/2+.28,0);keep.castShadow=true;
  // Muralhas com blocos, ameias e cincoiras.
  for(let row=0;row<5;row++){
