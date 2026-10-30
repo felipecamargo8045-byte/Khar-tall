@@ -309,6 +309,23 @@ function makeFortress(team,main){
    put(group,cap,dir*.27,level+1.45,-.01);
   }
  }
+ // Arqueiros montam guarda nos parapeitos e puxam os arcos ao atirar.
+ const bowArms=[];
+ for(const offset of main?[-.67,.67]:[0]){
+   const sentry=new THREE.Group();
+   const tint=mat(team==='ally'?0x3b85ba:0xa04a60);
+   put(sentry,cyl(.13,.15,.30,tint,8),0,.23,0);
+   put(sentry,sphere(.115,skin),0,.48,0);
+   put(sentry,cone(.14,.17,darkStone,8),0,.63,0);
+   const arm=pivot(sentry,.11,.37,.02);
+   put(arm,cyl(.036,.045,.29,tint,7),0,-.10,0);
+   const bow=pivot(arm,.05,-.21,.05);
+   horizontalPath(bow,[[-.19,.24,0],[-.29,0,.02],[-.19,-.24,0]],.022,wood);
+   horizontalPath(bow,[[-.19,.24,.035],[-.15,0,.035],[-.19,-.24,.035]],.008,gold);
+   sentry.position.set(offset,level+.25,.74);
+   group.add(sentry);bowArms.push(arm);
+ }
+ group.userData.bowArms=bowArms;
   group.userData.material=theme;
  group.userData.castle=main;
  group.userData.team=team;
@@ -882,6 +899,11 @@ function syncForts(game){
   const hp=fort.lane===-1?game.castles[fort.team]:game.towers[fort.team][fort.lane];
   const max=fort.lane===-1?2600:1400;
   const ratio=clamp(hp/max,0,1);
+  const attackSlot=fort.lane===-1?2:fort.lane;
+  const recent=[...(game.towerShots||[])].reverse().find(shot=>shot.side===fort.team&&shot.slot===attackSlot);
+  const elapsed=recent?Math.max(0,recent.time-game.time):10;
+  const pull=elapsed<.45?Math.sin(Math.PI*elapsed/.45):0;
+  for(const arm of fort.mesh.userData.bowArms||[])arm.rotation.x=-.8*pull;
   fort.mesh.scale.y=.84+.16*ratio;
   fort.mesh.visible=hp>0;
   if(fort.bar){
