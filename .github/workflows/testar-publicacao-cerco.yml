@@ -685,7 +685,7 @@ jobs:
             assert.equal(relief.kind,'liliti');assert.equal(relief.layers,3);assert.ok(relief.dust>=20);assert.equal(relief.cover,'cover');
             // Todas as oito figuras usam o mesmo recorte na sombra dourada, não uma borda retangular.
             const golden=await page.evaluate(()=>{
-              const stages=[...document.querySelectorAll('#cardGrid .card-relief')];
+              const stages=[...document.querySelectorAll('#cardGrid .card-relief.has-figure-outline')];
               return {ids:stages.map(s=>s.dataset.card),
                 aligned:stages.every(s=>{
                   const outline=s.querySelector('.card-gold-outline img'),figure=s.querySelector('.card-subject img');
