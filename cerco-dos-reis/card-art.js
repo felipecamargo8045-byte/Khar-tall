@@ -19,6 +19,12 @@
   if(!stage){
    stage=document.createElement('span');stage.className='card-relief';
    image.replaceWith(stage);stage.append(image);image.classList.add('card-back');image.draggable=false;
+   // Ao trocar uma imagem após o carregamento, o cenário de preenchimento acompanha a foto atual.
+   image.addEventListener('load',()=>{
+    if(stage.classList.contains('has-figure-depth')){
+     stage.style.setProperty('--card-portrait-backdrop',`url(${JSON.stringify(image.getAttribute('src')||'')})`);
+    }
+   });
    for(const name of ['card-inner-contour','card-glass-light','card-light-sweep']){
     const layer=document.createElement('i');layer.className=name;layer.setAttribute('aria-hidden','true');stage.append(layer);
    }
@@ -27,6 +33,10 @@
   stage.dataset.card=id;
   stage.classList.toggle('has-figure-depth',portraits.has(id));
   stage.classList.toggle('has-spell-art',spells.has(id));
+  // A foto original fica INTEIRA em "contain". O mesmo arquivo preenche apenas
+  // as sobras de proporção no fundo, sem cortes na figura nem faixas vazias.
+  if(portraits.has(id))stage.style.setProperty('--card-portrait-backdrop',`url(${JSON.stringify(image.getAttribute('src')||'')})`);
+  else stage.style.removeProperty('--card-portrait-backdrop');
   stage.style.setProperty('--crop-x',id==='lobo'?'58%':id==='liliti'?'50%':'50%');
   stage.style.setProperty('--crop-y',id==='liliti'?'21%':id==='lobo'?'45%':'42%');
   stage.querySelectorAll('.card-subject,.card-gold-outline').forEach(el=>el.remove());
