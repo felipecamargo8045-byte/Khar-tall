@@ -682,7 +682,23 @@ jobs:
             const relief=await page.locator('#artOuter .card-relief').evaluate(node=>({kind:node.dataset.card,
               layers:node.querySelectorAll('img').length,dust:node.querySelectorAll('.card-stardust i').length,
               cover:getComputedStyle(node.querySelector('.card-back')).objectFit}));
-            assert.equal(relief.kind,'liliti');assert.equal(relief.layers,2);assert.ok(relief.dust>=20);assert.equal(relief.cover,'cover');
+            assert.equal(relief.kind,'liliti');assert.equal(relief.layers,3);assert.ok(relief.dust>=20);assert.equal(relief.cover,'cover');
+            // Todas as oito figuras usam o mesmo recorte na sombra dourada, não uma borda retangular.
+            const golden=await page.evaluate(()=>{
+              const stages=[...document.querySelectorAll('#cardGrid .card-relief')];
+              return {ids:stages.map(s=>s.dataset.card),
+                aligned:stages.every(s=>{
+                  const outline=s.querySelector('.card-gold-outline img'),figure=s.querySelector('.card-subject img');
+                  return outline&&figure&&outline.getAttribute('src')===figure.getAttribute('src')&&
+                    outline.style.width===figure.style.width&&outline.style.left===figure.style.left&&
+                    getComputedStyle(outline).clipPath!=='none';
+                }),
+                featuredGlow:getComputedStyle(document.querySelector('#artOuter .card-gold-outline')).filter,
+                normalGlow:getComputedStyle(stages.find(s=>s.dataset.card==='soldado').querySelector('.card-gold-outline')).filter};
+            });
+            assert.equal(golden.ids.length,8,'Contorno deve alcançar todos os personagens');
+            assert.ok(golden.aligned,'O contorno dourado não acompanha a arte da personagem');
+            assert.notEqual(golden.featuredGlow,golden.normalGlow,'Liliti não recebeu brilho adicional');
             assert.ok((await page.locator('#cardBadges').innerText()).includes('Suprema'));
             assert.ok((await page.locator('#cardOffer').innerText()).includes('10,00'));
             // A animação solicitada deve ser testada com movimento habilitado; acessibilidade mantém fallback estático.
