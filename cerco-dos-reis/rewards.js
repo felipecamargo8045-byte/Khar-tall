@@ -77,16 +77,24 @@ function rng(){
  try{const n=new Uint32Array(1);crypto.getRandomValues(n);return n[0]/4294967296}catch{return Math.random()}
 }
 function rollLoot(){
- // Sem assinatura mensal verificada, skins NUNCA entram na rolagem.
+ // Quando a integração oficial validar a assinatura no servidor, 3% dos
+ // prêmios poderão ser skins premium. Sem assinatura, 100% dos prêmios
+ // são materiais. NUNCA desbloquear uma skin só com um valor local.
  const roll=rng()*100;
- if(roll<50)return {kind:'material',id:'iron',qty:15,weight:50};
- if(roll<76)return {kind:'material',id:'shards',qty:8,weight:26};
- if(roll<93)return {kind:'material',id:'crystals',qty:3,weight:17};
+ if(memberVerified()&&roll<3)return {kind:'skin',id:SKINS[Math.floor(rng()*SKINS.length)].id,qty:1,weight:3};
+ const materialRoll=memberVerified()?roll-3:roll;
+ const normalized=memberVerified()?materialRoll*(100/97):materialRoll;
+ if(normalized<50)return {kind:'material',id:'iron',qty:15,weight:50};
+ if(normalized<76)return {kind:'material',id:'shards',qty:8,weight:26};
+ if(normalized<93)return {kind:'material',id:'crystals',qty:3,weight:17};
  return {kind:'material',id:'essence',qty:1,weight:7};
 }
 function openScroll(){
  if(state.scrolls<1)return null;
  const prize=rollLoot();
+ // O treinamento não fornece resgate de skins reais. Se o servidor vier
+ // a autorizar premium, o prêmio dependerá de uma transação remota.
+ if(prize.kind==='skin')return null;
  state.scrolls--;
  state.opened++;
  state.materials[prize.id]=safeNumber(state.materials[prize.id]+prize.qty);
