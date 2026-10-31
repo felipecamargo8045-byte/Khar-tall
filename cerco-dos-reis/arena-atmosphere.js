@@ -123,7 +123,7 @@ function halo(){
 
 export function createAtmosphere(renderer,scene){
  renderer.outputColorSpace=THREE.SRGBColorSpace;
- renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.10;
+ renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
  const backdrop=document.createElement('canvas');backdrop.width=backdrop.height=256;
@@ -133,9 +133,9 @@ export function createAtmosphere(renderer,scene){
  scene.background=new THREE.CanvasTexture(backdrop);scene.background.colorSpace=THREE.SRGBColorSpace;
  scene.fog=new THREE.Fog(0x14263b,35,60);
  scene.environment=environment();scene.environmentIntensity=.55;
- scene.add(new THREE.HemisphereLight(0xdceaff,0x3c4c50,1.18));
+ scene.add(new THREE.HemisphereLight(0xdceaff,0x293d38,.85));
  scene.add(new THREE.AmbientLight(0xffe4c5,.16));
- const sun=new THREE.DirectionalLight(0xffdfb3,3.0);
+ const sun=new THREE.DirectionalLight(0xffe5c1,2.25);
  sun.position.set(-8,15,7);sun.castShadow=true;
  const shadowSize=Math.min(2048,renderer.capabilities.maxTextureSize);
  sun.shadow.mapSize.set(shadowSize,shadowSize);
@@ -143,7 +143,7 @@ export function createAtmosphere(renderer,scene){
  sun.shadow.camera.updateProjectionMatrix();
  sun.shadow.bias=-.00018;sun.shadow.normalBias=.035;sun.shadow.radius=3;
  scene.add(sun);
- const fill=new THREE.DirectionalLight(0x8fb8ef,.78);fill.position.set(7,9,-8);scene.add(fill);
+ const fill=new THREE.DirectionalLight(0x8fb8ef,.60);fill.position.set(7,9,-8);scene.add(fill);
  const torches=[],waters=[];
  let lastShadow=-Infinity,dirty=true;
  const reducedMotion=window.matchMedia?.('(prefers-reduced-motion:reduce)');
@@ -172,7 +172,7 @@ export function createAtmosphere(renderer,scene){
    p.putImageData(image,0,0);
    const waves=new THREE.CanvasTexture(c);waves.wrapS=waves.wrapT=THREE.RepeatWrapping;
    waves.repeat.set(4.2,.7);
-   const material=new THREE.MeshStandardMaterial({color:0x3fb9d7,metalness:.24,roughness:.24,
+   const material=new THREE.MeshStandardMaterial({color:0x286b80,metalness:.24,roughness:.32,
     bumpMap:waves,bumpScale:.065,envMapIntensity:1.15,emissive:0x0a354c,emissiveIntensity:.08});
    const mesh=new THREE.Mesh(new THREE.BoxGeometry(11.45,.045,1.35),material);
    mesh.position.y=-.09;mesh.receiveShadow=true;scene.add(mesh);waters.push(waves);

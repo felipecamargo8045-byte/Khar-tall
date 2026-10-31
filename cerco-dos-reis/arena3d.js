@@ -1,13 +1,16 @@
 import * as THREE from './vendor/three.module.js';
-import {makeCloak,animateCloth,batchRig,updateRig} from './character-cloth.js?v=1';
-import {bevelBox,reliefMap,floorHeight,pickGround,fitArena,createAtmosphere,characterShadow,batchStatic,framingInfo} from './arena-atmosphere.js?v=4';
+import './arena-layout.js?v=1';
+import {createCharacter,characterProfiles} from './character-models.js?v=1';
+import {animateCloth,batchRig,updateRig} from './character-cloth.js?v=1';
+import {bevelBox,reliefMap,floorHeight,pickGround,fitArena,createAtmosphere,characterShadow,batchStatic,framingInfo} from './arena-atmosphere.js?v=5';
 
 // Arena WebGL 3D local, geometria própria e sem serviços pagos.
 // Modelo visual independente do motor de combate; não substitui suas regras.
 const host=document.getElementById('arena3d');
 const shell=document.querySelector('.canvas-box');
 const gameCanvas=document.getElementById('arena');
-const W=420,H=560,SCALE=40;
+const layout=globalThis.CercoArenaLayout;
+const {width:W,height:H,scale:SCALE}=layout;
 const position=(x,y)=>new THREE.Vector3((x-W/2)/SCALE,0,(y-H/2)/SCALE);
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const teams={
@@ -18,9 +21,9 @@ const mat=(color,metalness=.08,roughness=.83)=>new THREE.MeshStandardMaterial({c
 const outfitMaterials=new Set();let activeOutfit=window.CercoStore?.snapshot?.().skin?.color||null;
 function outfit(team,color=teams[team].cloth,metalness=.08){const material=mat(team==='ally'&&activeOutfit?activeOutfit:color,metalness);if(team==='ally'){material.userData.defaultColor=color;outfitMaterials.add(material)}return material}
 document.addEventListener('cerco:collection',event=>{activeOutfit=event.detail.skin?.color||null;for(const material of outfitMaterials)material.color.set(activeOutfit||material.userData.defaultColor)});
-const stone=mat(0x8194a8),darkStone=mat(0x344354),stoneLight=mat(0xb2c6d5);
+const stone=mat(0x717974),darkStone=mat(0x303c40),stoneLight=mat(0xa7a58e);
 const iron=mat(0x8994a5,.8,.35),black=mat(0x131a27,.35),gold=mat(0xc6a569,.7,.34);
-const wood=mat(0xae8650),grass=mat(0x4a725b),dirt=mat(0x607b70),water=new THREE.MeshStandardMaterial({color:0x277a9d,metalness:.25,roughness:.3,transparent:true,opacity:.93});
+const wood=mat(0x73543a),grass=mat(0x4a725b),dirt=mat(0x607b70),water=new THREE.MeshStandardMaterial({color:0x277a9d,metalness:.25,roughness:.3,transparent:true,opacity:.93});
 const skin=mat(0xd1a486),fur=mat(0x48403b),redHair=mat(0x9d452c),green=mat(0x64b87b);
 const box=(w,h,d,m)=>new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
 const sphere=(r,m)=>new THREE.Mesh(new THREE.SphereGeometry(r,14,10),m);
@@ -33,9 +36,9 @@ const materialCache=new Map();
 function texturedStone(style){
  if(materialCache.has(style))return materialCache.get(style);
  const palettes={
-  ally:['#7899b6','#9db2c6','#55748f','#b6c7d7'],
-  enemy:['#977989','#b69dac','#6c5265','#cab1bd'],
-  road:['#6b7c7b','#879494','#53666c','#a1a9a3']
+  ally:['#75817d','#818b83','#697671','#90968b'],
+  enemy:['#7c7972','#89877e','#706e67','#979388'],
+  road:['#706f61','#7d7c6d','#62685f','#8a8774']
  };
  const cols=palettes[style]||palettes.road;
  const canvas=document.createElement('canvas');
@@ -44,16 +47,16 @@ function texturedStone(style){
  let rand=seed;
  function random(){rand=(rand*1664525+1013904223)>>>0;return rand/4294967296}
  p.fillStyle=cols[2];p.fillRect(0,0,256,256);
- const blockHeight=style==='road'?37:31;
- const blockWidth=style==='road'?61:72;
+ const blockHeight=style==='road'?37:22;
+ const blockWidth=style==='road'?61:41;
  for(let row=0,y=0;y<256;row++,y+=blockHeight){
    const shift=row%2?blockWidth/2:0;
    for(let x=-blockWidth;x<256+blockWidth;x+=blockWidth){
-    const px=x+shift, inset=1.2+random()*1.2;
+    const px=x+shift, inset=.6+random()*.5;
     p.fillStyle=cols[Math.floor(random()*cols.length)];
     p.fillRect(px+inset,y+inset,blockWidth-2*inset,blockHeight-2*inset);
-    p.fillStyle='rgba(245,238,212,.16)';p.fillRect(px+inset+2,y+inset+2,blockWidth-5,2);
-    p.fillStyle='rgba(14,25,35,.21)';p.fillRect(px+inset,y+blockHeight-4,blockWidth-4,2);
+    p.fillStyle='rgba(245,238,212,.08)';p.fillRect(px+inset+2,y+inset+2,blockWidth-5,2);
+    p.fillStyle='rgba(14,25,35,.09)';p.fillRect(px+inset,y+blockHeight-4,blockWidth-4,2);
     p.strokeStyle='rgba(12,26,40,.15)';p.lineWidth=1;
     for(let n=0;n<3;n++){
       const crackX=px+8+random()*(blockWidth-17);
@@ -68,7 +71,7 @@ function texturedStone(style){
  tex.colorSpace=THREE.SRGBColorSpace;
  tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
  tex.anisotropy=2;
- const result=new THREE.MeshStandardMaterial({map:tex,bumpMap:reliefMap(tex),bumpScale:.055,
+ const result=new THREE.MeshStandardMaterial({map:tex,bumpMap:reliefMap(tex),bumpScale:.025,
   roughness:.86,metalness:.02,flatShading:false,envMapIntensity:.35});
  materialCache.set(style,result);
  return result;
@@ -92,44 +95,44 @@ function createRenderer(){
  r.setPixelRatio(Math.min(1.5,window.devicePixelRatio||1));
  return r;
 }
-// Direção de arte: fantasia estilizada, limpa e legível. Iluminação de
-// maquete, detalhes vivos e pontes grandes; assets e padrões são originais.
+// Direção de arte: fantasia estilizada, limpa e legível. Materiais de
+// pedra, metal e tecido, com proporções legíveis no campo; assets e padrões são originais.
 function surfaceTexture(style){
- const canvas=document.createElement('canvas');
- canvas.width=512;canvas.height=512;
- const ctx=canvas.getContext('2d'),seed=style==='grass'?1931:2701;
- let n=seed;
- function rnd(){n=(Math.imul(n,1664525)+1013904223)>>>0;return n/4294967296}
- const green=style==='grass';
- ctx.fillStyle=green?'#83bc72':'#c6ba9b';
- ctx.fillRect(0,0,512,512);
- for(let r=0;r<8;r++)for(let c=0;c<8;c++){
-  const x=c*64,y=r*64;
-  const shades=green?['#8dcf77','#80bf72','#94ce81','#7cb96c','#a0d48b']:['#c3b9a2','#d5c9aa','#b2aea0','#d8ceb7','#bdbda8'];
-  ctx.fillStyle=shades[Math.floor(rnd()*shades.length)];
-  ctx.fillRect(x+1,y+1,62,62);
-  ctx.fillStyle=green?'rgba(39,101,48,.12)':'rgba(52,62,66,.13)';
-  ctx.fillRect(x+1,y+61,62,2);
-  ctx.strokeStyle=green?'rgba(245,255,206,.28)':'rgba(253,248,211,.22)';
-  ctx.lineWidth=1;ctx.strokeRect(x+2,y+2,60,60);
-  for(let z=0;z<14;z++){
-   const xx=x+4+rnd()*55,yy=y+4+rnd()*55;
-   ctx.fillStyle=green?(rnd()>.5?'rgba(36,113,54,.18)':'rgba(245,246,173,.17)'):'rgba(92,88,78,.12)';
-   ctx.fillRect(xx,yy,2+rnd()*2,1+rnd()*3);
+ const canvas=document.createElement('canvas');canvas.width=canvas.height=512;
+ const ctx=canvas.getContext('2d'),image=ctx.createImageData(512,512);
+ const grass=style==='grass';
+ const hash=(x,y)=>{let n=Math.imul(x,374761393)^Math.imul(y,668265263);n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967295};
+ function noise(x,y,period){
+  const ix=Math.floor(x),iy=Math.floor(y),tx=x-ix,ty=y-iy;
+  const u=tx*tx*(3-2*tx),v=ty*ty*(3-2*ty);
+  const sample=(a,b)=>hash((a+period)%period,(b+period)%period);
+  return THREE.MathUtils.lerp(THREE.MathUtils.lerp(sample(ix,iy),sample(ix+1,iy),u),THREE.MathUtils.lerp(sample(ix,iy+1),sample(ix+1,iy+1),u),v);
+ }
+ for(let y=0;y<512;y++)for(let x=0;x<512;x++){
+  const value=noise(x/128,y/128,4)*.56+noise(x/32,y/32,16)*.28+noise(x/8,y/8,64)*.16;
+  const grain=(hash(x,y)-.5)*6,i=(y*512+x)*4;
+  const base=grass?[49,77,51]:[108,103,87],variation=grass?[28,32,17]:[25,24,21];
+  for(let c=0;c<3;c++)image.data[i+c]=base[c]+variation[c]*value+grain;
+  image.data[i+3]=255;
+ }
+ ctx.putImageData(image,0,0);
+ if(!grass){
+  // Lajes irregulares com juntas finas e desgaste, sem quadriculado colorido.
+  for(let row=0;row<12;row++)for(let col=-1;col<5;col++){
+   const x=col*128+(row%2)*64,y=row*44;
+   ctx.strokeStyle='rgba(28,35,31,.25)';ctx.lineWidth=1.6;
+   ctx.strokeRect(x+1,y+1,124,41);
+   ctx.strokeStyle='rgba(206,196,162,.10)';ctx.strokeRect(x+3,y+3,120,37);
   }
  }
- const tex=new THREE.CanvasTexture(canvas);
- tex.colorSpace=THREE.SRGBColorSpace;
- tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
- tex.anisotropy=2;
- tex.repeat.set(green?1.7:1,green?2.4:4);
- return tex;
+ const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+ tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.anisotropy=4;return tex;
 }
 function terrain(){
  // Terreno contínuo cobre a vista inteira, sem moldura de maquete.
- const grassMap=surfaceTexture('grass');grassMap.repeat.set(9,4.9);
+ const grassMap=surfaceTexture('grass');grassMap.repeat.set(7,3.5);
  const grassMaterial=new THREE.MeshStandardMaterial({map:grassMap,bumpMap:reliefMap(grassMap),
-  bumpScale:.024,roughness:.95,envMapIntensity:.28});
+  bumpScale:.018,roughness:.97,envMapIntensity:.28});
  for(const z of [-15.675,15.675]){
   const field=box(60,.14,30,grassMaterial);
   put(scene,field,0,-.059,z);field.receiveShadow=true;
@@ -143,12 +146,12 @@ function terrain(){
     const path=box(2.54,.045,6.07,roadMat);
     put(scene,path,x,.035,z);path.receiveShadow=true;
    }
-   const sideLine=mat(0xdacda9);
+   const sideLine=mat(0x777b64);
    for(const d of [-1,1]){
     for(const z of [-3.705,3.705])put(scene,box(.075,.038,6.07,sideLine),x+d*1.32,.057,z);
    }
    for(let z=-6.3;z<6.4;z+=.8){
-     if(Math.abs(z)>.98)put(scene,box(2.5,.02,.032,mat(0x8b8c80)),x,.065,z);
+     if(Math.abs(z)>.98)put(scene,box(2.5,.02,.032,mat(0x686e5d)),x,.065,z);
    }
  }
  // Água ciano contrastante: rio intransponível, salvo pelas pontes.
@@ -164,25 +167,25 @@ function terrain(){
  }
  // Pontes largas, madeira dourada com tabuas salientes e corrimão.
  for(const x of [-2.5,2.5]){
-   for(const z of [-.90,.90])put(scene,bevelBox(2.78,.17,.30,mat(0xd5c49e),.035),x,.11,z);
+   for(const z of [-.90,.90])put(scene,bevelBox(2.78,.17,.30,mat(0x92866c),.035),x,.11,z);
    for(const side of [-1,1])put(scene,box(.16,.22,1.80,mat(0x79553a)),x+side*1.02,.16,0);
    for(let i=0;i<9;i++){
      const z=-.80+i*.20,y=floorHeight(x,z);
-     const plank=bevelBox(2.54,.075,.194,mat(i%2?0xd4a36b:0xbd8a52),.012);
+     const plank=bevelBox(2.54,.075,.194,mat(i%2?0x8c6e48:0x816442),.012);
      put(scene,plank,x,y-.0375,z);
      for(const side of [-1,1])put(scene,cyl(.027,.027,.012,iron,6),x+side*1.1,y+.007,z);
    }
    for(const d of [-1,1]){
      const side=x+d*1.31;
-     put(scene,bevelBox(.095,.13,1.84,mat(0xffdf96),.016),side,.51,0);
+     put(scene,bevelBox(.095,.13,1.84,mat(0xa38a55),.016),side,.51,0);
      for(const z of [-.75,0,.75]){
        const post=box(.14,.48,.14,gold);put(scene,post,side,.54,z);
-       put(scene,sphere(.105,mat(0xffd985)),side,.83,z);
+       put(scene,sphere(.105,mat(0xc0a66c)),side,.83,z);
      }
    }
  }
  // Rochas de margem com contraste; entradas das pontes ficam totalmente livres.
- const bankStone=mat(0xc1c9be),bankShade=mat(0x789998);
+ const bankStone=mat(0x7a8580),bankShade=mat(0x586e69);
  for(const z of [-.79,.79]){
   for(let k=0;k<24;k++){
    const x=-5.3+(k+.5)*.45;
@@ -191,16 +194,17 @@ function terrain(){
    put(scene,rock,x,.20,z);
   }
  }
- // Mosaicos laterais, arbustos, tochas e bandeiras, mantendo o centro limpo.
- for(let i=0;i<24;i++){
-    const x=(i%2?1:-1)*(4.3+(i%4)*.30);
-    const z=-6.55+(i%12)*1.16;
-    if(i%3===0){
-      put(scene,sphere(.28,mat(i%2?0x5c9d56:0x4f9e70)),x,.26,z);
-      put(scene,sphere(.2,mat(0x9ccd80)),x+.16,.25,z-.1);
-    }else{
-      put(scene,cone(.15,.33,mat(0x3e885c)),x,.23,z);
-    }
+ // Vegetação baixa e pedras naturais nas laterais, com o campo aberto.
+ const foliage=mat(0x3b593b),rockMat=mat(0x616c62);
+ for(let i=0;i<18;i++){
+  const x=(i%2?1:-1)*(4.65+(i%3)*.18),z=-6.65+(i%9)*1.64;
+  if(Math.abs(z)<1.1)continue;
+  const rock=new THREE.Mesh(new THREE.IcosahedronGeometry(.19,1),rockMat);
+  rock.scale.set(1.35,.64,.94);rock.rotation.set(.2,i*.8,.1);put(scene,rock,x,.11,z);
+  for(let n=0;n<3;n++){
+   const blade=cone(.045,.27,foliage,4);blade.rotation.z=(n-1)*.35;
+   put(scene,blade,x+.22+(n-1)*.06,.13,z+.15);
+  }
  }
  scene.traverse(mesh=>{
   if(mesh.isMesh&&mesh.material?.isMeshStandardMaterial){
@@ -210,151 +214,94 @@ function terrain(){
  });
  batchedPieces+=batchStatic(scene);
 }
-function crenel(parent,x,z,w,count,h){
- for(let i=0;i<count;i++){
-  put(parent,box(w/count*.74,h,.27,stoneLight),x-w/2+(i+.5)*w/count,.03,z);
- }
-}
 function makeFortress(team,main){
- const colors=teams[team],group=new THREE.Group();
- const theme=outfit(team,colors.cloth,.35),flag=outfit(team,colors.flag,.14);
- const wide=main?2.45:1.7;
- const level=main?2.15:1.55;
- const base=bevelBox(wide+.14,.3,1.59,darkStone,.045);put(group,base,0,.18,0);
- put(group,bevelBox(wide+.26,.10,1.72,stoneLight,.02),0,.065,0);
- const fortressStone=texturedStone(team);
- const keep=bevelBox(wide*.78,level,1.04,fortressStone,.045);put(group,keep,0,level/2+.28,0);keep.castShadow=true;
- // Muralhas com blocos, ameias e cincoiras.
- for(let row=0;row<5;row++){
-  for(let col=0;col<3;col++){
-   const block=box(.07,.045,.18,darkStone);
-   put(group,block,-wide*.34+(col+row%2*.5)*wide*.24,.57+row*level/5,.535);
+ const group=new THREE.Group(),colors=teams[team];
+ const wall=texturedStone(team),trim=stoneLight;
+ const theme=outfit(team,colors.cloth,.20),flag=outfit(team,colors.flag,.08);
+ const roof=outfit(team,team==='ally'?0x18354c:0x61333c,.26);
+ roof.roughness=.66;
+ const bowArms=[],level=main?1.65:1.55;
+ const ring=(r,h,m,x,y,z)=>put(group,cyl(r,r,h,m,20),x,y,z);
+ function turret(x,z,r,top){
+  ring(r,r*.28,darkStone,x,.13,z);
+  ring(r*.91,top-.20,wall,x,top/2+.02,z);
+  ring(r*1.04,.10,trim,x,top-.16,z);
+  ring(r*1.06,.075,gold,x,top-.08,z);
+  put(group,cone(r*1.15,.73,roof,20),x,top+.30,z);
+  ring(.055,.14,gold,x,top+.72,z);
+  put(group,sphere(.065,gold),x,top+.82,z);
+  for(let n=0;n<6;n++){
+   const a=n*Math.PI/3,window=box(.075,.31,.035,black);
+   window.rotation.y=a;put(group,window,x+Math.sin(a)*(r*.925),top*.61,z+Math.cos(a)*(r*.925));
   }
  }
- crenel(group,0,.56,wide*.83,main?9:7,.34);
- for(const side of [-1,1]){
-   const turret=new THREE.Group();
-   const x=side*wide*.49;
-   const shaft=cyl(.31,.34,level+0.42,fortressStone,8);
-   put(turret,shaft,0,(level+.42)/2+.18,0);shaft.castShadow=true;
-   const crown=cyl(.44,.40,.25,mat(0xf3d8a5),9);put(turret,crown,0,level+.38,0);
-   for(let j=0;j<8;j++){
-    const a=j*Math.PI/4;
-    const merlon=box(.21,.32,.18,stone);
-    merlon.position.set(Math.sin(a)*.37,level+.6,Math.cos(a)*.37);
-    merlon.rotation.y=a;turret.add(merlon);
-   }
-   const roof=cone(.42,.94,theme,9);put(turret,roof,0,level+1.09,0);
-   put(turret,sphere(.10,gold),0,level+1.61,0);
-   put(group,turret,x,0,-.32);
- }
- // Portão arqueado com ferragens reais.
- const gate=box(.56,.80,.07,black);put(group,gate,0,.60,.556);
- put(group,new THREE.Mesh(new THREE.CircleGeometry(.28,16,0,Math.PI),black),0,.98,.602);
- for(let i=-1;i<=1;i++){
-   put(group,box(.035,.76,.075,wood),i*.17,.59,.635);
- }
- put(group,box(.67,.07,.11,gold),0,.31,.65);
- for(let x of [-.46,.46]){
-   const window=box(.13,.36,.06,black);put(group,window,x,level*.75,.57);
-   put(group,box(.04,.23,.07,theme),x,level*.75,.61);
- }
- // Estandartes de facção, com haste e tecido 3D.
- for(const side of main?[-.59,.59]:[0]){
-   const pole=cyl(.028,.028,1.12,gold,7);put(group,pole,side,level+1.04,.04);
-   const banner=box(.38,.38,.035,flag);put(group,banner,side+.16,level+1.34,.04);
-   put(group,box(.2,.12,.04,gold),side+.16,level+1.36,.068);
- }
- // Faixa luminosa de facção visível de longe, mesmo no celular.
- const ribbon=box(wide*.79,.085,1.10,theme);put(group,ribbon,0,level+.12,0);
- const crest=box(.25,.29,.09,gold);put(group,crest,0,level+.04,.63);
- put(group,box(.11,.19,.10,theme),0,level+.04,.70);
-
- // Arquitetura realçada: telhado inclinado, parapeitos e emblema gravado.
- const roofing=mat(team==='ally'?0x2379a6:0xa23b58,.17,.62);
- const roofRidge=new THREE.Mesh(new THREE.ConeGeometry(wide*.455,main?.95:.64,4),roofing);
- roofRidge.rotation.y=Math.PI/4;
- put(group,roofRidge,0,level+(main?.75:.60),-.02);
- roofRidge.castShadow=true;
- put(group,box(wide*.67,.08,1.1,mat(0xe9c57f,.6,.33)),0,level+.29,-.03);
- for(const dir of [-1,1]){
-   // Contrafortes em pedra clara, portas secundárias e janelas coloridas.
-   const buttress=box(.18,level*.66,.31,stoneLight);
-   put(group,buttress,dir*(wide*.35),level*.34,.56);
-   const slit=box(.075,.33,.075,mat(0x162c3e));
-   put(group,slit,dir*(wide*.26),level*.68,.594);
-   put(group,box(.036,.23,.08,mat(team==='ally'?0x77d7ff:0xf99cae)),dir*(wide*.26),level*.68,.635);
-   const ornament=box(.24,.24,.11,gold);
-   ornament.rotation.z=Math.PI/4;
-   put(group,ornament,dir*(wide*.33),level*.48,.675);
- }
- // Pórtico com arco de pedra e degraus sobrepostos.
- const portal=new THREE.Group();
- const upperArc=new THREE.Mesh(new THREE.TorusGeometry(.36,.08,5,16,Math.PI),stoneLight);
- put(portal,upperArc,0,.98,.65);
- for(const side of [-1,1])put(portal,bevelBox(.14,.84,.19,stoneLight,.02),side*.36,.56,.64);
- put(portal,bevelBox(.19,.19,.23,stoneLight,.02),0,1.37,.64);
- put(portal,box(.91,.12,.36,mat(0xba9869)),0,.20,.77);
- put(portal,box(1.07,.10,.44,mat(0xd3b886)),0,.10,.83);
- group.add(portal);
  if(main){
-  // Castelo principal: torre central mais alta e coroa distinta.
-  const highTower=cyl(.41,.45,1.16,fortressStone,10);
-  put(group,highTower,0,level+1.03,-.42);
-  const upperRoof=cone(.50,1.0,roofing,7);
-  put(group,upperRoof,0,level+1.95,-.42);
-  put(group,sphere(.12,gold),0,level+2.5,-.42);
-  for(const dir of [-1,1]){
-   const crownBanner=box(.22,.64,.045,flag);
-   put(group,crownBanner,dir*.27,level+1.15,-.04);
-   const cap=box(.27,.06,.07,gold);
-   put(group,cap,dir*.27,level+1.45,-.01);
+  put(group,bevelBox(2.86,.12,1.82,darkStone,.035),0,.08,0);
+  put(group,bevelBox(2.65,.12,1.66,trim,.028),0,.19,0);
+  put(group,bevelBox(1.94,1.48,1.17,wall,.045),0,.98,0);
+  for(const side of [-1,1]){
+   put(group,bevelBox(.16,1.24,.22,trim,.018),side*.77,.88,.56);
+   turret(side*1.04,-.16,.33,2.08);
+   const banner=put(group,box(.30,.65,.035,flag),side*.57,1.12,.637);
+   put(group,box(.34,.055,.055,gold),side*.57,1.47,.657);
+   const seal=put(group,box(.10,.15,.05,gold),side*.57,1.12,.672);seal.rotation.z=Math.PI/4;
   }
+  const hipRoof=put(group,cone(1.32,.79,roof,4),0,2.00,-.04);
+  hipRoof.rotation.y=Math.PI/4;hipRoof.scale.z=.73;
+  put(group,bevelBox(2.02,.07,1.25,gold,.012),0,1.68,-.04);
+  turret(0,-.38,.30,2.84);
+ }else{
+  // Uma torre de defesa única e estreita, em vez de outro castelo inteiro.
+  ring(.92,.13,darkStone,0,.10,0);ring(.84,.11,trim,0,.22,0);
+  ring(.66,1.46,wall,0,.97,0);
+  for(const y of [.43,1.32,1.63])ring(.69,.065,trim,0,y,0);
+  ring(.78,.23,wall,0,1.78,0);ring(.80,.06,gold,0,1.92,0);
+  for(let n=0;n<10;n++){
+   const a=n*Math.PI/5,merlon=bevelBox(.19,.24,.19,trim,.022);
+   merlon.rotation.y=a;put(group,merlon,Math.sin(a)*.70,2.03,Math.cos(a)*.70);
+  }
+  put(group,cone(.67,.72,roof,20),0,2.31,-.07);
+  put(group,sphere(.065,gold),0,2.73,-.07);
+  for(const side of [-1,1]){
+   const slit=box(.085,.36,.06,black);put(group,slit,side*.38,1.15,.54);
+   put(group,box(.035,.24,.07,gold),side*.38,1.15,.57);
+  }
+  put(group,box(.30,.52,.04,flag),0,1.38,.675);
+  put(group,box(.35,.055,.06,gold),0,1.65,.697);
  }
- // Arqueiros montam guarda nos parapeitos e puxam os arcos ao atirar.
- const bowArms=[];
- for(const offset of main?[-.67,.67]:[0]){
-   const sentry=new THREE.Group();
-   const tint=mat(team==='ally'?0x3b85ba:0xa04a60);
-   put(sentry,cyl(.13,.15,.30,tint,8),0,.23,0);
-   put(sentry,sphere(.115,skin),0,.48,0);
-   put(sentry,cone(.14,.17,darkStone,8),0,.63,0);
-   const arm=pivot(sentry,.11,.37,.02);
-   put(arm,cyl(.036,.045,.29,tint,7),0,-.10,0);
-   const bow=pivot(arm,.05,-.21,.05);
-   horizontalPath(bow,[[-.19,.24,0],[-.29,0,.02],[-.19,-.24,0]],.022,wood);
-   horizontalPath(bow,[[-.19,.24,.035],[-.15,0,.035],[-.19,-.24,.035]],.008,gold);
-   sentry.position.set(offset,level+.25,.74);
-   group.add(sentry);bowArms.push(arm);
+ // Pórtico escuro, arco de pedra e grade metálica com ferragens douradas.
+ const gateY=main?.64:.62,front=main?.60:.67;
+ put(group,box(.43,.69,.05,black),0,gateY,front);
+ put(group,new THREE.Mesh(new THREE.CircleGeometry(.215,18,0,Math.PI),black),0,gateY+.34,front+.018);
+ const arch=new THREE.Mesh(new THREE.TorusGeometry(.26,.06,6,18,Math.PI),trim);
+ put(group,arch,0,gateY+.34,front+.04);
+ for(const side of [-1,1])put(group,bevelBox(.10,.70,.12,trim,.015),side*.26,gateY,front+.04);
+ for(let n=-2;n<=2;n++)put(group,box(.018,.68,.035,iron),n*.075,gateY,front+.08);
+ put(group,bevelBox(.71,.08,.30,trim,.016),0,.25,front+.11);
+ put(group,bevelBox(.83,.07,.37,stone,.016),0,.16,front+.17);
+ // Pequenas sentinelas reais; os braços continuam ligados aos disparos.
+ for(const offset of main?[-.53,.53]:[0]){
+  const sentry=new THREE.Group();
+  put(sentry,cyl(.09,.12,.25,theme,12),0,.19,0);
+  put(sentry,sphere(.08,skin),0,.39,0);
+  put(sentry,sphere(.095,darkStone),0,.44,-.02);
+  const arm=pivot(sentry,.10,.28,.02);put(arm,cyl(.026,.034,.22,iron,8),0,-.075,0);
+  const bow=pivot(arm,.03,-.16,.06);
+  horizontalPath(bow,[[-.12,.18,0],[-.20,0,.02],[-.12,-.18,0]],.015,wood);
+  horizontalPath(bow,[[-.12,.18,.02],[-.11,0,.02],[-.12,-.18,.02]],.004,gold);
+  put(group,sentry,offset,main?1.50:1.80,main?.69:.62);bowArms.push(arm);
  }
- group.userData.bowArms=bowArms;
-  group.userData.material=theme;
- group.userData.castle=main;
- group.userData.team=team;
- group.traverse(mesh=>{if(mesh.isMesh){mesh.castShadow=true;mesh.receiveShadow=true}});
- batchedPieces+=batchStatic(group,bowArms);
- return group;
+ const scale=layout.structureScale[main?'castle':'tower'];group.scale.setScalar(scale);
+ group.userData={bowArms,material:theme,castle:main,team,baseScale:scale,barHeight:main?3.91:2.98};
+ group.traverse(mesh=>{if(mesh.isMesh)mesh.castShadow=mesh.receiveShadow=true});
+ batchedPieces+=batchStatic(group,bowArms);return group;
 }
 function buildForts(){
- for(const team of ['enemy','ally']){
-  const enemy=team==='enemy';
-  const flip=enemy?Math.PI:0;
-  const z=enemy?-4.48:4.48;
-  for(let lane=0;lane<2;lane++){
-    const fortress=makeFortress(team,false);
-    fortress.rotation.y=flip;
-    fortress.position.set(lane===0?-2.5:2.5,0,z);
-    scene.add(fortress);
-    const bar=makeHealthBar(team,1.9);
-    scene.add(bar);
-    forts.push({mesh:fortress,bar,team,lane});
-  }
-  const big=makeFortress(team,true);
-  big.position.set(0,0,enemy?-6.35:6.35);
-  big.rotation.y=flip;
-  scene.add(big);
-  const bar=makeHealthBar(team,2.3);scene.add(bar);
-  forts.push({mesh:big,bar,team,lane:-1});
+ for(const team of ['enemy','ally'])for(let slot=0;slot<3;slot++){
+  const main=slot===2,mesh=makeFortress(team,main),origin=layout.positions[team][slot];
+  mesh.rotation.y=team==='enemy'?Math.PI:0;mesh.position.copy(position(origin.x,origin.y));scene.add(mesh);
+  const bar=makeHealthBar(team,main?1.58:1.18);scene.add(bar);
+  forts.push({mesh,bar,team,lane:main?-1:slot});
  }
 }
 function torches(){
@@ -364,126 +311,6 @@ function torches(){
    atmosphere.addTorch(x,z);
   }
  }
-}
-function armor(m,color,scale=1){
- const shell=bevelBox(.64*scale,.58*scale,.4*scale,m,.065*scale);
- shell.castShadow=true;return shell;
-}
-function makeHuman(id,team){
- const colors=teams[team];
- const group=new THREE.Group();
- const cloth=outfit(team),accent=mat(colors.glow,.4),leather=mat(0x4e3b35),plate=mat(id==='colosso'?0x77736e:0x606f7b,.58,.45);
- const isGiant=id==='colosso',royal=['rei','guardiao','liliti'].includes(id);
- const size=isGiant?1.4:id==='liliti'?1.06:1;
- const hips=.8*size,torso=.85*size,head=1.61*size;
- const legs=[],knees=[];
- for(const d of [-1,1]){
-  const j=pivot(group,d*.18*size,hips,0);
-  put(j,cyl(.11*size,.13*size,.34*size,leather,9),0,-.17*size,0);
-  const knee=pivot(j,0,-.34*size,0);knees.push(knee);
-  put(knee,sphere(.115*size,plate),0,0,0);
-  put(knee,cyl(.085*size,.105*size,.33*size,plate,9),0,-.17*size,0);
-  put(knee,box(.22*size,.14*size,.34*size,darkStone),0,-.34*size,.09*size);
-  legs.push(j);
- }
- const body=pivot(group,0,hips+.18*size,0);
- put(body,armor(plate,id,size*.95),0,.22*size,0);
- const tabard=box(.42*size,.69*size,.07*size,cloth);
- put(body,tabard,0,-.13*size,.25*size);
- const cloak=makeCloak((royal?.76:.60)*size,(royal?1.08:.82)*size,cloth,gold);
- cloak.mesh.position.set(0,-.03*size,-.29*size);body.add(cloak.mesh);
- if(team==='ally'){cloak.mesh.material[0].userData.defaultColor=colors.cloth;outfitMaterials.add(cloak.mesh.material[0])}
- const cloaks=[cloak],hair=[];
- const headMesh=sphere(.29*size,skin);put(body,headMesh,0,.76*size,0);headMesh.castShadow=true;
- if(id==='liliti'){
-  put(body,sphere(.315*size,redHair),0,.91*size,-.08*size);
-  for(const d of [-1,1]){put(body,box(.1*size,.61*size,.13*size,redHair),d*.28*size,.52*size,-.08*size);}
-  const skirt=cyl(.25*size,.47*size,.93*size,cloth,14);put(body,skirt,0,-.40*size,0);
-  for(const side of [-1,1]){const strand=pivot(body,side*.24*size,.75*size,-.17*size);put(strand,cyl(.07*size,.10*size,.58*size,redHair,7),0,-.27*size,0);hair.push(strand)}
- }else if(id==='rei'){
-  const crown=cyl(.32*size,.32*size,.22*size,gold,8);put(body,crown,0,1.07*size,0);
-  for(let i=0;i<7;i++){const a=i*2*Math.PI/7;put(body,cone(.065*size,.2*size,gold),Math.sin(a)*.245*size,1.22*size,Math.cos(a)*.245*size);}
- }else if(id==='arqueiro'||id==='soldado'||id==='batedor'){
-  const hood=cone(.36*size,.38*size,cloth,7);put(body,hood,0,1.05*size,-.035*size);
- }else{
-  const helmet=cone(.35*size,.38*size,plate,7);put(body,helmet,0,1.08*size,0);
-  put(body,box(.13*size,.32*size,.09*size,plate),0,.79*size,.26*size);
- }
- for(const side of [-1,1]){
-  put(body,sphere(.037*size,black),side*.11*size,.79*size,.26*size);
-  put(body,sphere(.021*size,id==='liliti'?green:stoneLight),side*.11*size,.79*size,.287*size);
- }
- put(body,sphere(.055*size,skin),0,.70*size,.275*size);
- const arms=[],elbows=[],hands=[];
- for(const d of [-1,1]){
-  const shoulder=pivot(body,d*.41*size,.49*size,0);
-  put(shoulder,sphere(.15*size,plate),0,0,0);
-  put(shoulder,cyl(.105*size,.12*size,.32*size,id==='liliti'?skin:plate,9),0,-.16*size,0);
-  const elbow=pivot(shoulder,0,-.32*size,0);elbows.push(elbow);
-  put(elbow,cyl(.08*size,.105*size,.29*size,id==='liliti'?skin:plate,9),0,-.145*size,0);
-  const hand=pivot(elbow,0,-.30*size,0);hands.push(hand);put(hand,sphere(.105*size,leather),0,0,0);
-  arms.push(shoulder);
- }
- // Equipamento real em 3D, diferente por classe.
- if(['soldado','rei','guardiao','colosso'].includes(id)){
-  const h=1.03*size;
-  const sword=pivot(hands[1],0,0,.13*size);
-  put(sword,cyl(.045*size,.05*size,.34*size,gold),0,-.1*size,0);
-  put(sword,box(.11*size,.58*size,.09*size,iron),0,-.55*size,0);
-  put(sword,box(.34*size,.05*size,.1*size,gold),0,-.30*size,0);
-  if(id==='soldado'||id==='guardiao'){
-   const shield=cyl(.34*size,.32*size,.11*size,cloth,8);
-   shield.rotation.x=Math.PI/2;
-   put(hands[0],shield,0,.15*size,.20*size);
-   put(hands[0],sphere(.13*size,gold),0,.15*size,.265*size);
-  }
- }
- if(['arqueiro','batedor'].includes(id)){
-  const arc=pivot(hands[0],-.05*size,.07*size,.12*size);
-  horizontalPath(arc,[[-.22, .38,0],[-.36,0,0],[-.22,-.38,0]],.035*size,wood);
-  horizontalPath(arc,[[-.22,.38,.01],[-.20,0,.01],[-.22,-.38,.01]],.008*size,gold);
-  arc.rotation.z=Math.PI/2;
-  put(body,box(.09*size,.9*size,.09*size,wood),.38*size,.1*size,-.32*size);
- }
- if(id==='liliti'){
-  const staff=pivot(hands[1],0,.08*size,.12*size);
-  put(staff,cyl(.035*size,.035*size,1.38*size,gold,7),0,-.35*size,0);
-  put(staff,sphere(.15*size,green),0,.38*size,0);
- }
- const sash=box(.69*size,.09*size,.42*size,accent);
- put(body,sash,0,-.17*size,0);
- group.userData={legs,arms,knees,elbows,cloaks,hair,body,baseHeight:head,size,hasWolf:false,id};
- return group;
-}
-function makeWolf(team){
- const colors=teams[team],group=new THREE.Group();
- const hide=mat(team==='ally'?0x565f63:0x635454),fang=mat(0xd5c8ad);
- const body=pivot(group,0,.68,0);
- const wolfTorso=sphere(.5,hide);wolfTorso.scale.set(.78,.64,1.35);const torso=put(body,wolfTorso,0,0,0);torso.castShadow=true;
- put(body,sphere(.44,hide),0,.18,-.5);
- const neck=box(.57,.49,.58,hide);put(body,neck,0,.23,.65);
- const head=pivot(body,0,.28,.83);
- put(head,box(.53,.45,.62,hide),0,0,.19);
- put(head,box(.34,.24,.51,hide),0,-.10,.65);
- for(const d of [-1,1]){
-   put(head,cone(.14,.36,hide,5),d*.2,.32,.08);
-   put(head,sphere(.06,mat(team==='ally'?0x9fe7ff:0xffbd9a)),d*.21,.04,.50);
-   put(head,cone(.08,.2,fang,4),d*.15,-.2,.80);
- }
- const legs=[];
- for(let zz of [-.45,.5]){
-  for(let d of [-1,1]){
-   const j=pivot(group,d*.28,.56,zz);
-   put(j,cyl(.13,.10,.54,hide,7),0,-.28,0);
-   put(j,box(.24,.15,.34,darkStone),0,-.55,.12);
-   legs.push(j);
-  }
- }
- const tail=pivot(body,0,.05,-.76);
- const sweep=cone(.16,.7,hide,6);sweep.rotation.x=Math.PI/2;put(tail,sweep,0,.12,-.3);
- put(body,box(.66,.13,.82,outfit(team)),0,.32,0);
- group.userData={legs,arms:[],body,head,tail,hasWolf:true,size:.95,id:'lobo'};
- return group;
 }
 function makeHealthBar(team,width=.84){
  const node=new THREE.Group();
@@ -502,9 +329,7 @@ function makeHealthBar(team,width=.84){
  return node;
 }
 
-// Acabamento ilustrado animado no espaço 3D: combina esculturas móveis,
-// sombras e silhuetas detalhadas dos personagens originais de Khar Thal.
-// Não usa artes ou modelos do jogo de referência.
+// Sombras de contato complementam a sombra direcional nos pés dos modelos.
 const shadowCanvas=document.createElement('canvas');
 shadowCanvas.width=64;shadowCanvas.height=64;
 const shadowCtx=shadowCanvas.getContext('2d');
@@ -522,21 +347,24 @@ function fakeShadow(width){
  return mesh;
 }
 function createActor(u){
- const model=u.card.id==='lobo'?makeWolf(u.side):makeHuman(u.card.id,u.side);
+ const model=createCharacter(u.card.id,u.side,{mat,outfit,outfitMaterials});
  // Proporção de estratégia: tropas menores do que a estrutura que defendem.
- const unitScale=u.card.id==='colosso'?.56:u.card.id==='lobo'?.40:u.card.id==='rei'?.49:u.card.id==='liliti'?.47:.44;
- model.scale.setScalar(unitScale*.66);
+ const unitScale=characterProfiles[u.card.id].scale;
+ model.scale.setScalar(unitScale);
+ model.updateMatrixWorld(true);
+ const modelBounds=new THREE.Box3().setFromObject(model);
+ const visualHeight=modelBounds.max.y,visualWidth=modelBounds.max.x-modelBounds.min.x;
  model.traverse(o=>{if(o.isMesh)o.castShadow=true});
  const rig=batchRig(model);
- const bar=makeHealthBar(u.side,.68);
+ const bar=makeHealthBar(u.side,Math.min(1.08,Math.max(.68,visualWidth*.70)));
  const appearance=null;
  const shadowProxy=characterShadow(u.card.id,appearance?.height||(u.card.id==='lobo'?.92:1.18));
- const shadow=fakeShadow(u.card.id==='colosso'?.68:u.card.id==='lobo'?.52:.48);
+ const shadow=fakeShadow(Math.max(.64,visualWidth*.94));
  scene.add(model);scene.add(bar);scene.add(shadow);
  scene.add(shadowProxy);
  atmosphere.invalidate();
  if(appearance)scene.add(appearance.mesh);
- return {model,rig,bar,shadow,shadowProxy,appearance,side:u.side,lastFrame:0,position:new THREE.Vector3()};
+ return {model,rig,bar,shadow,shadowProxy,appearance,visualHeight,visualWidth,side:u.side,lastFrame:0,position:new THREE.Vector3()};
 }
 function syncActors(game){
  const live=new Set(game.units.filter(u=>u.hp>0).map(u=>u.id));
@@ -558,8 +386,7 @@ function syncActors(game){
   const ground=floorHeight(pos.x,pos.z);
   obj.position.copy(pos);
   rec.shadow.position.set(pos.x,ground+.013,pos.z);
-  // O modelo físico continua na cena, enquanto a arte animada dá
-  // acabamento de personagem real sobre a silhueta geométrica.
+  // Os modelos articulados recebem luz e sombra diretamente no campo.
   if(rec.appearance){
      const art=rec.appearance;
      art.mesh.position.set(pos.x,ground+art.height*.5+.025,pos.z+.10);
@@ -578,7 +405,7 @@ function syncActors(game){
   const step=walking?1:attacking?.48:.06;
   obj.position.y=ground+(walking?.018*Math.sin(phase*2):.005*Math.sin(clock*2));
   // Indicador flutuante, sempre legível, separado do corpo do personagem.
-  const visibleHeight=u.card.id==='colosso'?1.08:u.card.id==='lobo'?.54:.77;
+  const visibleHeight=rec.visualHeight;
   rec.bar.position.set(pos.x,ground+visibleHeight+.12,pos.z);
   rec.bar.quaternion.copy(camera.quaternion);
   const fill=rec.bar.userData.fill;
@@ -618,6 +445,7 @@ function syncActors(game){
   anim.knees?.forEach((k,i)=>{k.rotation.x=walking?Math.max(0,-Math.sin(phase+i*Math.PI))*.65:.08});
   anim.elbows?.forEach((e,i)=>{e.rotation.x=attacking?-.5-.3*Math.sin(clock*12):-.12-(walking?Math.max(0,Math.sin(phase+i*Math.PI))*.18:0)});
   anim.hair?.forEach((h,i)=>{h.rotation.x=Math.sin(clock*2.8+i)*.07;h.rotation.z=Math.sin(clock*3.1+i)*.035});
+  anim.magicHands?.forEach((hand,i)=>{hand.rotation.y=clock*(i?1:-1);hand.scale.setScalar(1+(attacking?.25:.06)*Math.sin(clock*5))});
   updateRig(rec.rig);
   // Modelo e tecido recebem luz e sombra como a arquitetura.
  }
@@ -645,8 +473,9 @@ function syncBolts(game){
    const fortress=forts.find(f=>f.team===shot.source&&f.lane===(shot.slot===2?-1:shot.slot));
    const from=fortress?.mesh.position.clone()||position(shot.fromX,shot.fromY);
    if(fortress&&shot.slot===2)from.x+=(shot.toX<W/2?-.4:.4);
-   from.y=shot.slot===2?3.24:2.44;
-   const to=position(shot.toX,shot.toY);to.y=floorHeight(to.x,to.z)+.40;
+   from.y=(shot.slot===2?1.9:2.2)*(fortress?.mesh.scale.y||1);
+   const targetActor=actors.get(shot.targetId);
+   const to=position(shot.toX,shot.toY);to.y=floorHeight(to.x,to.z)+(targetActor?.visualHeight||1)*.60;
    const t=shot.progress,arc=.76,trajectory=to.clone().sub(from);
    mesh.position.copy(from).lerp(to,t);
    mesh.position.y+=Math.sin(t*Math.PI)*arc;
@@ -679,9 +508,8 @@ function syncBolts(game){
  }
 }
 
-// Cada personagem possui uma assinatura de ataque: o projétil, o impacto e
-// a postura são diferentes, inclusive quando a arte ilustrada está ativa.
-const ATTACK_COLORS={arrow:0xffe6a7,mark:0x98e9fc,enchant:0xde80ff,shield:0xa1eaf1,
+// Cada personagem mantém sua assinatura de ataque nos gestos, projéteis e impactos.
+const ATTACK_COLORS={arrow:0xffe6a7,mark:0xe25458,enchant:0xe8bb65,shield:0xa1eaf1,
  slash:0xffeac6,bite:0xffb1a0,slam:0xffa45c,royal:0xf4ca72};
 function emissiveMaterial(color,opacity=1){
  return new THREE.MeshBasicMaterial({color,transparent:true,opacity,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
@@ -689,7 +517,7 @@ function emissiveMaterial(color,opacity=1){
 function attackProjectile(shot){
  const color=ATTACK_COLORS[shot.kind]||0xffd8a6;
  const root=new THREE.Group();
- const thin=['arrow','mark'].includes(shot.kind);
+ const thin=shot.kind==='arrow';
  if(thin){
   const length=shot.kind==='mark'?.85:.68;
   const shaft=cyl(.024,.024,length,mat(shot.kind==='mark'?0x2ac5f3:0x9c7550,.42,.48),8);
@@ -707,11 +535,16 @@ function attackProjectile(shot){
    const tracer=new THREE.Mesh(new THREE.TorusGeometry(.13,.025,4,15),emissiveMaterial(color,.72));
    tracer.rotation.x=Math.PI/2;put(root,tracer,0,-.14,0);
   }
+ }else if(shot.kind==='mark'){
+  const rune=new THREE.Mesh(new THREE.OctahedronGeometry(.16,0),emissiveMaterial(0xe25458,.92));
+  rune.scale.y=2.4;root.add(rune);
+  const tracer=new THREE.Mesh(new THREE.TorusGeometry(.18,.018,4,20),emissiveMaterial(0xd4a25d,.85));
+  tracer.rotation.x=Math.PI/2;root.add(tracer);
  }else if(shot.kind==='enchant'){
-  put(root,sphere(.18,emissiveMaterial(0xd47dff,.96)),0,0,0);
-  const halo=new THREE.Mesh(new THREE.TorusGeometry(.29,.035,5,22),emissiveMaterial(0xfaacff,.79));
+  put(root,sphere(.18,emissiveMaterial(0xc9524a,.96)),0,0,0);
+  const halo=new THREE.Mesh(new THREE.TorusGeometry(.29,.035,5,22),emissiveMaterial(0xedbf61,.79));
   put(root,halo,0,0,0);
-  const halo2=new THREE.Mesh(new THREE.TorusGeometry(.22,.027,5,22),emissiveMaterial(0x73efdf,.85));
+  const halo2=new THREE.Mesh(new THREE.TorusGeometry(.22,.027,5,22),emissiveMaterial(0xe57b62,.85));
   halo2.rotation.y=1;root.add(halo2);
  }else if(shot.kind==='shield'){
   const plane=new THREE.Mesh(new THREE.CircleGeometry(.25,7),emissiveMaterial(0x93f3e8,.74));
@@ -794,7 +627,9 @@ function syncTroopVfx(game){
   const target=position(shot.toX,shot.toY);
   const source=position(shot.fromX,shot.fromY);
   const rise=Math.sin(shot.progress*Math.PI);
-  mesh.position.set(at.x,floorHeight(at.x,at.z)+.40+rise*(shot.kind==='enchant'?.43:.26),at.z);
+  const sourceActor=actors.get(shot.sourceId),targetActor=actors.get(shot.targetId);
+  const chest=(sourceActor?.visualHeight||1.2)*.58*(1-shot.progress)+(targetActor?.visualHeight||1.2)*.58*shot.progress;
+  mesh.position.set(at.x,floorHeight(at.x,at.z)+chest+rise*(shot.kind==='enchant'?.23:.16),at.z);
   if(shot.kind==='enchant'){
     mesh.rotation.set(shot.progress*5,shot.progress*7,shot.progress*4);
   }else if(shot.kind==='shield'){
@@ -859,10 +694,14 @@ function applyUniqueAttackPose(u,rec,anim){
    anim.legs.forEach((leg,i)=>{leg.rotation.x+=(i<2?-1:1)*.48*snap});
  }else{
    const [left,right]=anim.arms;
-   if(kind==='arrow'||kind==='mark'){
+   if(kind==='arrow'){
      if(left){left.rotation.x=-1.15*snap;left.rotation.z=.25*snap}
      if(right){right.rotation.x=-1.42*snap;right.rotation.z=-.30*snap}
      anim.body.rotation.x=-.08*snap;
+   }else if(kind==='mark'){
+     if(left){left.rotation.x=-1.5*snap;left.rotation.z=-.40*snap}
+     if(right){right.rotation.x=-2.0*snap;right.rotation.z=.45*snap}
+     anim.body.rotation.y=.25*snap;
    }else if(kind==='slash'||kind==='royal'){
      if(right){right.rotation.x=-1.8*thrust;right.rotation.z=-.66*snap}
      if(left)left.rotation.x=-.33*snap;
@@ -894,11 +733,11 @@ function syncForts(game){
   const elapsed=recent?Math.max(0,recent.time-game.time):10;
   const pull=elapsed<.45?Math.sin(Math.PI*elapsed/.45):0;
   for(const arm of fort.mesh.userData.bowArms||[])arm.rotation.x=-.8*pull;
-  fort.mesh.scale.y=.84+.16*ratio;
+  fort.mesh.scale.y=fort.mesh.userData.baseScale*(.94+.06*ratio);
   fort.mesh.visible=hp>0;
   if(fort.bar){
     fort.bar.visible=hp>0;
-    fort.bar.position.set(fort.mesh.position.x,(fort.lane===-1?4.98:3.46)*fort.mesh.scale.y,fort.mesh.position.z+.12);
+    fort.bar.position.set(fort.mesh.position.x,fort.mesh.userData.barHeight*fort.mesh.scale.y,fort.mesh.position.z+.12);
     fort.bar.quaternion.copy(camera.quaternion);
     fort.bar.userData.fill.scale.x=Math.max(.01,ratio);
     fort.bar.userData.fill.position.x=-fort.bar.userData.width*(1-ratio)/2;
@@ -967,8 +806,10 @@ window.Cerco3D={
   presentation:ready?{shadows:renderer.shadowMap.enabled,shadowSize:atmosphere.sun.shadow.mapSize.x,
    toneMapping:renderer.toneMapping,environment:!!scene.environment,pixelRatio:renderer.getPixelRatio(),
    batchedPieces,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,
+   forts:forts.map(f=>({team:f.team,slot:f.lane===-1?2:f.lane,x:f.mesh.position.x*SCALE+W/2,y:f.mesh.position.z*SCALE+H/2})),
    framing:framingInfo(camera,forts)}:null}),
  debugActors:()=>[...actors.entries()].map(([id,rec])=>({id,kind:rec.model.userData.id,illustrated:!!rec.appearance,legs:rec.model.userData.legs?.length||0,
+   height:Number(rec.visualHeight.toFixed(3)),width:Number(rec.visualWidth.toFixed(3)),identity:rec.model.userData.profile.identity,
    cloaks:rec.model.userData.cloaks?.length||0,clothSample:Number((rec.model.userData.cloaks?.[0]?.geometry.attributes.position.array.at(-1)||0).toFixed(4)),
    rotations:rec.model.userData.legs?.map(l=>Number(l.rotation.x.toFixed(3)))||[]}))
 };

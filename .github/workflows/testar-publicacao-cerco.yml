@@ -26,6 +26,8 @@ jobs:
           node --check cerco-dos-reis/realm-ui.js
           node --check cerco-dos-reis/sw.js
           node --check cerco-dos-reis/arena3d.js
+          node --check cerco-dos-reis/character-models.js
+          node --check cerco-dos-reis/arena-layout.js
           node --check cerco-dos-reis/arena-atmosphere.js
           node cerco-dos-reis/tests/presentation.mjs
           node --check cerco-dos-reis/character-cloth.js
@@ -40,14 +42,14 @@ jobs:
           for name in ['#shopGrid','#featuredCards','#cardGrid','#arena']:
               assert name[1:] in html, name
           assert 'https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/' not in html
-          assert 'src="./app.js?v=26"' in html
+          assert 'src="./app.js?v=27"' in html
           assert 'src="./rewards.js?v=3"' in html
           assert 'src="./home.js?v=5"' in html
           assert 'src="./voices.js?v=5"' in html
           assert 'src="./realm-ui.js?v=6"' in html
           assert 'href="./interface.css?v=50"' in html
-          assert 'src="./arena3d.js?v=19"' in html
-          for name in ['game-ui.css','interface.css','assets/interface-icons.svg','app.js','rewards.js','home.js','arena3d.js','arena-atmosphere.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
+          assert 'src="./arena3d.js?v=20"' in html
+          for name in ['game-ui.css','interface.css','assets/interface-icons.svg','app.js','rewards.js','home.js','arena3d.js','arena-atmosphere.js','arena-layout.js','character-models.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
               assert Path('cerco-dos-reis',name).is_file(),name
           print('Seis ambientes, recompensas, arquivos, navegacao e scripts: OK')
           PY
@@ -479,6 +481,21 @@ jobs:
             assert.ok(fighter && fighter.attacks>=1,'Tropa nao realizou ataque');
             await page.screenshot({path:'/tmp/cerco-combate-3d.png'});
 
+            // O alcance reduzido e a posição visível devem valer nas duas bases.
+            const defenses=await page.evaluate(()=>{
+              const layout=window.CercoArenaLayout;
+              return {ranges:layout.defenseRange,forts:window.Cerco3D.info().presentation.forts,
+                expected:layout.positions,probes:['ally','enemy'].flatMap(side=>[0,1,2].map(slot=>{
+                  const range=layout.defenseRange[slot===2?'castle':'tower'],sign=side==='ally'?-1:1;
+                  return {inside:window.__cercoTest.defenseProbe(side,slot,sign*(range-1)),
+                    outside:window.__cercoTest.defenseProbe(side,slot,sign*(range+1))};
+                }))};
+            });
+            assert.deepEqual(defenses.ranges,{tower:124,castle:100});
+            assert.ok(defenses.probes.every(p=>p.inside.fired&&!p.outside.fired),'Defesa atirou fora do alcance');
+            for(const f of defenses.forts)assert.deepEqual({x:f.x,y:f.y},defenses.expected[f.team][f.slot],
+              'A posição de ataque não coincide com a fortificação 3D');
+
             // Torres devem detectar um inimigo da equipe oposta,
             // emitir projéteis e descontar vida ao acertar.
             await page.evaluate(()=>window.__cercoTest.reset());
@@ -598,6 +615,13 @@ jobs:
             await demo.goto('http://127.0.0.1:8080/?test=1',{waitUntil:'networkidle'});
             await demo.waitForFunction(()=>window.Cerco3D?.ready===true,{timeout:20000});
             await demo.locator('#homePlay').click();
+            const lineup=await demo.evaluate(()=>window.__cercoTest.modelLineup());
+            assert.equal(lineup.length,8);
+            assert.ok(lineup.find(m=>m.kind==='colosso').height>lineup.find(m=>m.kind==='soldado').height*1.4);
+            assert.ok(lineup.find(m=>m.kind==='soldado').height>1);
+            await demo.screenshot({path:'/tmp/cerco-identidade-3d.png'});
+            await demo.evaluate(()=>{window.__cercoTest.reset()});
+            await demo.locator('#start').click();
             await demo.evaluate(()=>{window.__cercoTest.duel('guardiao');window.__cercoTest.createEnemy('arqueiro',105,245)});
             await demo.waitForTimeout(7500);
             await demo.screenshot({path:'/tmp/cerco-personagens-3d.png'});
@@ -616,6 +640,7 @@ jobs:
             /tmp/cerco-arena-mobile.png
             /tmp/cerco-combate-3d.png
             /tmp/cerco-personagens-3d.png
+            /tmp/cerco-identidade-3d.png
             /tmp/cerco-batalha-3d.webm
             /tmp/cerco-loja-mobile.png
           if-no-files-found: ignore

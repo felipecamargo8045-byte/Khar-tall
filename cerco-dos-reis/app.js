@@ -3,6 +3,7 @@
 (()=>{'use strict';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const ASSET='./origem-apk/assets/';const KEY='cerco-reis-migracao-treino-v1';
+const arenaLayout=window.CercoArenaLayout;
 const cardData=[
 {id:'lobo',name:'Lobo',kind:'Tropa · Velocidade',rarity:'Comum',cost:3,dmg:58,hp:260,units:2,range:32,speed:33,attackSpeed:.95,ability:'Bote do Lobo',desc:'Dois lobos velozes avançam em matilha. Seu primeiro bote ganha força.',effect:'O primeiro golpe de cada lobo causa 60% de dano adicional.',img:'portrait_lobo.webp',role:'Pressão rápida'},
 {id:'arqueiro',name:'Arqueiro',kind:'Tropa · Distância',rarity:'Comum',cost:3,dmg:47,hp:150,units:2,range:100,speed:24,attackSpeed:1.25,ability:'Disparo de apoio',desc:'Dois arqueiros surgem juntos e disparam flechas de longe, cobrindo as duas rotas quando invocados no centro.',effect:'Mantém distância dos inimigos. Depois do nível Ouro, pode evoluir na batalha ao abater tropas.',img:'portrait_aprendiz_arqueiro.webp',role:'Cobertura'},
@@ -475,8 +476,7 @@ function combat(u,dt){
  const opponent=u.side==='ally'?'enemy':'ally';
  const lane=u.lane??(u.x<W/2?0:1);
  const standing=game.towers[opponent][lane]>0;
- const goal=standing?{x:LANES[lane],y:opponent==='enemy'?126:H-46}:
-   {x:W/2,y:opponent==='enemy'?73:H-19};
+ const goal=arenaLayout.positions[opponent][standing?lane:2];
  const reach=(u.card.range||32)+12;
  if(distance(u,goal)<=reach){
    if(u.cooldown<=0){
@@ -512,13 +512,10 @@ function separateFriendlyUnits(){
 
 // Defesa automática das quatro torres e dos dois castelos centrais.
 // Nenhuma cobrança, inventário ou partida online envolvida.
-const DEFENSE_RANGE={tower:146,castle:118};
+const DEFENSE_RANGE=arenaLayout.defenseRange;
 const DEFENSE_DAMAGE={tower:76,castle:95};
 const DEFENSE_INTERVAL={tower:1.55,castle:1.95};
-const TOWER_POSITIONS={
- enemy:[{x:110,y:124},{x:310,y:124},{x:210,y:69}],
- ally:[{x:110,y:H-49},{x:310,y:H-49},{x:210,y:H-19}]
-};
+const TOWER_POSITIONS=arenaLayout.positions;
 function defendFromTowers(dt){
  for(const side of ['ally','enemy']){
   for(let slot=0;slot<3;slot++){
@@ -987,6 +984,23 @@ if(new URLSearchParams(location.search).has('test')){
     breach:(side='enemy',lane=0,damage=9999)=>receiveFortressDamage(side,lane,damage),
     finish:(winner='ally')=>result(winner),
     towers:()=>({shots:game.towerShots.slice(),hits:game.defenseHits,projectiles:game.projectiles.slice(),timers:{...game.towerTimers}}),
+    defenseProbe:(side,slot,offset)=>{
+      const previous=game,origin=TOWER_POSITIONS[side][slot];
+      game={...game,units:[{id:-33,hp:1000,side:side==='ally'?'enemy':'ally',x:origin.x,y:origin.y+offset}],
+        towerTimers:{},towerShots:[],projectiles:[]};
+      try{defendFromTowers(.5);return {fired:game.towerShots.some(s=>s.side===side&&s.slot===slot),
+        origin:{...origin},range:DEFENSE_RANGE[slot===2?'castle':'tower']}}
+      finally{game=previous}
+    },
+    modelLineup:()=>{
+      game.units=[];
+      ['lobo','arqueiro','soldado','colosso','guardiao','batedor','rei','liliti'].forEach((id,i)=>{
+        const c=cardData.find(c=>c.id===id),ids=addUnit({...c,units:1},{x:65+(i%4)*95,y:185+Math.floor(i/4)*175},'ally');
+        ids.forEach(unitId=>{const u=game.units.find(u=>u.id===unitId);u.heading=Math.PI/2;u.state='idle'});
+      });
+      game.paused=true;window.Cerco3D?.syncNow?.(game);draw();
+      return window.Cerco3D?.debugActors?.();
+    },
     forceTowerTarget:(side='enemy',slot=0,target='colosso')=>{
       const card=cardData.find(c=>c.id===target);
       const position=TOWER_POSITIONS[side][slot];

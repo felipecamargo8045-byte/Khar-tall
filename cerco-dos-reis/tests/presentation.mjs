@@ -63,3 +63,27 @@ const rig=batchRig(actor);joint.rotation.x=.7;updateRig(rig);
 const record=rig.records[0],partMatrix=new THREE.Matrix4();record.mesh.getMatrixAt(1,partMatrix);
 assert.ok(partMatrix.elements.every((n,i)=>Math.abs(n-record.sources[1].matrixWorld.elements[i])<1e-6),'Articulação perdida ao instanciar');
 console.log('PASSOU: tecido articulado e agrupamento dinâmico de personagens 3D.');
+
+// Proporções reais dos modelos: adultos legíveis, gigante maior, lobo comprido.
+const {createCharacter,characterProfiles}=await import('../character-models.js');
+const context={mat:(color,metalness=.1,roughness=.8)=>new THREE.MeshStandardMaterial({color,metalness,roughness}),
+ outfit:()=>new THREE.MeshStandardMaterial({color:0x244760}),outfitMaterials:new Set()};
+const measures={};
+for(const id of Object.keys(characterProfiles)){
+ const model=createCharacter(id,'ally',context);model.scale.setScalar(characterProfiles[id].scale);
+ const bounds=new THREE.Box3().setFromObject(model);measures[id]=bounds.getSize(new THREE.Vector3());
+ assert.ok(bounds.max.y>1||id==='lobo','Personagem humano pequeno demais: '+id);
+ assert.equal(model.userData.legs.length,id==='lobo'?4:2);
+ if(['batedor','liliti'].includes(id))assert.equal(model.userData.magicHands.length,2);
+ if(id==='rei')assert.equal(model.userData.hair.length,0);
+ if(id==='liliti')assert.ok(model.userData.hair.length>=6,'Cabelo ruivo sem volume');
+}
+assert.ok(measures.colosso.y>measures.soldado.y*1.4,'Colosso perdeu a estatura');
+assert.ok(measures.colosso.x>measures.soldado.x*1.2,'Colosso perdeu a largura');
+assert.ok(measures.lobo.z>measures.lobo.y,'Lobo sem proporção de quadrúpede');
+await import('../arena-layout.js');
+const layout=globalThis.CercoArenaLayout;
+for(let slot=0;slot<3;slot++)assert.equal(layout.positions.ally[slot].y+layout.positions.enemy[slot].y,layout.height,
+ 'As defesas não estão simétricas');
+assert.ok(layout.positions.enemy[0].y-layout.positions.enemy[2].y>=90,'Castelo e torre próximos demais');
+console.log('PASSOU: identidade, proporções humanas, estatura do Colosso e bases simétricas.');
