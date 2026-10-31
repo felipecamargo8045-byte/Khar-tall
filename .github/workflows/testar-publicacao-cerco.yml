@@ -33,12 +33,13 @@ jobs:
           for name in ['#shopGrid','#featuredCards','#cardGrid','#arena']:
               assert name[1:] in html, name
           assert 'https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/' not in html
-          assert 'src="./app.js?v=24"' in html
+          assert 'src="./app.js?v=25"' in html
           assert 'src="./rewards.js?v=2"' in html
-          assert 'src="./home.js?v=3"' in html
+          assert 'src="./home.js?v=4"' in html
           assert 'src="./voices.js?v=4"' in html
           assert 'src="./realm-ui.js?v=5"' in html
-          for name in ['game-ui.css','app.js','rewards.js','home.js','arena3d.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
+          assert 'href="./interface.css?v=36"' in html
+          for name in ['game-ui.css','interface.css','assets/interface-icons.svg','app.js','rewards.js','home.js','arena3d.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
               assert Path('cerco-dos-reis',name).is_file(),name
           print('Seis ambientes, recompensas, arquivos, navegacao e scripts: OK')
           PY
