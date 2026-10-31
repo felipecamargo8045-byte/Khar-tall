@@ -24,11 +24,45 @@ const prog=id=>local.cards[id]||{level:1,xp:0};
 let chosen=cardData[0],tab='tech';
 const cssTier=(el,t)=>{el.style.setProperty('--metal',t.metal);el.style.setProperty('--light',t.light);el.style.setProperty('--dark',t.dark)};
 const cardImage=c=>ASSET+c.img;const fmt=v=>Number.isFinite(v)?v.toLocaleString('pt-BR'):'—';
-function show(view){$$('.page').forEach(n=>n.classList.toggle('active',n.dataset.page===view));$$('#navigation button').forEach(n=>n.classList.toggle('active',n.dataset.view===view));if(view==='cards')renderCards();window.scrollTo({top:0,behavior:'smooth'})}
+function show(view){$$('.page').forEach(n=>n.classList.toggle('active',n.dataset.page===view));$$('#navigation button').forEach(n=>n.classList.toggle('active',n.dataset.view===view));if(view==='cards')renderCards();if(view==='home')window.CercoHome?.render?.();window.scrollTo({top:0,behavior:'smooth'})}
 $$('[data-view]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view)));
 function imgFallback(e){if(!e.target.dataset.failed){e.target.dataset.failed='1';e.target.src=ASSET+'emblem.svg'}}
 function renderCards(){const grid=$('#cardGrid');grid.replaceChildren();for(const c of cardData){const p=prog(c.id),t=tier(p.level),b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed',String(chosen.id===c.id));b.className=chosen.id===c.id?'selected':'';cssTier(b,t);const image=document.createElement('img');image.src=cardImage(c);image.alt=c.name;image.addEventListener('error',imgFallback);const frame=document.createElement('span');frame.className='tile-img';frame.append(image);const label=document.createElement('strong');label.textContent=c.name;const lvl=document.createElement('small');lvl.textContent='Nível '+p.level;b.append(frame,label,lvl);b.addEventListener('click',()=>{chosen=c;tab='tech';renderCards()});grid.append(b)}
-const c=chosen,p=prog(c.id),t=tier(p.level);cssTier($('#artOuter'),t);$('#fullArt').src=cardImage(c);$('#fullArt').alt='Imagem completa de '+c.name;$('#fullArt').onerror=imgFallback;$('#cardType').textContent=c.kind;$('#cardName').textContent=c.name;$('#cardText').textContent=c.desc;$('#cardBadges').replaceChildren();for(const s of [`Nível ${p.level}`,t.name,c.rarity]){const x=document.createElement('span');x.textContent=s;$('#cardBadges').append(x)};statTiles('#cardStats',[['Dano',c.dmg],['Vida',c.hp||'—'],['Energia',c.cost]]);$('#cardSkill').textContent=c.ability;$('#cardSkillText').textContent=c.effect;$('#xpLabel').textContent=`${p.xp} / 100 XP`;$('#xpFill').style.width=(p.level>=100?100:p.xp)+'%';$$('#cardTabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));const panel=$('#tabContent');panel.replaceChildren();if(tab==='tech'){const spec=document.createElement('div');spec.className='spec-grid';for(const [k,v] of [['Classe',c.kind],['Função',c.role],['Raridade',c.rarity],['Dano de base',c.dmg],['Vida de base',c.hp||'Não aplicável'],['Alcance',c.range||'Efeito em área'],['Velocidade',c.speed||'Instantânea'],['Energia',c.cost],['Habilidade',c.ability],['Ataque',c.attackSpeed?c.attackSpeed+' s':'Instantâneo']]){const row=document.createElement('div'),label=document.createElement('span'),value=document.createElement('b');label.textContent=k;value.textContent=String(v);row.append(label,value);spec.append(row)}panel.append(spec)}else if(tab==='evolution'){const steps=document.createElement('div');steps.className='tier-steps';tiers.forEach(x=>{const n=document.createElement('span');n.textContent=`${x.name} · nível ${x.min}`;n.style.borderColor=x.metal;steps.append(n)});panel.append(steps);const desc=document.createElement('p');desc.textContent=c.id==='rei'?'Caminhos: Rei de Sangue / Rei da Matilha. Habilidades oficiais serão ligadas ao servidor original.':c.id==='liliti'?'A raridade Lendária é independente da moldura; evoluir não altera a categoria Lendária.':'Molduras indicam o progresso do nível; os bônus definitivos dependem das regras do jogo original.';panel.append(desc)}else{const x=document.createElement('p');x.textContent=`Progresso local: nível ${p.level}, ${p.xp} de 100 XP. Treinamento contra IA: +1 XP por carta utilizada. O nível 100 exige validação especial no sistema original e não é concedido pelo treinamento.`;panel.append(x)}}
+const c=chosen,p=prog(c.id),t=tier(p.level);cssTier($('#artOuter'),t);$('#fullArt').src=cardImage(c);$('#fullArt').alt='Imagem completa de '+c.name;$('#fullArt').onerror=imgFallback;$('#cardType').textContent=c.kind;$('#cardName').textContent=c.name;$('#cardText').textContent=c.desc;$('#cardBadges').replaceChildren();for(const s of [`Nível ${p.level}`,t.name,c.rarity]){const x=document.createElement('span');x.textContent=s;$('#cardBadges').append(x)};statTiles('#cardStats',[['Dano',c.dmg],['Vida',c.hp||'—'],['Energia',c.cost]]);$('#cardSkill').textContent=c.ability;$('#cardSkillText').textContent=c.effect;$('#xpLabel').textContent=`${p.xp} / 100 XP`;$('#xpFill').style.width=(p.level>=100?100:p.xp)+'%';$$('#cardTabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));const panel=$('#tabContent');panel.replaceChildren();if(tab==='tech'){const spec=document.createElement('div');spec.className='spec-grid';for(const [k,v] of [['Classe',c.kind],['Função',c.role],['Raridade',c.rarity],['Dano de base',c.dmg],['Vida de base',c.hp||'Não aplicável'],['Alcance',c.range||'Efeito em área'],['Velocidade',c.speed||'Instantânea'],['Energia',c.cost],['Habilidade',c.ability],['Ataque',c.attackSpeed?c.attackSpeed+' s':'Instantâneo']]){const row=document.createElement('div'),label=document.createElement('span'),value=document.createElement('b');label.textContent=k;value.textContent=String(v);row.append(label,value);spec.append(row)}panel.append(spec)}else if(tab==='evolution'){const upgradeApi=window.CercoRewards;
+ const recipe=upgradeApi?.recipe?.(c.id);
+ if(recipe){
+  const panelForge=document.createElement('section');
+  panelForge.className='evolution-forge';
+  const heading=document.createElement('h3');heading.textContent='⚒ Forja de evolução · estágio '+recipe.stage+' / '+recipe.limit;
+  panelForge.append(heading);
+  const body=document.createElement('p');body.textContent='Cada estágio aumenta dano e vida em 4% nesta versão de treinamento. As evoluções são compradas com materiais dos Pergaminhos de Liliti.';
+  panelForge.append(body);
+  const req=document.createElement('div');req.className='spec-grid';
+  const items=upgradeApi.materials;
+  let canAfford=recipe.stage<recipe.limit;
+  for(const [key,qty] of Object.entries(recipe.requirements)){
+   if(!qty)continue;
+   const have=upgradeApi.snapshot().materials[key]||0;
+   if(have<qty)canAfford=false;
+   const tile=document.createElement('div'),name=document.createElement('span'),status=document.createElement('b');
+   name.textContent=items[key].icon+' '+items[key].name;
+   status.textContent=have+' / '+qty;
+   if(have<qty)status.style.color='#ffa6a6';
+   tile.append(name,status);req.append(tile);
+  }
+  panelForge.append(req);
+  const button=document.createElement('button');button.className='gold';button.type='button';
+  button.disabled=!canAfford;
+  button.textContent=recipe.stage>=recipe.limit?'EVOLUÇÃO MÁXIMA':canAfford?'✦ FORJAR EVOLUÇÃO':'MATERIAIS INSUFICIENTES';
+  button.addEventListener('click',()=>{
+   const result=upgradeApi.upgrade(c.id);
+   if(!result.ok){window.alert(result.error);return}
+   renderCards();
+  });
+  panelForge.append(button);
+  panel.append(panelForge);
+ }
+ const steps=document.createElement('div');steps.className='tier-steps';tiers.forEach(x=>{const n=document.createElement('span');n.textContent=`${x.name} · nível ${x.min}`;n.style.borderColor=x.metal;steps.append(n)});panel.append(steps);const desc=document.createElement('p');desc.textContent=c.id==='rei'?'Caminhos: Rei de Sangue / Rei da Matilha. Habilidades oficiais serão ligadas ao servidor original.':c.id==='liliti'?'A raridade Lendária é independente da moldura; evoluir não altera a categoria Lendária.':'Molduras indicam o progresso do nível; os bônus definitivos dependem das regras do jogo original.';panel.append(desc)}else{const x=document.createElement('p');x.textContent=`Progresso local: nível ${p.level}, ${p.xp} de 100 XP. Treinamento contra IA: +1 XP por carta utilizada. O nível 100 exige validação especial no sistema original e não é concedido pelo treinamento.`;panel.append(x)}}
 $$('#cardTabs button').forEach(b=>b.addEventListener('click',()=>{tab=b.dataset.tab;renderCards()}));
 function statTiles(sel,arr){const target=$(sel);target.replaceChildren();arr.forEach(([k,v])=>{const d=document.createElement('div'),l=document.createElement('span'),b=document.createElement('strong');l.textContent=k;b.textContent=String(v);d.append(l,b);target.append(d)})}
 function selectedCard(){const c=chosen;$('#selectedPortrait').src=cardImage(c);$('#selectedPortrait').onerror=imgFallback;$('#selectedName').textContent=c.name;$('#selectedDesc').textContent=c.desc;statTiles('#selectedStats',[['Dano',c.dmg],['Vida',c.hp||'—'],['Energia',c.cost]]);$('#selectedSkill').textContent=c.ability;$('#selectedSkillDesc').textContent=c.effect}
@@ -63,6 +97,7 @@ function exitBattle(){
    if(promise?.catch)promise.catch(()=>{});
  }
  reset();
+ show('home');
  requestAnimationFrame(()=>window.Cerco3D?.resize?.());
 }
 function menuFromBattle(){
@@ -90,8 +125,8 @@ function syncBattleButtons(){
  }
 }
 function reset(){window.CercoVoices?.stop?.();cancelAnimationFrame(loop);clearInterval(ticker);game={running:false,paused:false,time:180,energy:6,max:10,last:0,units:[],towers:{ally:[1400,1400],enemy:[1400,1400]},castles:{ally:2600,enemy:2600},counter:0,aiTimer:0,message:'',result:null,projectiles:[],effects:[],attackShots:[],attackFx:[],attackHistory:[],towerTimers:{},towerShots:[],defenseHits:0,destroyedStructures:[]};hand=['lobo','arqueiro','soldado','colosso'];next=4;activeIndex=0;$('#overlay').hidden=false;$('#overlay').innerHTML='<span class="overline">DOIS EXÉRCITOS · UM TRONO</span><h2>O cerco começa com você.</h2><p>3 minutos, duas rotas e cartas com habilidades próprias.</p><button class="gold" id="start">⚔ Iniciar treinamento</button>';$('#start').addEventListener('click',start);$('#pause').disabled=true;$('#pause').textContent='Pausar';syncBattleButtons();updateUI();draw()}
-function start(){window.CercoVoices?.unlock?.();enterBattle();game.running=true;game.paused=false;game.result=null;game.last=performance.now();$('#overlay').hidden=true;$('#pause').disabled=false;clearInterval(ticker);ticker=setInterval(()=>advanceByClock(performance.now()),65);log('O cerco começou. Defenda suas torres!');loop=requestAnimationFrame(step)}
-function result(winner){if(!game.running)return;if(winner==='ally'){window.CercoAudio?.play('victory');window.CercoVoices?.speak?.('rei','victory')}game.running=false;clearInterval(ticker);cancelAnimationFrame(loop);$('#overlay').hidden=false;const win=winner==='ally';if(win){local.wins++;save()}$('#overlay').innerHTML='';const over=document.createElement('span');over.className='overline';over.textContent='O CERCO TERMINOU';const t=document.createElement('h2');t.textContent=win?'Vitória':'Derrota';const p=document.createElement('p');p.textContent=win?'Seu reino venceu o treinamento.':'Reorganize as cartas e tente novamente.';const b=document.createElement('button');b.className='gold';b.textContent='Jogar novamente';b.addEventListener('click',()=>{reset();start()});$('#overlay').append(over,t,p,b);const home=document.createElement('button');home.className='secondary-btn';home.textContent='Voltar ao menu';home.addEventListener('click',exitBattle);$('#overlay').append(home);syncBattleButtons();updateUI()}
+function start(){game.matchId=(globalThis.crypto?.randomUUID?.()||String(Date.now())+'-'+Math.random().toString(36).slice(2));window.CercoVoices?.unlock?.();enterBattle();game.running=true;game.paused=false;game.result=null;game.last=performance.now();$('#overlay').hidden=true;$('#pause').disabled=false;clearInterval(ticker);ticker=setInterval(()=>advanceByClock(performance.now()),65);log('O cerco começou. Defenda suas torres!');loop=requestAnimationFrame(step)}
+function result(winner){if(!game.running)return;if(winner==='ally'){window.CercoAudio?.play('victory');window.CercoVoices?.speak?.('rei','victory')}game.running=false;clearInterval(ticker);cancelAnimationFrame(loop);$('#overlay').hidden=false;const win=winner==='ally';if(win){local.wins++;save();window.CercoRewards?.awardVictory?.(game.matchId)}else{window.CercoRewards?.recordLoss?.(game.matchId)}$('#overlay').innerHTML='';const over=document.createElement('span');over.className='overline';over.textContent='O CERCO TERMINOU';const t=document.createElement('h2');t.textContent=win?'Vitória':'Derrota';const p=document.createElement('p');p.textContent=win?'Seu reino venceu o treinamento.':'Reorganize as cartas e tente novamente.';const b=document.createElement('button');b.className='gold';b.textContent='Jogar novamente';b.addEventListener('click',()=>{reset();start()});$('#overlay').append(over,t,p,b);const home=document.createElement('button');home.className='secondary-btn';home.textContent='Voltar ao menu';home.addEventListener('click',exitBattle);$('#overlay').append(home);syncBattleButtons();updateUI()}
 function pause(){if(!game.running)return;game.paused=!game.paused;if(game.paused)window.CercoVoices?.stop?.();syncBattleButtons();$('#pause').textContent=game.paused?'Continuar':'Pausar';if(game.paused){$('#overlay').hidden=false;$('#overlay').innerHTML='<h2>Batalha pausada</h2><p>Seu reino pode esperar.</p><button class="gold" id="resume">Continuar batalha</button>';$('#resume').addEventListener('click',pause)}else{$('#overlay').hidden=true;game.last=performance.now();loop=requestAnimationFrame(step)}}
 function log(s){const line=document.createElement('p');line.textContent=s;$('#battleLog').prepend(line);while($('#battleLog').children.length>8)$('#battleLog').lastElementChild.remove()}
 
@@ -144,7 +179,9 @@ function addUnit(c,location,side){
    const lane=tacticalLane(spot.x,spot.y,side,i,count);
    const nearby=closestEnemyAt(side,{x,y},TARGET_AWARENESS);
    const id=cryptoRandom();
-   const unit={id,card:c,side,lane,x,y,hp:c.hp,maxHp:c.hp,cooldown:0,
+   const boost=1+0.04*(window.CercoRewards?.snapshot?.().upgrades?.[c.id]||0);
+   const maxHp=Math.round(c.hp*boost);
+   const unit={id,card:c,side,lane,x,y,hp:maxHp,maxHp,damageMultiplier:boost,cooldown:0,
      first:true,mark:null,stun:0,targetId:nearby?.id||null,state:'walk'};
    game.units.push(unit);
    ids.push(id);
@@ -424,7 +461,7 @@ function combat(u,dt){
    const d=distance(u,target),reach=(u.card.range||32)+8;
    if(d<=reach){
      if(u.cooldown<=0){
-       let damage=u.card.dmg;
+       let damage=u.card.dmg*(u.damageMultiplier||1);
        if(u.first&&u.card.id==='lobo')damage*=1.6;
        if(u.first&&u.card.id==='colosso')damage*=1.4;
        if(u.card.id==='batedor'&&u.mark===target.id)damage*=1.4;
@@ -443,7 +480,7 @@ function combat(u,dt){
  if(distance(u,goal)<=reach){
    if(u.cooldown<=0){
      const cardId=u.card.id;
-     startTroopAttack(u,null,u.card.dmg,opponent,standing?lane:-1,goal);
+     startTroopAttack(u,null,u.card.dmg*(u.damageMultiplier||1),opponent,standing?lane:-1,goal);
      u.cooldown=u.card.attackSpeed||1.1;
    }else if(u.attackPulse<=0)u.state='idle';
  }else moveUnit(u,goal,dt);
@@ -981,6 +1018,6 @@ $('#battlePause').addEventListener('click',pause);
 $('#battleSound').addEventListener('click',()=>{$('#soundToggle').click();syncBattleButtons()});
 document.addEventListener('fullscreenchange',()=>requestAnimationFrame(()=>window.Cerco3D?.resize?.()));
 window.addEventListener('resize',()=>{if(document.body.classList.contains('battle-mode'))window.Cerco3D?.resize?.()},{passive:true});
-$('#pause').addEventListener('click',pause);$('#reset').addEventListener('click',reset);$('#clearProgress').addEventListener('click',()=>{if(!confirm('Limpar somente o progresso local de treinamento?'))return;local={cards:{},wins:0};save();reset();renderCards()});
-window.addEventListener('hashchange',()=>{const key=location.hash.replace('#','');if(['arena','cards','shop','clans','profile'].includes(key))show(key)});window.Cerco3DGame={getState:()=>game};reset();renderCards();if(location.hash)show(location.hash.slice(1));
+$('#pause').addEventListener('click',pause);$('#reset').addEventListener('click',reset);$('#clearProgress').addEventListener('click',()=>{if(!confirm('Limpar somente o progresso local de treinamento?'))return;local={cards:{},wins:0};save();window.CercoRewards?.reset?.();reset();renderCards();window.CercoHome?.render?.()});
+window.addEventListener('hashchange',()=>{const key=location.hash.replace('#','');if(['home','arena','cards','shop','clans','profile'].includes(key))show(key)});window.Cerco3DGame={getState:()=>game};reset();renderCards();if(location.hash)show(location.hash.slice(1));
 })();
