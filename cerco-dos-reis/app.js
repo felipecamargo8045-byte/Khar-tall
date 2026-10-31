@@ -568,7 +568,30 @@ function step(now){
  draw();
  if(game.running)loop=requestAnimationFrame(step);
 }
-function updateClock(){const sec=Math.ceil(game.time);$('#timer').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');$('#energy').textContent=game.energy.toFixed(1)+' / 10 energia';$('#energyFill').style.width=(game.energy*10)+'%';$('#enemyCastle').textContent=fmt(Math.ceil(game.castles.enemy))+' PV';$('#allyCastle').textContent=fmt(Math.ceil(game.castles.ally))+' PV';}
+function updateClock(){const sec=Math.ceil(game.time);$('#timer').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');// Mana recarrega normalmente, mas o jogador vê DEZ blocos inteiros.
+ // Nunca aparece uma faixa correndo ou uma fração preenchendo outro bloco.
+ const mana=Math.max(0,Math.min(10,Math.floor(game.energy+1e-7)));
+ const bar=$('#manaBlocks');
+ if(bar&&bar.children.length!==10){
+   const fragment=document.createDocumentFragment();
+   for(let i=0;i<10;i++){
+     const piece=document.createElement('span');
+     piece.className='mana-block';
+     piece.setAttribute('aria-hidden','true');
+     fragment.append(piece);
+   }
+   bar.replaceChildren(fragment);
+ }
+ if(bar){
+   for(let i=0;i<bar.children.length;i++){
+     const filled=i<mana;
+     if(bar.children[i].classList.contains('filled')!==filled)
+       bar.children[i].classList.toggle('filled',filled);
+   }
+   bar.setAttribute('aria-valuenow',String(mana));
+   bar.setAttribute('aria-valuetext',mana+' de 10 blocos de mana');
+ }
+ $('#energy').textContent=mana+' / 10 MANA';$('#enemyCastle').textContent=fmt(Math.ceil(game.castles.enemy))+' PV';$('#allyCastle').textContent=fmt(Math.ceil(game.castles.ally))+' PV';}
 const boardArt=new Image();boardArt.src=ASSET+'arena_atmosfera.webp';
 // Castelo ilustrado em camadas góticas, com pedra e brasões próprios de cada time.
 const fortressArt={};
@@ -901,6 +924,8 @@ if(new URLSearchParams(location.search).has('test')){
       return [];
     },
     reset:()=>reset(),
+    mana:()=>({actual:game.energy,blocks:Math.floor(game.energy+1e-7),ui:document.querySelectorAll('#manaBlocks .mana-block.filled').length}),
+    setMana:(value)=>{game.energy=clamp(Number(value)||0,0,10);updateClock();return game.energy},
     fullscreen:()=>({active:document.body.classList.contains('battle-mode'),native:!!document.fullscreenElement,rect:document.querySelector('#battleStage')?.getBoundingClientRect().toJSON()}),
     attackInfo:()=>({shots:game.attackShots.map(x=>({...x})),effects:game.attackFx.map(x=>({...x})),history:game.attackHistory.map(x=>({...x}))}),
     duel:(cardId='arqueiro')=>{
