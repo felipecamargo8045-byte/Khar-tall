@@ -33,7 +33,7 @@ jobs:
           for name in ['#shopGrid','#featuredCards','#cardGrid','#arena']:
               assert name[1:] in html, name
           assert 'https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/' not in html
-          assert 'src="./app.js?v=23"' in html
+          assert 'src="./app.js?v=24"' in html
           assert 'src="./rewards.js?v=1"' in html
           assert 'src="./home.js?v=1"' in html
           assert 'src="./voices.js?v=4"' in html
