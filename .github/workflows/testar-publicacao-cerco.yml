@@ -493,6 +493,8 @@ jobs:
             assert.deepEqual(deployLimits,{own:true,allyEnemy:false,enemyOwn:true,enemyAlly:false,river:false});
             await page.evaluate(()=>window.__cercoTest.reset());
             await page.locator('#start').click();
+            // Começar com mana cheia evita que a regeneração normal falseie este teste.
+            await page.evaluate(()=>window.__cercoTest.setMana(10));
             const manaBefore=await page.evaluate(()=>window.__cercoTest.mana().actual);
             const xpBefore=await page.evaluate(()=>window.__cercoTest.progress('lobo').xp);
             await page.locator('#arena').click({position:{x:box.width*.76,y:box.height*.22}});
