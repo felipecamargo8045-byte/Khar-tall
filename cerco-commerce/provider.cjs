@@ -15,7 +15,7 @@ function makeProvider({handle,secret,base,game,fetcher=fetch}){
   token,
   async create(order){
    const data=await call('links',{handle,order_nsu:order.id,
-    items:[{quantity:1,price:order.amount,description:'Cerco dos Reis · Skin '+order.name}],
+    items:[{quantity:1,price:order.amount,description:'Cerco dos Reis · '+(order.kind==='card'?'Carta ':'Skin ')+order.name}],
     redirect_url:game+'/?cerco_order='+order.id+'#shop',
     webhook:{url:base+'/webhook/infinitepay?order='+order.id+'&token='+token(order.id),events:['paid','refunded','canceled']}});
    let url;try{url=new URL(data.url)}catch{throw fail('Checkout indisponível.')}

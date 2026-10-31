@@ -7,12 +7,12 @@ const arenaLayout=window.CercoArenaLayout;
 const cardData=[
 {id:'lobo',name:'Lobo',kind:'Tropa · Velocidade',rarity:'Comum',cost:3,dmg:58,hp:260,units:2,range:32,speed:33,attackSpeed:.95,ability:'Bote do Lobo',desc:'Dois lobos velozes avançam em matilha. Seu primeiro bote ganha força.',effect:'O primeiro golpe de cada lobo causa 60% de dano adicional.',img:'portrait_lobo.webp',role:'Pressão rápida'},
 {id:'arqueiro',name:'Arqueiro',kind:'Tropa · Distância',rarity:'Comum',cost:3,dmg:47,hp:150,units:2,range:100,speed:24,attackSpeed:1.25,ability:'Disparo de apoio',desc:'Dois arqueiros surgem juntos e disparam flechas de longe, cobrindo as duas rotas quando invocados no centro.',effect:'Mantém distância dos inimigos. Depois do nível Ouro, pode evoluir na batalha ao abater tropas.',img:'portrait_aprendiz_arqueiro.webp',role:'Cobertura'},
-{id:'soldado',name:'Soldado',kind:'Tropa · Frente',rarity:'Comum',cost:2,dmg:49,hp:330,range:27,speed:25,attackSpeed:.9,ability:'Infantaria',desc:'Aprendiz que protege a linha de frente e abre caminho.',effect:'Depois do nível Ouro pode evoluir na batalha ao derrotar um alvo.',img:'portrait_aprendiz_soldado.webp',role:'Defesa inicial'},
+{id:'soldado',name:'Soldado',kind:'Tropa · Frente',rarity:'Comum',cost:2,dmg:49,hp:330,units:2,range:27,speed:25,attackSpeed:.9,ability:'Infantaria',desc:'Dois soldados protegem a linha de frente e abrem caminho juntos.',effect:'Invoca dois soldados independentes. Depois do nível Ouro podem evoluir na batalha ao derrotar um alvo.',img:'portrait_aprendiz_soldado.webp',role:'Defesa inicial'},
 {id:'colosso',name:'Colosso',kind:'Tropa · Pesada',rarity:'Rara',cost:6,dmg:133,hp:1040,range:32,speed:14,attackSpeed:1.9,ability:'Investida do Colosso',desc:'Um gigante capaz de romper fortificações.',effect:'Investida pesada: no treinamento o primeiro contato causa dano adicional.',img:'portrait_colosso.webp',role:'Demolição'},
 {id:'guardiao',name:'Guardião',kind:'Tropa · Defesa',rarity:'Épica',cost:5,dmg:88,hp:820,range:65,speed:17,attackSpeed:1.6,ability:'Defesa do Guardião',desc:'Protege o espaço à sua volta e os aliados mais vulneráveis.',effect:'Ataque de médio alcance com foco na defesa.',img:'portrait_guardiao.webp',role:'Proteção'},
 {id:'batedor',name:'Batedor',kind:'Tropa · Precisão',rarity:'Rara',cost:4,dmg:67,hp:210,range:112,speed:27,attackSpeed:1.3,ability:'Marca do Batedor',desc:'Caçador estratégico que marca e enfraquece alvos.',effect:'No treinamento, o segundo disparo no mesmo alvo causa dano extra.',img:'portrait_batedor.webp',role:'Marcação'},
 {id:'rei',name:'Rei',kind:'Tropa · Comando',rarity:'Épica',cost:6,dmg:79,hp:880,range:38,speed:22,attackSpeed:1.4,ability:'Soberania',desc:'Comandante do exército, com caminhos especiais de evolução.',effect:'Rei de Sangue: roubo de vida. Rei da Matilha: invoca lobos periodicamente — progressões reservadas à integração original.',img:'portrait_rei.webp',role:'Comando'},
-{id:'liliti',name:'Liliti',kind:'Tropa · Controle',rarity:'Lendária',cost:6,dmg:100,hp:750,range:92,speed:25,attackSpeed:1.25,ability:'Controle da Liliti',desc:'Carta lendária ruiva de olhos verdes. Manipula adversários e transforma o ritmo do combate.',effect:'Ataque de 100, regeneração pessoal equivalente a 50% do dano causado e controle temporário de alvos no treinamento.',img:'portrait_lilith_ruiva.webp',role:'Controle e sustentação'},
+{id:'liliti',name:'Liliti',kind:'Tropa · Controle',rarity:'Suprema',premium:true,priceCents:1000,cost:6,dmg:100,hp:750,range:92,speed:25,attackSpeed:1.25,ability:'Controle da Liliti',desc:'A carta de maior raridade do Cerco: ruiva de olhos verdes, com magia rubra e dourada. Compra única por R$ 10,00.',effect:'Converte 50% do dano real em cura dividida entre aliados vivos: uma rota no início e duas no Ouro (40). No 60 cura uma torre; no 80, as duas. No 100 alcança todo o exército, torres e castelo. Estruturas recebem cura menor, a cada 4 s. Uma Liliti viva por jogador.',img:'portrait_lilith_ruiva.webp',role:'Controle e sustentação'},
 {id:'chama',name:'Chama Viva',kind:'Magia · Ataque',rarity:'Rara',cost:4,dmg:263,hp:0,range:85,speed:0,ability:'Explosão da Chama',desc:'O fogo atinge inimigos concentrados em uma das rotas.',effect:'Dano em área às tropas inimigas da rota escolhida.',img:'spell_fire.svg',role:'Dano em área',spell:true},
 {id:'cura',name:'Campo de Cura',kind:'Magia · Suporte',rarity:'Rara',cost:4,dmg:0,hp:0,range:85,speed:0,ability:'Regeneração',desc:'Um campo mágico restaura a vida das suas tropas na rota escolhida.',effect:'Recupera 180 pontos de vida das tropas aliadas na rota.',img:'spell_heal.svg',role:'Suporte',spell:true},
 {id:'armadilha',name:'Armadilha',kind:'Magia · Controle',rarity:'Rara',cost:3,dmg:172,hp:0,range:85,speed:0,ability:'Emboscada',desc:'Dano instantâneo e surpresa no caminho dos adversários.',effect:'Ataca o primeiro alvo inimigo da rota e o retarda por alguns instantes.',img:'spell_trap.svg',role:'Emboscada',spell:true}
@@ -24,19 +24,22 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(local))}catch{}};
 const prog=id=>local.cards[id]||{level:1,xp:0};
 let chosen=cardData[0],tab='tech';
 const cssTier=(el,t)=>{el.style.setProperty('--metal',t.metal);el.style.setProperty('--light',t.light);el.style.setProperty('--dark',t.dark)};
-const cardImage=c=>ASSET+c.img;const fmt=v=>Number.isFinite(v)?v.toLocaleString('pt-BR'):'—';
+const cardImage=c=>ASSET+c.img;
+const cardUnlocked=c=>!c.premium||window.CercoStore?.ownsCard?.(c.id)===true;
+const levelCap=c=>c.id==='liliti'&&cardUnlocked(c)?100:99;const fmt=v=>Number.isFinite(v)?v.toLocaleString('pt-BR'):'—';
 function show(view){$$('.page').forEach(n=>n.classList.toggle('active',n.dataset.page===view));$$('#navigation button').forEach(n=>n.classList.toggle('active',n.dataset.view===view));if(view==='cards')renderCards();if(view==='home')window.CercoHome?.render?.();window.scrollTo({top:0,behavior:'smooth'})}
 $$('[data-view]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view)));
 function imgFallback(e){if(!e.target.dataset.failed){e.target.dataset.failed='1';e.target.src=ASSET+'emblem.svg'}}
-function renderCards(){const grid=$('#cardGrid');grid.replaceChildren();for(const c of cardData){const p=prog(c.id),t=tier(p.level),b=document.createElement('button');b.type='button';b.setAttribute('aria-label',c.name+', nível '+p.level+', '+p.xp+' de 100 XP');b.setAttribute('aria-pressed',String(chosen.id===c.id));b.className=chosen.id===c.id?'selected':'';cssTier(b,t);const image=document.createElement('img');image.src=cardImage(c);image.alt=c.name;image.addEventListener('error',imgFallback);const frame=document.createElement('span');frame.className='tile-img';frame.append(image);const label=document.createElement('strong');label.textContent=c.name;const lvl=document.createElement('small');lvl.textContent='Nv. '+p.level+' · '+p.xp+'/100';const meter=document.createElement('span');meter.className='card-tile-xp';meter.setAttribute('role','progressbar');meter.setAttribute('aria-label','Experiência de '+c.name);meter.setAttribute('aria-valuenow',String(p.level>=100?100:p.xp));meter.setAttribute('aria-valuemin','0');meter.setAttribute('aria-valuemax','100');const fill=document.createElement('i');fill.style.width=(p.level>=100?100:Math.max(0,Math.min(100,p.xp)))+'%';meter.append(fill);b.append(frame,label,lvl,meter);b.addEventListener('click',()=>{chosen=c;tab='tech';renderCards();if(matchMedia('(max-width:730px)').matches)document.querySelector('.detail')?.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth'})});grid.append(b)}
-const c=chosen,p=prog(c.id),t=tier(p.level);cssTier($('#artOuter'),t);$('#fullArt').src=cardImage(c);$('#fullArt').alt='Imagem completa de '+c.name;$('#fullArt').onerror=imgFallback;$('#cardType').textContent=c.kind;$('#cardName').textContent=c.name;$('#cardText').textContent=c.desc;$('#cardBadges').replaceChildren();for(const s of [`Nível ${p.level}`,t.name,c.rarity]){const x=document.createElement('span');x.textContent=s;$('#cardBadges').append(x)};statTiles('#cardStats',[['Dano base',c.dmg],['Vida base',c.hp||'—'],['Energia',c.cost]]);$('#cardSkill').textContent=c.ability;$('#cardSkillText').textContent=c.effect;$('#xpLabel').textContent=`${p.xp} / 100 XP`;$('#xpFill').style.width=(p.level>=100?100:p.xp)+'%';$$('#cardTabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));const panel=$('#tabContent');panel.replaceChildren();if(tab==='tech'){const spec=document.createElement('div');spec.className='spec-grid';for(const [k,v] of [['Classe',c.kind],['Função',c.role],['Raridade',c.rarity],['Dano de base',c.dmg],['Vida de base',c.hp||'Não aplicável'],['Alcance',c.range||'Efeito em área'],['Velocidade',c.speed||'Instantânea'],['Energia',c.cost],['Habilidade',c.ability],['Ataque',c.attackSpeed?c.attackSpeed+' s':'Instantâneo']]){const row=document.createElement('div'),label=document.createElement('span'),value=document.createElement('b');label.textContent=k;value.textContent=String(v);row.append(label,value);spec.append(row)}panel.append(spec)}else if(tab==='evolution'){const upgradeApi=window.CercoRewards;
+function renderCards(){const grid=$('#cardGrid');grid.replaceChildren();for(const c of cardData){const p=prog(c.id),t=tier(p.level),b=document.createElement('button');b.type='button';b.setAttribute('aria-label',c.name+', nível '+p.level+', '+p.xp+' de 100 XP');b.setAttribute('aria-pressed',String(chosen.id===c.id));b.className=chosen.id===c.id?'selected':'';b.dataset.card=c.id;cssTier(b,t);const image=document.createElement('img');image.src=cardImage(c);image.alt=c.name;image.addEventListener('error',imgFallback);const frame=document.createElement('span');frame.className='tile-img';frame.append(image);const label=document.createElement('strong');label.textContent=c.name;const lvl=document.createElement('small');lvl.textContent='Nv. '+p.level+' · '+p.xp+'/100';const meter=document.createElement('span');meter.className='card-tile-xp';meter.setAttribute('role','progressbar');meter.setAttribute('aria-label','Experiência de '+c.name);meter.setAttribute('aria-valuenow',String(p.level>=100?100:p.xp));meter.setAttribute('aria-valuemin','0');meter.setAttribute('aria-valuemax','100');const fill=document.createElement('i');fill.style.width=(p.level>=100?100:Math.max(0,Math.min(100,p.xp)))+'%';meter.append(fill);b.append(frame,label,lvl,meter);b.addEventListener('click',()=>{chosen=c;tab='tech';renderCards();window.CercoCardArt?.shine?.(c.id);if(matchMedia('(max-width:730px)').matches)document.querySelector('.detail')?.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth'})});grid.append(b)}
+const c=chosen,p=prog(c.id),t=tier(p.level);cssTier($('#artOuter'),t);$('#fullArt').src=cardImage(c);$('#fullArt').alt='Imagem completa de '+c.name;$('#fullArt').onerror=imgFallback;window.CercoCardArt?.decorate?.($('#fullArt'),c.id);
+ const offer=$('#cardOffer');if(offer){offer.hidden=!c.premium;offer.textContent=cardUnlocked(c)?'LILITI NA SUA COLEÇÃO · SUPREMA':'OBTER LILITI · R$ 10,00';offer.disabled=cardUnlocked(c)}$('#cardType').textContent=c.kind;$('#cardName').textContent=c.name;$('#cardText').textContent=c.desc;$('#cardBadges').replaceChildren();for(const s of [`Nível ${p.level}`,t.name,c.rarity]){const x=document.createElement('span');x.textContent=s;$('#cardBadges').append(x)};statTiles('#cardStats',[['Dano base',c.dmg],['Vida base',c.hp||'—'],['Energia',c.cost]]);$('#cardSkill').textContent=c.ability;$('#cardSkillText').textContent=c.effect;$('#xpLabel').textContent=`${p.xp} / 100 XP`;$('#xpFill').style.width=(p.level>=100?100:p.xp)+'%';$$('#cardTabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));const panel=$('#tabContent');panel.replaceChildren();if(tab==='tech'){const spec=document.createElement('div');spec.className='spec-grid';for(const [k,v] of [['Classe',c.kind],['Função',c.role],['Raridade',c.rarity],['Dano de base',c.dmg],['Vida de base',c.hp||'Não aplicável'],['Alcance',c.range||'Efeito em área'],['Velocidade',c.speed||'Instantânea'],['Energia',c.cost],['Habilidade',c.ability],['Ataque',c.attackSpeed?c.attackSpeed+' s':'Instantâneo']]){const row=document.createElement('div'),label=document.createElement('span'),value=document.createElement('b');label.textContent=k;value.textContent=String(v);row.append(label,value);spec.append(row)}panel.append(spec)}else if(tab==='evolution'){const upgradeApi=window.CercoRewards;
  const recipe=upgradeApi?.recipe?.(c.id);
  if(recipe){
   const panelForge=document.createElement('section');
   panelForge.className='evolution-forge';
   const heading=document.createElement('h3');heading.textContent='⚒ Forja de evolução · estágio '+recipe.stage+' / '+recipe.limit;
   panelForge.append(heading);
-  const body=document.createElement('p');body.textContent='Cada estágio aumenta dano e vida em 4% nesta versão de treinamento. As evoluções são compradas com materiais dos Pergaminhos de Liliti.';
+  const body=document.createElement('p');body.textContent='A forja reforça dano e vida em 4% por estágio, com materiais dos Pergaminhos de Liliti.';
   panelForge.append(body);
   const req=document.createElement('div');req.className='spec-grid';
   const items=upgradeApi.materials;
@@ -63,13 +66,20 @@ const c=chosen,p=prog(c.id),t=tier(p.level);cssTier($('#artOuter'),t);$('#fullAr
   panelForge.append(button);
   panel.append(panelForge);
  }
- const steps=document.createElement('div');steps.className='tier-steps';tiers.forEach(x=>{const n=document.createElement('span');n.textContent=`${x.name} · nível ${x.min}`;n.style.borderColor=x.metal;steps.append(n)});panel.append(steps);const desc=document.createElement('p');desc.textContent=c.id==='rei'?'Caminhos: Rei de Sangue / Rei da Matilha. Habilidades oficiais serão ligadas ao servidor original.':c.id==='liliti'?'A raridade Lendária é independente da moldura; evoluir não altera a categoria Lendária.':'Molduras indicam o progresso do nível; os bônus definitivos dependem das regras do jogo original.';panel.append(desc)}else{const x=document.createElement('p');x.textContent=`Progresso local: nível ${p.level}, ${p.xp} de 100 XP. Treinamento contra IA: +1 XP por carta utilizada. O nível 100 exige validação especial no sistema original e não é concedido pelo treinamento.`;panel.append(x)}}
+ const steps=document.createElement('div');steps.className='tier-steps';tiers.forEach(x=>{const n=document.createElement('span');n.textContent=`${x.name} · nível ${x.min}`;n.style.borderColor=x.metal;steps.append(n)});panel.append(steps);const desc=document.createElement('p');desc.textContent=c.id==='rei'?'Caminhos: Rei de Sangue / Rei da Matilha. Habilidades oficiais serão ligadas ao servidor original.':c.id==='liliti'?'Suprema é a maior raridade, independente da moldura. Cura: uma rota (1–39), duas rotas (40–59), uma torre (60–79), duas torres (80–99) e todo o campo aliado, incluindo o castelo (100). Cada nível aumenta os atributos-base em 1%. A cura é dividida entre os feridos; torres recebem no máximo 4 PV e o castelo 3 PV a cada 4 s. A compra libera a carta e sua progressão até o nível 100.':'Molduras indicam o progresso do nível; os bônus definitivos dependem das regras do jogo original.';panel.append(desc)}else{const x=document.createElement('p');x.textContent=`Progresso local: nível ${p.level}, ${p.xp} de 100 XP. Treinamento contra IA: +1 XP por carta utilizada. ${c.id==='liliti'?'A compra validada da Liliti libera a progressão até o nível 100.':'O nível 100 exige validação especial no sistema original.'}`;panel.append(x)}}
 $$('#cardTabs button').forEach(b=>b.addEventListener('click',()=>{tab=b.dataset.tab;renderCards()}));
+document.addEventListener('cerco:collection',()=>{
+ hand=hand.map(id=>{const c=cardData.find(x=>x.id===id);return c&&cardUnlocked(c)?id:'soldado'});
+ const owned=cardData.filter(cardUnlocked).length;
+ const count=$('#profileCardCount');if(count)count.textContent=owned+' / '+cardData.length;
+ const flag=$('.profile-content .vip-flag');if(flag)flag.textContent=owned+' CARTAS DISPONÍVEIS';
+ updateHand();if(tab==='evolution'||chosen.id==='liliti')renderCards();
+});
 function statTiles(sel,arr){const target=$(sel);target.replaceChildren();arr.forEach(([k,v])=>{const d=document.createElement('div'),l=document.createElement('span'),b=document.createElement('strong');l.textContent=k;b.textContent=String(v);d.append(l,b);target.append(d)})}
 function selectedCard(){const c=chosen;$('#selectedPortrait').src=cardImage(c);$('#selectedPortrait').onerror=imgFallback;$('#selectedName').textContent=c.name;$('#selectedDesc').textContent=c.desc;statTiles('#selectedStats',[['Dano',c.dmg],['Vida',c.hp||'—'],['Energia',c.cost]]);$('#selectedSkill').textContent=c.ability;$('#selectedSkillDesc').textContent=c.effect}
 const canvas=$('#arena'),ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height;
 const sprites=new Map(cardData.map(c=>{const i=new Image();i.src=cardImage(c);return[c.id,i]}));const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,n));
-let game,loop=0,ticker=0;let hand=['lobo','arqueiro','soldado','colosso'];let next=4;const queue=cardData.map(c=>c.id);let activeIndex=0;
+let game,loop=0,ticker=0;let hand=['lobo','arqueiro','soldado','colosso'];let next=4;const queue=()=>cardData.filter(cardUnlocked).map(c=>c.id);let activeIndex=0;
 
 // Partida é uma cena independente do portal: toda a janela é do jogo.
 // Fullscreen nativo é opcional; CSS ocupa 100dvh mesmo quando o navegador o nega.
@@ -168,6 +178,7 @@ function groundSpawn(location,side){
  return spot;
 }
 function addUnit(c,location,side){
+ if(c.id==='liliti'&&game.units.some(u=>u.hp>0&&u.side===side&&u.card.id==='liliti'))return [];
  const spot=groundSpawn(location,side);
  const count=c.units||1;
  const ids=[];
@@ -181,9 +192,10 @@ function addUnit(c,location,side){
    const lane=tacticalLane(spot.x,spot.y,side,i,count);
    const nearby=closestEnemyAt(side,{x,y},TARGET_AWARENESS);
    const id=cryptoRandom();
-   const boost=1+0.04*(window.CercoRewards?.snapshot?.().upgrades?.[c.id]||0);
+   const level=c.id==='liliti'?Math.min(100,Math.max(1,Number(prog(c.id).level)||1)):prog(c.id).level;
+   const boost=(1+0.04*(window.CercoRewards?.snapshot?.().upgrades?.[c.id]||0))*(c.id==='liliti'?1+level*.01:1);
    const maxHp=Math.round(c.hp*boost);
-   const unit={id,card:c,side,lane,x,y,hp:maxHp,maxHp,damageMultiplier:boost,cooldown:0,
+   const unit={id,card:c,side,lane,x,y,level,hp:maxHp,maxHp,damageMultiplier:boost,cooldown:0,
      first:true,mark:null,stun:0,targetId:nearby?.id||null,state:'walk'};
    game.units.push(unit);
    ids.push(id);
@@ -197,6 +209,8 @@ function cryptoRandom(){game.counter++;return game.counter}
 function cast(id){
  if(!game.running||game.paused)return;
  const c=cardData.find(x=>x.id===id);
+ if(c?.id==='liliti'&&!cardUnlocked(c)){log('Obtenha a Liliti na loja para adicionar esta carta ao seu exército.');return}
+ if(c?.id==='liliti'&&game.units.some(u=>u.hp>0&&u.side==='ally'&&u.card.id==='liliti')){log('Sua Liliti já está no campo. Só pode haver uma viva por jogador.');return}
  if(!c||game.energy<c.cost){log('Energia insuficiente para '+(c?.name||'esta carta'));return}
  game.energy-=c.cost;
  
@@ -225,13 +239,14 @@ function cast(id){
    else log(c.name+' invocado onde você tocou.');
  }
  const p=prog(c.id);
- if(p.level<99){p.xp++;if(p.xp>=100){p.xp=0;p.level++}local.cards[c.id]=p;save()}
+ if(p.level<levelCap(c)){p.xp++;if(p.xp>=100){p.xp=0;p.level++}local.cards[c.id]=p;save()}
  const index=hand.indexOf(id);
- if(index>=0){hand[index]=queue[next%queue.length];next++}
+ if(index>=0){const rotation=queue();hand[index]=rotation[next%rotation.length];next++}
  activeIndex=0;updateUI();
 }
 function aiCast(){
- const choices=cardData.filter(c=>!c.spell&&c.cost<7);
+ const choices=cardData.filter(c=>!c.spell&&c.cost<7&&
+   (c.id!=='liliti'||(!game.units.some(u=>u.hp>0&&u.side==='enemy'&&u.card.id==='liliti')&&Math.random()<.16)));
  const c=choices[Math.floor(Math.random()*choices.length)];
  // A IA também usa um ponto, não uma posição artificial na frente do castelo.
  const x=Math.random()<.16?W/2:(Math.random()<.5?110:310);
@@ -390,24 +405,30 @@ function receiveFortressDamage(side,lane,amount){
  }
  return true;
 }
+function restoreFromLiliti(shot,realDamage){
+ if(shot.kind!=='enchant')return;
+ const caster=game.units.find(u=>u.id===shot.sourceId&&u.hp>0);
+ if(!caster)return;
+ const restored=window.CercoLiliti.restore(caster,realDamage,game);
+ for(const target of restored.troops){
+  const unit=game.units.find(u=>u.id===target.id);if(unit)unit.healPulse=.65;
+  attackVisual('heal',target.x,target.y,caster.side);
+ }
+ for(const target of restored.structures){const p=arenaLayout.positions[target.side][target.slot];attackVisual('heal',p.x,p.y,target.side)}
+}
 function applyAttackDamage(shot,target){
  if(target&&target.hp>0&&target.side!==shot.side){
-   receiveDamage(target,shot.damage);
-   target.hitPulse=.27;
-   if(shot.kind==='enchant'){
-     const caster=game.units.find(u=>u.id===shot.sourceId&&u.hp>0);
-     if(caster)caster.hp=Math.min(caster.maxHp,caster.hp+shot.damage*.5);
-   }
-   attackVisual(shot.kind,target.x,target.y,shot.side);
-   
-   return true;
+   const before=target.hp;receiveDamage(target,shot.damage);target.hitPulse=.27;
+   restoreFromLiliti(shot,before-target.hp);
+   attackVisual(shot.kind,target.x,target.y,shot.side);return true;
  }
  if(shot.structureSide){
    const side=shot.structureSide,lane=shot.structureLane;
+   const before=lane===-1?game.castles[side]:game.towers[side][lane];
    if(!receiveFortressDamage(side,lane,shot.damage))return false;
-   attackVisual(shot.kind,shot.toX,shot.toY,shot.side);
-   
-   return true;
+   const after=lane===-1?game.castles[side]:game.towers[side][lane];
+   restoreFromLiliti(shot,before-after);
+   attackVisual(shot.kind,shot.toX,shot.toY,shot.side);return true;
  }
  return false;
 }
@@ -575,7 +596,7 @@ function advanceProjectiles(dt){
   if(game.effects[i].life<=0)game.effects.splice(i,1);
  }
 }
-function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.energy+dt*(game.time<60?1.2:.7),0,10);game.aiTimer+=dt;const speed=$('#difficulty').value;const interval=speed==='easy'?6.2:speed==='hard'?2.9:4.4;if(game.aiTimer>=interval){game.aiTimer=0;aiCast()}defendFromTowers(dt);for(const u of game.units){u.motionTime=(u.motionTime||0)+dt;u.attackPulse=Math.max(0,(u.attackPulse||0)-dt);combat(u,dt);
+function tick(dt){game.time=Math.max(0,game.time-dt);game.energy=clamp(game.energy+dt*(game.time<60?1.2:.7),0,10);game.aiTimer+=dt;const speed=$('#difficulty').value;const interval=speed==='easy'?6.2:speed==='hard'?2.9:4.4;if(game.aiTimer>=interval){game.aiTimer=0;aiCast()}defendFromTowers(dt);for(const u of game.units){u.healPulse=Math.max(0,(u.healPulse||0)-dt);u.motionTime=(u.motionTime||0)+dt;u.attackPulse=Math.max(0,(u.attackPulse||0)-dt);combat(u,dt);
  // Um passo grave apenas enquanto o Colosso realmente caminha.
  // Cada unidade controla seu ritmo para não tocar som ao ficar parada.
  if(u.state==='walk'&&u.card.id==='colosso'){
@@ -927,8 +948,8 @@ function draw(){
 
  g.restore();
 }
-function updateHand(){const node=$('#hand');node.replaceChildren();hand.forEach((id,i)=>{const c=cardData.find(x=>x.id===id);const b=document.createElement('button');b.type='button';b.className=i===activeIndex?'selected':'';b.setAttribute('aria-label',`Selecionar ${c.name}, ${c.cost} energia`);const im=document.createElement('img');im.src=cardImage(c);im.alt='';im.onerror=imgFallback;const label=document.createElement('b');label.textContent=c.name;const co=document.createElement('small');co.textContent=c.cost;b.append(im,label,co);b.addEventListener('click',()=>{activeIndex=i;chosen=c;selectedCard();updateHand()});node.append(b)})}
-function updateUI(){updateClock();$('#wins').textContent=String(local.wins);updateHand();selectedCard()}
+function updateHand(){const node=$('#hand');node.replaceChildren();hand.forEach((id,i)=>{const c=cardData.find(x=>x.id===id);const b=document.createElement('button');b.type='button';b.className=i===activeIndex?'selected':'';b.dataset.card=c.id;b.setAttribute('aria-label',`Selecionar ${c.name}, ${c.cost} energia`);const im=document.createElement('img');im.src=cardImage(c);im.alt='';im.onerror=imgFallback;const label=document.createElement('b');label.textContent=c.name;const co=document.createElement('small');co.textContent=c.cost;b.append(im,label,co);b.addEventListener('click',()=>{activeIndex=i;chosen=c;selectedCard();updateHand();window.CercoCardArt?.shine?.(c.id)});node.append(b)})}
+function updateUI(){updateClock();$('#wins').textContent=String(local.wins);updateHand();selectedCard();window.CercoCardArt?.refresh?.()}
 function placeCardAt(x,y){
  game.spawn=point(x,y);
  cast(hand[activeIndex]);
@@ -963,6 +984,22 @@ if(new URLSearchParams(location.search).has('test')){
       return [];
     },
     reset:()=>reset(),
+    progress:id=>({...prog(id)}),
+    setProgress:(id,level,xp)=>{local.cards[id]={level:Math.max(1,Math.min(100,level)),xp:Math.max(0,Math.min(99,xp))};save()},
+    cast:(id)=>{cast(id);return game.units.filter(u=>u.side==='ally').map(u=>({id:u.id,card:u.card.id}))},
+    healImpact:(level=1,realHp=100)=>{
+      const saved=game;
+      game={...game,units:[],towers:{ally:[1000,1000],enemy:[1400,1400]},castles:{ally:2000,enemy:2600},attackFx:[],attackShots:[],lilitiStructureHealAt:{}};
+      const liliti=cardData.find(c=>c.id==='liliti'),soldier=cardData.find(c=>c.id==='soldado');
+      const casterId=addUnit(liliti,{x:110,y:400},'ally')[0];
+      const caster=game.units.find(u=>u.id===casterId);caster.level=level;caster.hp=500;
+      addUnit({...soldier,units:1},{x:110,y:360},'ally');addUnit({...soldier,units:1},{x:310,y:360},'ally');
+      for(const u of game.units)if(u.id!==casterId)u.hp=100;
+      const enemyId=addUnit({...soldier,units:1},{x:110,y:380},'enemy')[0],enemy=game.units.find(u=>u.id===enemyId);enemy.hp=realHp;
+      applyAttackDamage({kind:'enchant',damage:100,side:'ally',sourceId:casterId},enemy);
+      const result={allies:game.units.filter(u=>u.side==='ally').map(u=>({id:u.id,lane:u.lane,hp:u.hp})),towers:game.towers.ally,castle:game.castles.ally};
+      game=saved;return result;
+    },
     mana:()=>({actual:game.energy,blocks:Math.floor(game.energy+1e-7),ui:document.querySelectorAll('#manaBlocks .mana-block.filled').length}),
     setMana:(value)=>{game.energy=clamp(Number(value)||0,0,10);updateClock();return game.energy},
     fullscreen:()=>({active:document.body.classList.contains('battle-mode'),native:!!document.fullscreenElement,rect:document.querySelector('#battleStage')?.getBoundingClientRect().toJSON()}),
@@ -1038,5 +1075,5 @@ $('#battleSound').addEventListener('click',()=>{$('#soundToggle').click();syncBa
 document.addEventListener('fullscreenchange',()=>requestAnimationFrame(()=>window.Cerco3D?.resize?.()));
 window.addEventListener('resize',()=>{if(document.body.classList.contains('battle-mode'))window.Cerco3D?.resize?.()},{passive:true});
 $('#pause').addEventListener('click',pause);$('#reset').addEventListener('click',reset);$('#clearProgress').addEventListener('click',()=>{if(!confirm('Limpar somente o progresso local de treinamento?'))return;local={cards:{},wins:0};save();window.CercoRewards?.reset?.();reset();renderCards();window.CercoHome?.render?.()});
-window.addEventListener('hashchange',()=>{const key=location.hash.replace('#','');if(['home','arena','cards','shop','clans','profile'].includes(key))show(key)});window.Cerco3DGame={getState:()=>game};reset();renderCards();if(location.hash)show(location.hash.slice(1));
+window.addEventListener('hashchange',()=>{const key=location.hash.replace('#','');if(['home','arena','cards','shop','clans','profile'].includes(key))show(key)});window.Cerco3DGame={getState:()=>game};reset();renderCards();window.CercoCardArt?.refresh?.();if(location.hash)show(location.hash.slice(1));
 })();

@@ -41,7 +41,7 @@ const featured=[
 function renderFeatured(){
  const grid=$('#featuredCards');grid.replaceChildren();
  featured.forEach(([name,img,id])=>{
-  const b=document.createElement('button');b.type='button';b.className='featured-card';
+  const b=document.createElement('button');b.type='button';b.className='featured-card';b.dataset.card=id;
   const picture=document.createElement('img');picture.src=ASSET+img;picture.alt='Arte de '+name;picture.loading='lazy';
   const label=document.createElement('strong');label.textContent=name;b.append(picture,label);
   b.addEventListener('click',()=>{
@@ -51,6 +51,7 @@ function renderFeatured(){
   });
   grid.append(b);
  });
+ window.CercoCardArt?.refresh?.();
 }
 
 const CLAN_KEY='cerco-dos-reis-clan-local-v1';
