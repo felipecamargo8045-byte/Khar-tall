@@ -8,7 +8,7 @@
 <title>Cerco dos Reis · Khar Thal</title>
 <link rel="icon" href="./origem-apk/assets/emblem.svg">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="stylesheet" href="./game-ui.css?v=13">
+<link rel="stylesheet" href="./game-ui.css?v=14">
 </head>
 <body>
 <div class="aurora" aria-hidden="true"></div>
@@ -17,14 +17,75 @@
   <div class="header-right"><div class="sound-controls" aria-label="Som do jogo"><button type="button" id="voiceToggle" class="sound-button voice-button" aria-label="Silenciar falas dos personagens" aria-pressed="true" title="Silenciar falas">🗣</button><button type="button" id="soundToggle" class="sound-button" aria-label="Silenciar sons do jogo" aria-pressed="true" title="Alternar sons">♫</button><label class="sr-only" for="soundVolume">Volume dos efeitos sonoros</label><input id="soundVolume" type="range" min="0" max="100" value="55" aria-label="Volume dos efeitos sonoros"></div><div class="mode-token"><span class="live-dot"></span> MODO TREINO</div><button type="button" id="installApp" class="install-btn" aria-label="Instalar aplicativo">⇩</button></div>
 </header>
 <nav id="navigation" class="game-nav" aria-label="Seções do jogo">
- <button class="active" data-view="arena"><span class="nav-ico">⚔</span><span>Arena</span></button>
+ <button class="active" data-view="home"><span class="nav-ico">⌂</span><span>Início</span></button>
+ <button data-view="arena"><span class="nav-ico">⚔</span><span>Arena</span></button>
  <button data-view="cards"><span class="nav-ico">▣</span><span>Cartas</span></button>
  <button data-view="shop"><span class="nav-ico">✦</span><span>Loja</span></button>
  <button data-view="clans"><span class="nav-ico">♜</span><span>Clãs</span></button>
  <button data-view="profile"><span class="nav-ico">♛</span><span>Perfil</span></button>
 </nav>
 <main class="game-body">
-<section class="page active" data-page="arena">
+
+<section class="page active home-page" data-page="home" aria-label="Início do comandante">
+ <div class="home-hero">
+  <div class="home-hero-copy">
+   <span class="overline">KHAR TALL · CERCO DOS REIS</span>
+   <h1>O seu reino começa aqui.</h1>
+   <p>Vença batalhas, alcance novos níveis e desvende as recompensas dos <strong>Pergaminhos de Liliti</strong>.</p>
+   <span class="home-training-note">Progresso e presentes deste treinamento são salvos neste aparelho.</span>
+   <div class="home-buttons">
+    <button id="homePlay" class="gold home-primary" type="button">⚔ ENTRAR NA BATALHA</button>
+    <button id="homeToCards" class="secondary-btn" type="button">▣ Ver cartas e evolução</button>
+   </div>
+  </div>
+  <div class="home-hero-art" aria-hidden="true"><img src="./origem-apk/assets/portrait_lilith_ruiva.webp" alt=""></div>
+ </div>
+ <div class="home-stats" aria-label="Resumo do comandante">
+  <div class="home-stat"><span>♛</span><div><small>NÍVEL DO COMANDANTE</small><strong id="homeLevel">1</strong><div class="home-xp-track"><i id="homeXpFill"></i></div><small id="homeXp">0 / 100 XP</small></div></div>
+  <div class="home-stat"><span>⚔</span><div><small>VITÓRIAS</small><strong id="homeWins">0</strong><small id="homeRecord">0 derrotas</small></div></div>
+  <div class="home-stat"><span>📜</span><div><small>PERGAMINHOS GUARDADOS</small><strong id="homeScrolls">0</strong><small>1 por vitória</small></div></div>
+  <div class="home-stat"><span>✦</span><div><small>PRESENTES ABERTOS</small><strong id="homeOpened">0</strong><small>Recompensas encontradas</small></div></div>
+ </div>
+ <div class="home-main-grid">
+  <section class="home-scroll-panel" aria-labelledby="scrollsTitle">
+   <div class="home-panel-heading"><div><span class="overline">SUSSURROS DO PASSADO</span><h2 id="scrollsTitle">Pergaminhos de Liliti</h2></div><span class="home-scroll-chip">☽ RECOMPENSAS</span></div>
+   <p>Uma vitória rende um pergaminho. Abra para receber materiais de evolução, forjar suas cartas e preparar seu exército.</p>
+   <div class="home-scroll-stage">
+    <div class="scroll-art" aria-hidden="true"><span>☽</span><b>✦</b></div>
+    <div class="scroll-info"><strong id="homeScrollStock">0 pergaminhos disponíveis</strong><small>Os prêmios são revelados ao abrir. Os materiais permanecem no inventário deste aparelho.</small>
+     <button id="homeOpenScroll" class="gold" type="button" disabled>✦ ABRIR PERGAMINHO</button>
+    </div>
+   </div>
+   <div id="homeRewardMessage" class="home-reward-message" role="status" aria-live="polite">Vença uma partida para conquistar o primeiro pergaminho.</div>
+   <details class="home-rates"><summary>Ver recompensas e chances</summary><div class="home-drop-list">
+     <div>⚒ Ferro Ancestral ×15 <b>50%</b></div>
+     <div>✦ Fragmentos de Eco ×8 <b>26%</b></div>
+     <div>◆ Cristais da Chama ×3 <b>17%</b></div>
+     <div>☽ Essência de Liliti ×1 <b>7%</b></div>
+   </div><p>Essas chances são do treinamento local. Os prêmios cosméticos premium são exclusivos de assinantes mensais verificados e permanecem bloqueados até existir integração com o servidor.</p></details>
+  </section>
+  <section class="home-inventory" aria-labelledby="inventoryTitle">
+   <div class="home-panel-heading"><div><span class="overline">FORJA DOS DOIS REINOS</span><h2 id="inventoryTitle">Seu inventário</h2></div></div>
+   <div class="home-materials" id="homeMaterials" aria-label="Materiais acumulados"></div>
+   <p class="home-forge-note">Materiais são usados na aba <strong>Evolução</strong> das cartas. Não é necessário pagar para conseguir materiais.</p>
+   <button type="button" class="secondary-btn" id="homeToForge">Ir para a forja das cartas</button>
+  </section>
+ </div>
+ <div class="home-main-grid home-bottom">
+  <section class="home-premium" aria-labelledby="premiumTitle">
+   <div class="home-panel-heading"><div><span class="overline">CONTEÚDO EXCLUSIVO</span><h2 id="premiumTitle">Skins dos Reinos</h2></div><span class="home-premium-tag">♛ ASSINATURA MENSAL</span></div>
+   <p>Skins são aparências cosméticas. Apenas assinantes mensais com assinatura ativa e confirmada pelo servidor poderão conquistá-las e equipá-las.</p>
+   <div id="homePremiumSkins" class="home-skin-grid"></div>
+   <small class="home-premium-warning">🔒 Assinaturas e pagamentos ainda não estão conectados neste treinamento. Nenhuma compra será cobrada aqui.</small>
+  </section>
+  <section class="home-history" aria-labelledby="historyTitle">
+   <div class="home-panel-heading"><div><span class="overline">CRÔNICAS DO COMANDANTE</span><h2 id="historyTitle">Últimas conquistas</h2></div></div>
+   <div id="homeHistory" class="home-history-list" aria-live="polite">Suas vitórias aparecerão aqui.</div>
+  </section>
+ </div>
+</section>
+
+<section class="page" data-page="arena">
  <div class="arena-topline"><div><small class="overline">BATALHA DE CASTELOS <span id="sceneBadge" class="scene-badge">CARREGANDO 3D</span></small><h1>ARENA REAL</h1></div><div class="rank-seal">⚔<span> IA </span></div></div>
  <div class="arena-layout">
   <aside class="commander panel">
@@ -109,7 +170,9 @@
 <script src="./khar-audio-original.js?v=2" defer></script>
 <script src="./sfx.js?v=7" defer></script>
 <script src="./voices.js?v=4" defer></script>
-<script src="./app.js?v=22" defer></script>
+<script src="./rewards.js?v=1" defer></script>
+<script src="./home.js?v=1" defer></script>
+<script src="./app.js?v=23" defer></script>
 <script src="./realm-ui.js?v=3" defer></script>
 <script type="module" src="./arena3d.js?v=13"></script>
 </body>
