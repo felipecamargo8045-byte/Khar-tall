@@ -682,7 +682,16 @@ jobs:
             // A animação solicitada deve ser testada com movimento habilitado; acessibilidade mantém fallback estático.
             await page.emulateMedia({reducedMotion:'no-preference'});
             await page.locator('#fullArt').click();
-            assert.equal(await page.locator('#artOuter .card-light-sweep').evaluate(node=>getComputedStyle(node,'::after').animationName),'card-reflection');
+            // A captura de estilo ocorre no mesmo evento de toque; o runner 3D pode atrasar a inspeção por >950ms.
+            const shining=await page.evaluate(()=>{
+              const art=document.getElementById('fullArt');
+              art.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch'}));
+              const stage=art.closest('.card-relief');
+              return {active:stage?.classList.contains('is-shining'),
+                animation:getComputedStyle(stage.querySelector('.card-light-sweep'),'::after').animationName};
+            });
+            assert.ok(shining.active,'Toque não ativou o brilho da carta');
+            assert.equal(shining.animation,'card-reflection','Reflexo não se iniciou no toque');
             await page.locator('#artOuter').scrollIntoViewIfNeeded();
             await page.screenshot({path:'/tmp/cerco-cartas-liliti.png'});
             await page.locator('#navigation [data-view="shop"]').click();
