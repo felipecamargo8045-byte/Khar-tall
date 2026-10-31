@@ -1,7 +1,8 @@
 /* Cerco dos Reis — progressão e Pergaminhos de Liliti (treinamento local).
  * Os presentes desta versão são locais e NÃO representam itens online.
- * Skins requerem verificação de assinatura mensal no servidor; não existe
- * aquisição/equipamento premium confiando em estado controlado pelo navegador.
+ * Compra individual de skins é permitida a qualquer jogador no Khar Tall.
+ * Apenas fragmentos recebidos em pergaminhos exigem assinatura verificada.
+ * O Cerco estático ainda não sincroniza compras/assinaturas entre contas.
  */
 (()=>{'use strict';
 const KEY='cerco-dos-reis-presentes-liliti-v1';
@@ -12,14 +13,21 @@ const MATERIALS=Object.freeze({
  crystals:{name:'Cristais da Chama',icon:'◆',description:'Despertam a forja de evolução'},
  essence:{name:'Essência de Liliti',icon:'☽',description:'Material raro dos pergaminhos'}
 });
+const PRICE_CENTS=250;
+const STORE_URL='https://khar-tall-online.onrender.com/loja';
 const SKINS=Object.freeze([
- {id:'liliti-luar',name:'Liliti · Luar Antigo',character:'Liliti',color:'#c38ce5'},
- {id:'rei-coroa',name:'Rei · Coroa Carmesim',character:'Rei',color:'#cb5f7f'},
- {id:'guardiao-voto',name:'Guardião · Voto Celeste',character:'Guardião',color:'#8abdeb'}
+ {id:'skin_green_light',name:'Verde Claro',character:'Exército',color:'#9ce6af'},
+ {id:'skin_blue_light',name:'Azul Claro',character:'Exército',color:'#9ed9ff'},
+ {id:'skin_red_light',name:'Vermelho Claro',character:'Exército',color:'#ffa6a0'},
+ {id:'skin_purple_light',name:'Roxo Claro',character:'Exército',color:'#d8b0ff'},
+ {id:'skin_pink_light',name:'Rosa Claro',character:'Exército',color:'#ffb4dd'},
+ {id:'skin_gold_light',name:'Dourado Claro',character:'Exército',color:'#ffe7a0'},
+ {id:'skin_orange_light',name:'Laranja Claro',character:'Exército',color:'#ffc18c'},
+ {id:'skin_cyan_light',name:'Ciano Claro',character:'Exército',color:'#a0efed'}
 ]);
 const defaultState=()=>({version:1,level:1,xp:0,wins:0,losses:0,scrolls:0,opened:0,
  materials:{iron:0,shards:0,crystals:0,essence:0},upgrades:{},
- history:[],creditedMatches:[],skins:[]});
+ history:[],creditedMatches:[],skins:[],skinFragments:{}});
 let state=defaultState();
 try{
  const saved=JSON.parse(localStorage.getItem(KEY)||'null');
@@ -29,7 +37,8 @@ try{
    upgrades:(saved.upgrades&&typeof saved.upgrades==='object')?saved.upgrades:{},
    history:Array.isArray(saved.history)?saved.history.slice(-40):[],
    creditedMatches:Array.isArray(saved.creditedMatches)?saved.creditedMatches.slice(-150):[],
-   skins:[] // direito de uso de skin NUNCA é restaurado via localStorage
+   skins:[], // direitos de compra exigem confirmação no servidor
+   skinFragments:Object.fromEntries(SKINS.map(skin=>[skin.id,0])) // sem entitlement do servidor, não aceitar saldo local
   };
  }
 }catch{}
@@ -77,13 +86,15 @@ function rng(){
  try{const n=new Uint32Array(1);crypto.getRandomValues(n);return n[0]/4294967296}catch{return Math.random()}
 }
 function rollLoot(){
- // Quando a integração oficial validar a assinatura no servidor, 3% dos
- // prêmios poderão ser skins premium. Sem assinatura, 100% dos prêmios
- // são materiais. NUNCA desbloquear uma skin só com um valor local.
+ // 5% de fragmentos APENAS PARA ASSINANTES mensais verificados.
+ // Não assinantes ganham materiais sempre, mas podem comprar skins avulsas.
+ const subscriber=memberVerified();
  const roll=rng()*100;
- if(memberVerified()&&roll<3)return {kind:'skin',id:SKINS[Math.floor(rng()*SKINS.length)].id,qty:1,weight:3};
- const materialRoll=memberVerified()?roll-3:roll;
- const normalized=memberVerified()?materialRoll*(100/97):materialRoll;
+ if(subscriber&&roll<5){
+   const skin=SKINS[Math.floor(rng()*SKINS.length)];
+   return {kind:'skinFragment',id:skin.id,qty:2,weight:5};
+ }
+ const normalized=subscriber?(roll-5)*(100/95):roll;
  if(normalized<50)return {kind:'material',id:'iron',qty:15,weight:50};
  if(normalized<76)return {kind:'material',id:'shards',qty:8,weight:26};
  if(normalized<93)return {kind:'material',id:'crystals',qty:3,weight:17};
@@ -92,16 +103,34 @@ function rollLoot(){
 function openScroll(){
  if(state.scrolls<1)return null;
  const prize=rollLoot();
- // O treinamento não fornece resgate de skins reais. Se o servidor vier
- // a autorizar premium, o prêmio dependerá de uma transação remota.
- if(prize.kind==='skin')return null;
+ // Para resgate futuro, saldo e direito a fragmentos só podem ser
+ // concedidos mediante assinatura confirmada no servidor.
+ if(prize.kind==='skinFragment'&&!memberVerified())return null;
  state.scrolls--;
  state.opened++;
- state.materials[prize.id]=safeNumber(state.materials[prize.id]+prize.qty);
- const result={...prize,name:MATERIALS[prize.id].name,icon:MATERIALS[prize.id].icon,at:Date.now()};
+ let result;
+ if(prize.kind==='skinFragment'){
+   const skin=SKINS.find(s=>s.id===prize.id);
+   state.skinFragments[prize.id]=safeNumber((state.skinFragments[prize.id]||0)+prize.qty);
+   result={...prize,name:'Fragmentos de '+skin.name,icon:'✧',at:Date.now()};
+ }else{
+   state.materials[prize.id]=safeNumber(state.materials[prize.id]+prize.qty);
+   result={...prize,name:MATERIALS[prize.id].name,icon:MATERIALS[prize.id].icon,at:Date.now()};
+ }
  state.history.push({type:'prize',text:'Pergaminho aberto · '+result.qty+' × '+result.name,at:result.at});
  state.history=state.history.slice(-40);
  persist();return result;
+}
+function purchaseInfo(id){
+ const skin=SKINS.find(x=>x.id===id);
+ if(!skin)return null;
+ return {id:skin.id,name:skin.name,priceCents:PRICE_CENTS,
+    url:STORE_URL,availableToAll:true,
+    note:'Compra única na loja oficial do Khar Tall, sem exigência de assinatura. O acesso no Cerco dos Reis ainda não está sincronizado com a loja original.'};
+}
+function fragmentProgress(id){
+ return {count:memberVerified()?safeNumber(state.skinFragments[id]):0,
+ required:10,subscriberOnly:true,verified:memberVerified()};
 }
 function recipe(id){
  const current=safeNumber(state.upgrades[id]);
@@ -126,16 +155,16 @@ function snapshot(){
   level:state.level,xp:state.xp,xpGoal:xpGoal(state.level),
   wins:state.wins,losses:state.losses,scrolls:state.scrolls,opened:state.opened,
   materials:state.materials,upgrades:state.upgrades,history:state.history,
-  subscriber:memberVerified(),premiumSkins:SKINS
+  subscriber:memberVerified(),premiumSkins:SKINS,skinFragments:memberVerified()?state.skinFragments:{},skinPrices:Object.fromEntries(SKINS.map(s=>[s.id,PRICE_CENTS]))
  }));
 }
 function reset(){
  state=defaultState();persist();
 }
 window.CercoRewards={
- snapshot,materials:MATERIALS,skins:SKINS,awardVictory,recordLoss,openScroll,
+ snapshot,materials:MATERIALS,skins:SKINS,purchaseInfo,fragmentProgress,awardVictory,recordLoss,openScroll,
  recipe,upgrade,hasMonthlyMembership:memberVerified,reset,
- // Teste público do cliente local: a decisão premium continua bloqueada.
- checkPremiumSkin:(id)=>memberVerified()&&SKINS.some(s=>s.id===id)
+ // Comprar skins é permitido a qualquer jogador; somente fragmentos dependem da assinatura.
+ checkPremiumSkin:(id)=>!!purchaseInfo(id)
 };
 })();
