@@ -1,4 +1,5 @@
 import * as THREE from './vendor/three.module.js';
+import {bevelBox,reliefMap,floorHeight,pickGround,fitArena,createAtmosphere,characterShadow,batchStatic,framingInfo} from './arena-atmosphere.js?v=1';
 
 // Arena WebGL 3D local, geometria própria e sem serviços pagos.
 // Modelo visual independente do motor de combate; não substitui suas regras.
@@ -63,7 +64,8 @@ function texturedStone(style){
  tex.colorSpace=THREE.SRGBColorSpace;
  tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
  tex.anisotropy=2;
- const result=new THREE.MeshStandardMaterial({map:tex,roughness:.87,metalness:.06,flatShading:true});
+ const result=new THREE.MeshStandardMaterial({map:tex,bumpMap:reliefMap(tex),bumpScale:.055,
+  roughness:.86,metalness:.02,flatShading:false,envMapIntensity:.35});
  materialCache.set(style,result);
  return result;
 }
@@ -75,21 +77,15 @@ function horizontalPath(parent,points,r,m){
  parent.add(mesh);return mesh;
 }
 
-let renderer,scene,camera,clock,ready=false,lastTime=0;
+let renderer,scene,camera,atmosphere,ready=false,lastTime=0,batchedPieces=0;
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
-const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
 const hit=new THREE.Vector3();
 const actors=new Map(),forts=[];
 const troopBolts=new Map(),troopVfx=new Map();
 const flyingBolts=new Map(),impactRings=new Map();
 function createRenderer(){
  const r=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'low-power'});
- r.setPixelRatio(Math.min(1,window.devicePixelRatio||1));
- r.shadowMap.enabled=false;
- r.shadowMap.type=THREE.PCFSoftShadowMap;
- r.outputColorSpace=THREE.SRGBColorSpace;
- r.toneMapping=THREE.NoToneMapping;
- r.toneMappingExposure=1.15;
+ r.setPixelRatio(Math.min(1.5,window.devicePixelRatio||1));
  return r;
 }
 // Direção de arte: fantasia estilizada, limpa e legível. Iluminação de
@@ -126,50 +122,62 @@ function surfaceTexture(style){
  return tex;
 }
 function terrain(){
- // Grande plataforma 3D com contorno dourado, piso pastel e duas pistas.
- const base=box(12.05,.38,15.45,mat(0x334a5b));put(scene,base,0,-.31,0);
- const edge=box(11.76,.13,15.17,gold);put(scene,edge,0,-.12,0);
- const field=box(11.48,.07,14.88,new THREE.MeshStandardMaterial({map:surfaceTexture('grass'),roughness:.9}));
- put(scene,field,0,-.024,0);field.receiveShadow=true;
- // Caminhos em pedra clara, com bordas bem definidas.
- const roadMat=new THREE.MeshStandardMaterial({map:surfaceTexture('path'),roughness:.82});
+ // Plataforma em camadas: a borda, o leito do rio e as pontes têm volume real.
+ put(scene,bevelBox(12.20,.24,15.62,mat(0x233648),.06),0,-.69,0);
+ const base=bevelBox(12.05,.52,15.45,mat(0x334a5b),.07);put(scene,base,0,-.39,0);
+ for(const x of [-5.80,5.80])put(scene,bevelBox(.16,.13,15.17,gold,.025),x,-.12,0);
+ for(const z of [-7.50,7.50])put(scene,bevelBox(11.70,.13,.16,gold,.025),0,-.12,z);
+ const grassMap=surfaceTexture('grass');grassMap.repeat.set(1.7,1.1);
+ const grassMaterial=new THREE.MeshStandardMaterial({map:grassMap,bumpMap:reliefMap(grassMap),
+  bumpScale:.024,roughness:.95,envMapIntensity:.28});
+ for(const z of [-4.0575,4.0575]){
+  const field=box(11.48,.14,6.765,grassMaterial);
+  put(scene,field,0,-.059,z);field.receiveShadow=true;
+ }
+ // As pistas param na margem; a água está abaixo das tábuas da ponte.
+ const pathMap=surfaceTexture('path');pathMap.repeat.set(1,1.85);
+ const roadMat=new THREE.MeshStandardMaterial({map:pathMap,bumpMap:reliefMap(pathMap),
+  bumpScale:.048,roughness:.85,envMapIntensity:.3});
  for(const x of [-2.5,2.5]){
-   const path=box(2.54,.045,13.48,roadMat);
-   put(scene,path,x,.018,0);path.receiveShadow=true;
+   for(const z of [-3.705,3.705]){
+    const path=box(2.54,.045,6.07,roadMat);
+    put(scene,path,x,.035,z);path.receiveShadow=true;
+   }
    const sideLine=mat(0xdacda9);
    for(const d of [-1,1]){
-     put(scene,box(.075,.038,13.5,sideLine),x+d*1.32,.052,0);
+    for(const z of [-3.705,3.705])put(scene,box(.075,.038,6.07,sideLine),x+d*1.32,.057,z);
    }
    for(let z=-6.3;z<6.4;z+=.8){
-     put(scene,box(2.5,.02,.032,mat(0x8b8c80)),x,.052,z);
+     if(Math.abs(z)>.98)put(scene,box(2.5,.02,.032,mat(0x8b8c80)),x,.065,z);
    }
  }
  // Água ciano contrastante: rio intransponível, salvo pelas pontes.
- const brightWater=new THREE.MeshStandardMaterial({color:0x3fb9d7,metalness:.12,roughness:.27,emissive:0x0a354c,emissiveIntensity:.16});
- put(scene,box(11.45,.06,1.35,brightWater),0,.085,0);
+ atmosphere.addWater();
+ put(scene,box(11.48,.09,1.35,mat(0x194e68)),0,-.23,0);
  const foam=mat(0xa7ecdf);
  for(let z of [-.61,.61]){
-   put(scene,box(11.25,.024,.085,foam),0,.13,z);
+   put(scene,box(11.25,.015,.055,foam),0,-.057,z);
  }
  for(let i=0;i<12;i++){
-  const ripple=box(.55,.018,.025,mat(i%2?0x81e5eb:0x70d4e5));
-  put(scene,ripple,-5.2+i*.92,.13,(i%3-1)*.26);
+  const ripple=box(.48,.012,.018,mat(i%2?0x81e5eb:0x70d4e5));
+  put(scene,ripple,-5.2+i*.92,-.057,(i%3-1)*.26);
  }
  // Pontes largas, madeira dourada com tabuas salientes e corrimão.
  for(const x of [-2.5,2.5]){
-   const apron=box(2.78,.13,2.08,mat(0xd5c49e));put(scene,apron,x,.14,0);
-   const deck=box(2.62,.18,1.80,mat(0x9e6b41));put(scene,deck,x,.245,0);
+   for(const z of [-.90,.90])put(scene,bevelBox(2.78,.17,.30,mat(0xd5c49e),.035),x,.11,z);
+   for(const side of [-1,1])put(scene,box(.16,.22,1.80,mat(0x79553a)),x+side*1.02,.16,0);
    for(let i=0;i<9;i++){
-     const plank=box(2.54,.045,.18,mat(i%2?0xd4a36b:0xbd8a52));
-     put(scene,plank,x,.36,-.77+i*.19);
-     put(scene,box(2.55,.025,.023,mat(0x76533b)),x,.383,-.86+i*.19);
+     const z=-.80+i*.20,y=floorHeight(x,z);
+     const plank=bevelBox(2.54,.075,.194,mat(i%2?0xd4a36b:0xbd8a52),.012);
+     put(scene,plank,x,y-.0375,z);
+     for(const side of [-1,1])put(scene,cyl(.027,.027,.012,iron,6),x+side*1.1,y+.007,z);
    }
    for(const d of [-1,1]){
      const side=x+d*1.31;
-     put(scene,box(.095,.13,1.84,mat(0xffdf96)),side,.43,0);
+     put(scene,bevelBox(.095,.13,1.84,mat(0xffdf96),.016),side,.51,0);
      for(const z of [-.75,0,.75]){
-       const post=box(.18,.48,.18,gold);put(scene,post,side,.53,z);
-       put(scene,sphere(.13,mat(0xffd985)),side,.84,z);
+       const post=box(.14,.48,.14,gold);put(scene,post,side,.54,z);
+       put(scene,sphere(.105,mat(0xffd985)),side,.83,z);
      }
    }
  }
@@ -208,6 +216,13 @@ function terrain(){
       put(scene,cone(.15,.33,mat(0x3e885c)),x,.23,z);
     }
  }
+ scene.traverse(mesh=>{
+  if(mesh.isMesh&&mesh.material?.isMeshStandardMaterial){
+   mesh.receiveShadow=true;
+   mesh.castShadow=mesh.castShadow||mesh.geometry.parameters?.height>=.12||mesh.geometry.type==='SphereGeometry';
+  }
+ });
+ batchedPieces+=batchStatic(scene);
 }
 function crenel(parent,x,z,w,count,h){
  for(let i=0;i<count;i++){
@@ -219,9 +234,10 @@ function makeFortress(team,main){
  const theme=mat(colors.cloth,.35),flag=mat(colors.flag,.14);
  const wide=main?2.45:1.7;
  const level=main?2.15:1.55;
- const base=box(wide,.3,1.45,darkStone);put(group,base,0,.18,0);
+ const base=bevelBox(wide+.14,.3,1.59,darkStone,.045);put(group,base,0,.18,0);
+ put(group,bevelBox(wide+.26,.10,1.72,stoneLight,.02),0,.065,0);
  const fortressStone=texturedStone(team);
- const keep=box(wide*.78,level,1.04,fortressStone);put(group,keep,0,level/2+.28,0);keep.castShadow=true;
+ const keep=bevelBox(wide*.78,level,1.04,fortressStone,.045);put(group,keep,0,level/2+.28,0);keep.castShadow=true;
  // Muralhas com blocos, ameias e cincoiras.
  for(let row=0;row<5;row++){
   for(let col=0;col<3;col++){
@@ -247,10 +263,10 @@ function makeFortress(team,main){
    put(group,turret,x,0,-.32);
  }
  // Portão arqueado com ferragens reais.
- const gate=box(.56,.92,.07,black);put(group,gate,0,.68,.556);
- put(group,sphere(.28,black),0,1.11,.566);
+ const gate=box(.56,.80,.07,black);put(group,gate,0,.60,.556);
+ put(group,new THREE.Mesh(new THREE.CircleGeometry(.28,16,0,Math.PI),black),0,.98,.602);
  for(let i=-1;i<=1;i++){
-   put(group,box(.035,.95,.075,wood),i*.17,.64,.635);
+   put(group,box(.035,.76,.075,wood),i*.17,.59,.635);
  }
  put(group,box(.67,.07,.11,gold),0,.31,.65);
  for(let x of [-.46,.46]){
@@ -265,8 +281,8 @@ function makeFortress(team,main){
  }
  // Faixa luminosa de facção visível de longe, mesmo no celular.
  const ribbon=box(wide*.79,.085,1.10,theme);put(group,ribbon,0,level+.12,0);
- const crest=box(.28,.39,.09,gold);put(group,crest,0,level*.70,.63);
- put(group,box(.12,.25,.10,theme),0,level*.70,.70);
+ const crest=box(.25,.29,.09,gold);put(group,crest,0,level+.04,.63);
+ put(group,box(.11,.19,.10,theme),0,level+.04,.70);
 
  // Arquitetura realçada: telhado inclinado, parapeitos e emblema gravado.
  const roofing=mat(team==='ally'?0x2379a6:0xa23b58,.17,.62);
@@ -288,10 +304,10 @@ function makeFortress(team,main){
  }
  // Pórtico com arco de pedra e degraus sobrepostos.
  const portal=new THREE.Group();
- const upperArc=cyl(.43,.43,.16,stoneLight,10);
- upperArc.rotation.x=Math.PI/2;
- put(portal,upperArc,0,.98,.61);
- put(portal,box(.75,.12,.25,stoneLight),0,1.33,.64);
+ const upperArc=new THREE.Mesh(new THREE.TorusGeometry(.36,.08,5,16,Math.PI),stoneLight);
+ put(portal,upperArc,0,.98,.65);
+ for(const side of [-1,1])put(portal,bevelBox(.14,.84,.19,stoneLight,.02),side*.36,.56,.64);
+ put(portal,bevelBox(.19,.19,.23,stoneLight,.02),0,1.37,.64);
  put(portal,box(.91,.12,.36,mat(0xba9869)),0,.20,.77);
  put(portal,box(1.07,.10,.44,mat(0xd3b886)),0,.10,.83);
  group.add(portal);
@@ -329,6 +345,8 @@ function makeFortress(team,main){
   group.userData.material=theme;
  group.userData.castle=main;
  group.userData.team=team;
+ group.traverse(mesh=>{if(mesh.isMesh){mesh.castShadow=true;mesh.receiveShadow=true}});
+ batchedPieces+=batchStatic(group,bowArms);
  return group;
 }
 function buildForts(){
@@ -357,8 +375,7 @@ function torches(){
  for(const z of [-3.1,3.1]){
   for(const x of [-4.9,4.9]){
    put(scene,cyl(.11,.15,.65,wood,6),x,.35,z);
-   put(scene,cone(.16,.35,mat(0xffb86b),7),x,.84,z);
-   const light=new THREE.PointLight(0xffa75c,.8,2.5);light.position.set(x,.8,z);scene.add(light);
+   atmosphere.addTorch(x,z);
   }
  }
 }
@@ -401,7 +418,7 @@ function makeHuman(id,team){
   const hood=cone(.36*size,.38*size,cloth,7);put(body,hood,0,1.05*size,-.035*size);
  }else{
   const helmet=cone(.35*size,.38*size,plate,7);put(body,helmet,0,1.08*size,0);
-  put(body,box(.13*size,.32*size,plate),0,.79*size,.26*size);
+  put(body,box(.13*size,.32*size,.09*size,plate),0,.79*size,.26*size);
  }
  const arms=[];
  for(const d of [-1,1]){
@@ -552,16 +569,18 @@ function createActor(u){
  model.traverse(o=>{if(o.isMesh)o.castShadow=true});
  const bar=makeHealthBar(u.side,1.05);
  const appearance=detailedAppearance(u);
+ const shadowProxy=characterShadow(u.card.id,appearance?.height||(u.card.id==='lobo'?.92:1.18));
  const shadow=fakeShadow(u.card.id==='colosso'?.95:u.card.id==='lobo'?.75:.72);
  scene.add(model);scene.add(bar);scene.add(shadow);
+ scene.add(shadowProxy);
  if(appearance)scene.add(appearance.mesh);
- return {model,bar,shadow,appearance,side:u.side,lastFrame:0,position:new THREE.Vector3()};
+ return {model,bar,shadow,shadowProxy,appearance,side:u.side,lastFrame:0,position:new THREE.Vector3()};
 }
 function syncActors(game){
  const live=new Set(game.units.filter(u=>u.hp>0).map(u=>u.id));
  for(const [id,rec] of actors){
   if(!live.has(id)){
-    scene.remove(rec.model);scene.remove(rec.bar);scene.remove(rec.shadow);
+    scene.remove(rec.model);scene.remove(rec.bar);scene.remove(rec.shadow);scene.remove(rec.shadowProxy);
     if(rec.appearance){scene.remove(rec.appearance.mesh);rec.appearance.mesh.material.dispose();rec.appearance.sheet.dispose();}
     actors.delete(id);
   }
@@ -572,8 +591,9 @@ function syncActors(game){
   if(!rec){rec=createActor(u);actors.set(u.id,rec)}
   const obj=rec.model,anim=obj.userData;
   const pos=position(u.x,u.y);
+  const ground=floorHeight(pos.x,pos.z);
   obj.position.copy(pos);
-  rec.shadow.position.set(pos.x,.085,pos.z);
+  rec.shadow.position.set(pos.x,ground+.013,pos.z);
   // O modelo físico continua na cena, enquanto a arte animada dá
   // acabamento de personagem real sobre a silhueta geométrica.
   if(!rec.appearance && characterMotion.has(u.card.id)){
@@ -582,12 +602,13 @@ function syncActors(game){
   }
   if(rec.appearance){
      const art=rec.appearance;
-     art.mesh.position.set(pos.x,art.height*.48+.08,pos.z+.10);
+     art.mesh.position.set(pos.x,ground+art.height*.5+.025,pos.z+.10);
      art.mesh.quaternion.copy(camera.quaternion);
      art.sheet.offset.x=detailedFrame(u)/24;
      // O 3D fica por trás da arte, mantendo volume no cenário sem poluir a leitura.
      obj.visible=false;
   } else obj.visible=true;
+  rec.shadowProxy.visible=!!rec.appearance;
   // Pequenos passos, com pés e braços articulados.
   const clock=u.motionTime||0,walking=u.state==='walk';
   const attacking=(u.attackPulse||0)>0;
@@ -595,10 +616,10 @@ function syncActors(game){
   const rate=u.card.id==='lobo'?10.5:u.card.id==='colosso'?4.1:u.card.id==='batedor'?8.9:7.1;
   const phase=clock*rate+u.id*.18;
   const step=walking?1:attacking?.48:.06;
-  obj.position.y=walking?.042*Math.sin(phase*2):.012*Math.sin(clock*2);
+  obj.position.y=ground+(walking?.042*Math.sin(phase*2):.012*Math.sin(clock*2));
   // Indicador flutuante, sempre legível, separado do corpo do personagem.
   const visibleHeight=rec.appearance?.height || (u.card.id==='colosso'?1.5:u.card.id==='lobo'?.92:1.18);
-  rec.bar.position.set(pos.x,visibleHeight+.18,pos.z);
+  rec.bar.position.set(pos.x,ground+visibleHeight+.18,pos.z);
   rec.bar.quaternion.copy(camera.quaternion);
   const fill=rec.bar.userData.fill;
   if(fill){
@@ -611,6 +632,7 @@ function syncActors(game){
   const yaw=Number.isFinite(u.heading)?Math.atan2(Math.cos(u.heading),Math.sin(u.heading)):(polarity===-1?Math.PI:0);
   const delta=Math.atan2(Math.sin(yaw-obj.rotation.y),Math.cos(yaw-obj.rotation.y));
   obj.rotation.y+=clamp(delta,-.15,.15);
+  rec.shadowProxy.position.copy(obj.position);rec.shadowProxy.rotation.y=obj.rotation.y;
   if(anim.hasWolf){
    anim.legs.forEach((leg,i)=>{leg.rotation.x=Math.sin(phase+(i===0||i===3?0:Math.PI))*.56*step});
    anim.body.rotation.x=walking?.035*Math.sin(phase*2):0;
@@ -658,7 +680,7 @@ function syncBolts(game){
    const from=fortress?.mesh.position.clone()||position(shot.fromX,shot.fromY);
    if(fortress&&shot.slot===2)from.x+=(shot.toX<W/2?-.4:.4);
    from.y=shot.slot===2?3.24:2.44;
-   const to=position(shot.toX,shot.toY);to.y=.72;
+   const to=position(shot.toX,shot.toY);to.y=floorHeight(to.x,to.z)+.72;
    const t=shot.progress,arc=.76,trajectory=to.clone().sub(from);
    mesh.position.copy(from).lerp(to,t);
    mesh.position.y+=Math.sin(t*Math.PI)*arc;
@@ -685,7 +707,7 @@ function syncBolts(game){
    }
    const k=1-effect.life/effect.maxLife;
    const p=position(effect.x,effect.y);
-   ring.position.set(p.x,.16,p.z);
+   ring.position.set(p.x,floorHeight(p.x,p.z)+.07,p.z);
    ring.scale.setScalar(.6+3.1*k);
    ring.material.opacity=Math.max(0,.8*(1-k));
  }
@@ -806,7 +828,7 @@ function syncTroopVfx(game){
   const target=position(shot.toX,shot.toY);
   const source=position(shot.fromX,shot.fromY);
   const rise=Math.sin(shot.progress*Math.PI);
-  mesh.position.set(at.x,.65+rise*(shot.kind==='enchant'?.43:.26),at.z);
+  mesh.position.set(at.x,floorHeight(at.x,at.z)+.65+rise*(shot.kind==='enchant'?.43:.26),at.z);
   if(shot.kind==='enchant'){
     mesh.rotation.set(shot.progress*5,shot.progress*7,shot.progress*4);
   }else if(shot.kind==='shield'){
@@ -826,7 +848,7 @@ function syncTroopVfx(game){
    if(!obj){obj=buildHitEffect(fx);troopVfx.set(fx.id,obj)}
    const p=position(fx.x,fx.y);
    const phase=1-fx.life/fx.maxLife;
-   obj.position.set(p.x,fx.kind==='slam'?.40:.70,p.z);
+   obj.position.set(p.x,floorHeight(p.x,p.z)+(fx.kind==='slam'?.40:.70),p.z);
    if(fx.kind!=='slam')obj.quaternion.copy(camera.quaternion);
    if(fx.kind==='slash')obj.rotation.z=phase*1.7-.8;
    if(fx.kind==='royal')obj.rotation.z=phase*1.2-.4;
@@ -899,6 +921,8 @@ function syncForts(game){
   const hp=fort.lane===-1?game.castles[fort.team]:game.towers[fort.team][fort.lane];
   const max=fort.lane===-1?2600:1400;
   const ratio=clamp(hp/max,0,1);
+  const shadowStep=Math.ceil(ratio*8);
+  if(fort.shadowStep!==shadowStep){fort.shadowStep=shadowStep;atmosphere.invalidate()}
   const attackSlot=fort.lane===-1?2:fort.lane;
   const recent=[...(game.towerShots||[])].reverse().find(shot=>shot.side===fort.team&&shot.slot===attackSlot);
   const elapsed=recent?Math.max(0,recent.time-game.time):10;
@@ -920,14 +944,8 @@ function size(){
  const w=host.clientWidth||gameCanvas.clientWidth||420;
  const h=host.clientHeight||gameCanvas.clientHeight||560;
  renderer.setSize(w,h,false);
- const aspect=Math.max(.28,w/Math.max(1,h));
- // Enquadramento inteligente: mostra toda a largura da arena no celular,
- // aproveita a tela em retrato e preserva as duas pontes + os castelos.
- const vertical=Math.max(14.8,9.55/aspect);
- camera.left=-vertical*aspect/2;
- camera.right=vertical*aspect/2;
- camera.top=vertical/2;camera.bottom=-vertical/2;
- camera.updateProjectionMatrix();
+ fitArena(camera,w,h);
+ atmosphere?.invalidate();
 }
 function init(){
  try{
@@ -936,19 +954,10 @@ function init(){
   renderer.domElement.style.cssText='width:100%;height:100%;display:block;pointer-events:none';
   host.appendChild(renderer.domElement);
   scene=new THREE.Scene();
-  scene.background=new THREE.Color(0x11283c);
-  scene.fog=new THREE.Fog(0x11283c,23,48);
   camera=new THREE.OrthographicCamera(-6,6,8,-8,.1,90);
-  camera.position.set(0,27,12.5);
-  camera.lookAt(0,0,0);
-  const hemi=new THREE.HemisphereLight(0xe7f2ff,0x7d8293,2.5);scene.add(hemi);
-  scene.add(new THREE.AmbientLight(0xf6e9d6,1.25));
-  const sun=new THREE.DirectionalLight(0xffe1b0,3.35);
-  sun.position.set(-4,12,-5);sun.castShadow=false;
-  sun.shadow.mapSize.set(1024,1024);
-  sun.shadow.camera.left=-9;sun.shadow.camera.right=9;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;
-  scene.add(sun);
-  const moon=new THREE.DirectionalLight(0x508ac5,1.4);moon.position.set(4,6,6);scene.add(moon);
+  camera.position.set(0,23,18);
+  camera.lookAt(0,.4,0);
+  atmosphere=createAtmosphere(renderer,scene);
   terrain();buildForts();torches();
   size();
   window.addEventListener('resize',size,{passive:true});
@@ -971,6 +980,7 @@ function render(game){
  if(now-lastTime<41 && lastTime!==0)return;
  lastTime=now;
  syncForts(game);syncActors(game);syncBolts(game);syncTroopVfx(game);
+ atmosphere.update(now,actors.size>0);
  renderer.render(scene,camera);
 }
 function screenToBattle(clientX,clientY,rect){
@@ -979,14 +989,18 @@ function screenToBattle(clientX,clientY,rect){
  pointer.x=((clientX-rect.left)/rect.width)*2-1;
  pointer.y=-((clientY-rect.top)/rect.height)*2+1;
  raycaster.setFromCamera(pointer,camera);
- if(!raycaster.ray.intersectPlane(groundPlane,hit))return null;
+ if(!pickGround(raycaster.ray,hit))return null;
  return {x:clamp(hit.x*SCALE+W/2,0,W),y:clamp(hit.z*SCALE+H/2,0,H)};
 }
 window.Cerco3D={
  get ready(){return ready},
  render,screenToBattle,resize:size,
  syncNow:(game)=>{if(ready&&game){syncActors(game);syncForts(game);syncBolts(game);syncTroopVfx(game)}},
- info:()=>({ready,actors:actors.size,projectiles:flyingBolts.size,troopShots:troopBolts.size,attackEffects:troopVfx.size,meshes:scene?.children?.length||0,webgl:renderer?.capabilities?.isWebGL2||false}),
+ info:()=>({ready,actors:actors.size,projectiles:flyingBolts.size,troopShots:troopBolts.size,attackEffects:troopVfx.size,meshes:scene?.children?.length||0,webgl:renderer?.capabilities?.isWebGL2||false,
+  presentation:ready?{shadows:renderer.shadowMap.enabled,shadowSize:atmosphere.sun.shadow.mapSize.x,
+   toneMapping:renderer.toneMapping,environment:!!scene.environment,pixelRatio:renderer.getPixelRatio(),
+   batchedPieces,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,
+   framing:framingInfo(camera,forts)}:null}),
  debugActors:()=>[...actors.entries()].map(([id,rec])=>({id,kind:rec.model.userData.id,illustrated:!!rec.appearance,legs:rec.model.userData.legs?.length||0,
    rotations:rec.model.userData.legs?.map(l=>Number(l.rotation.x.toFixed(3)))||[]}))
 };

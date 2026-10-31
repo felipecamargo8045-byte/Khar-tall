@@ -25,6 +25,9 @@ jobs:
           node --check cerco-dos-reis/restore-original-audio.js
           node --check cerco-dos-reis/realm-ui.js
           node --check cerco-dos-reis/sw.js
+          node --check cerco-dos-reis/arena3d.js
+          node --check cerco-dos-reis/arena-atmosphere.js
+          node cerco-dos-reis/tests/presentation.mjs
           python3 - <<'PY'
           from pathlib import Path
           html=Path('cerco-dos-reis/index.html').read_text()
@@ -39,7 +42,8 @@ jobs:
           assert 'src="./voices.js?v=4"' in html
           assert 'src="./realm-ui.js?v=5"' in html
           assert 'href="./interface.css?v=36"' in html
-          for name in ['game-ui.css','interface.css','assets/interface-icons.svg','app.js','rewards.js','home.js','arena3d.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
+          assert 'src="./arena3d.js?v=14"' in html
+          for name in ['game-ui.css','interface.css','assets/interface-icons.svg','app.js','rewards.js','home.js','arena3d.js','arena-atmosphere.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
               assert Path('cerco-dos-reis',name).is_file(),name
           print('Seis ambientes, recompensas, arquivos, navegacao e scripts: OK')
           PY
@@ -75,10 +79,15 @@ jobs:
               window.SpeechSynthesisUtterance=class SpeechSynthesisUtterance{constructor(text){this.text=text}};
             });
             page.on('pageerror',e=>problems.push('js: '+String(e)));
+            page.on('console',message=>{
+              if(message.type()==='error'&&/THREE\.|WebGL|shader/i.test(message.text()))problems.push('3D: '+message.text());
+            });
             await page.goto('http://127.0.0.1:8080/?test=1',{waitUntil:'networkidle'});
             await page.waitForFunction(()=>window.Cerco3D?.ready===true,{timeout:20000});
             const threeInfo=await page.evaluate(()=>window.Cerco3D.info());
             assert.ok(threeInfo.ready && threeInfo.meshes>30,'3D real nao iniciado: '+JSON.stringify(threeInfo));
+            assert.ok(threeInfo.presentation.shadows&&threeInfo.presentation.environment,'Iluminação e sombras indisponíveis');
+            assert.ok(threeInfo.presentation.drawCalls<1500,'Orçamento de renderização excedido: '+JSON.stringify(threeInfo));
             assert.equal(await page.locator('#sceneBadge').innerText(),'3D ATIVO');
             // Tela de entrada deve ser uma página própria com economia local.
             assert.equal(await page.locator('.page.active').getAttribute('data-page'),'home');
@@ -443,6 +452,7 @@ jobs:
               return u&&window.__cercoTest.animation(u.id);
             });
             assert.ok(fighter && fighter.attacks>=1,'Tropa nao realizou ataque');
+            await page.screenshot({path:'/tmp/cerco-combate-3d.png'});
 
             // Torres devem detectar um inimigo da equipe oposta,
             // emitir projéteis e descontar vida ao acertar.
@@ -535,9 +545,13 @@ jobs:
                 'Tela da partida nao acompanhou o dispositivo: '+JSON.stringify(layout));
               assert.ok(layout.ah>layout.h*.48,'Arena ficou pequena: '+JSON.stringify(layout));
               assert.ok(layout.bottom<=layout.h+4,'Baralho ficou fora da tela: '+JSON.stringify(layout));
+              const frame=await page.evaluate(()=>window.Cerco3D.info().presentation.framing);
+              assert.ok(frame.left>=-1&&frame.right<=1&&frame.top<=1&&frame.bottom>=-1,
+                'Coroas ou bases dos castelos cortadas: '+JSON.stringify(frame));
             }
             await page.waitForTimeout(500);
             await page.screenshot({path:'/tmp/cerco-arena-mobile.png'});
+            console.log('Apresentação 3D:',JSON.stringify(await page.evaluate(()=>window.Cerco3D.info().presentation)));
             assert.equal(await page.locator('#overlay').isVisible(),false);
             await page.waitForFunction(()=>document.querySelector('#timer')?.textContent!=='03:00',{timeout:12000});
             // Saida da batalha devolve a interface do portal sem perder o progresso.
@@ -565,13 +579,14 @@ jobs:
           path: |
             /tmp/cerco-home-mobile.png
             /tmp/cerco-arena-mobile.png
+            /tmp/cerco-combate-3d.png
             /tmp/cerco-loja-mobile.png
           if-no-files-found: ignore
       - name: Confirmar arquivos no Render
         run: |
           set -e
           base=https://cerco-dos-reis-teste.onrender.com
-          for file in / /game-ui.css /app.js /arena3d.js /sfx.js /realm-ui.js /origem-apk/assets/khar_tall_guardiao.png; do
+          for file in / /game-ui.css /app.js /arena3d.js /arena-atmosphere.js /sfx.js /realm-ui.js /origem-apk/assets/khar_tall_guardiao.png; do
             for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
               if curl -fsSL --max-time 15 "$base$file" >/tmp/cerco-publicado; then break; fi
               if [ "$attempt" = 12 ]; then exit 1; fi
