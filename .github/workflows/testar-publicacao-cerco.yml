@@ -679,6 +679,8 @@ jobs:
             assert.equal(relief.kind,'liliti');assert.equal(relief.layers,2);assert.ok(relief.dust>=20);assert.equal(relief.cover,'cover');
             assert.ok((await page.locator('#cardBadges').innerText()).includes('Suprema'));
             assert.ok((await page.locator('#cardOffer').innerText()).includes('10,00'));
+            // A animação solicitada deve ser testada com movimento habilitado; acessibilidade mantém fallback estático.
+            await page.emulateMedia({reducedMotion:'no-preference'});
             await page.locator('#fullArt').click();
             assert.equal(await page.locator('#artOuter .card-light-sweep').evaluate(node=>getComputedStyle(node,'::after').animationName),'card-reflection');
             await page.locator('#artOuter').scrollIntoViewIfNeeded();
