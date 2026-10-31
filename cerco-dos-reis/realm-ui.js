@@ -13,8 +13,8 @@ const bannerStyles=[
  {id:'night',name:'Cavaleiro da Noite',code:'NOITE',color:'#3e5377',detail:'Carvão e aço'},
  {id:'sun',name:'Trono Dourado',code:'OURO',color:'#e8b858',detail:'Dourado antigo'}
 ];
+// A seleção visual antiga não concede direito a skins premium.
 let selection='steel';
-try{let value=localStorage.getItem(KEY);if(bannerStyles.some(s=>s.id===value))selection=value;}catch{}
 function label(){const s=bannerStyles.find(x=>x.id===selection);$('#shopStatus').textContent='ACABAMENTO ATUAL: '+s.name.toUpperCase();document.documentElement.style.setProperty('--chosen-banner',s.color)}
 function renderShop(){
  const grid=$('#shopGrid');grid.replaceChildren();
@@ -23,11 +23,15 @@ function renderShop(){
   btn.setAttribute('aria-pressed',entry.id===selection?'true':'false');
   const swatch=document.createElement('span');swatch.className='swatch';swatch.style.setProperty('--swatch',entry.color);
   const name=document.createElement('strong');name.textContent=entry.name;
-  const info=document.createElement('small');info.textContent=entry.id===selection?'EQUIPADO':'APLICAR GRÁTIS';
+  const info=document.createElement('small');info.textContent=entry.id===selection?'PADRÃO':'🔒 ASSINANTES MENSAIS';
   btn.append(swatch,name,info);
   btn.addEventListener('click',()=>{
-    selection=entry.id;try{localStorage.setItem(KEY,selection);}catch{}
-    label();renderShop();
+    if(entry.id!=='steel'&&!window.CercoRewards?.hasMonthlyMembership?.()){
+      $('#shopStatus').textContent='🔒 APARÊNCIAS EXCLUSIVAS DE ASSINANTES MENSAIS — ASSINATURA NÃO CONECTADA';
+      return;
+    }
+    // Só a aparência padrão está disponível neste treinamento local.
+    selection='steel';label();renderShop();
   });grid.append(btn);
  }
  label();
