@@ -41,9 +41,36 @@
 
 
 
-/* O personagem e o cenário pertencem à MESMA ilustração. Nunca recortar,
-   esticar ou inserir um segundo rosto/corpo sobre as cartas. */
-.card-relief.has-figure-depth>.card-back{filter:none;object-fit:cover!important}
+/* Enquadramento sem cortes: a imagem principal mostra 100% do retrato.
+   O mesmo arquivo ocupa as sobras de proporção no fundo, com desfoque leve.
+   Não existe segunda silhueta sobreposta nem contorno ao redor do personagem. */
+.card-relief.has-figure-depth{
+  background-image:var(--card-portrait-backdrop);
+  background-size:cover;
+  background-position:var(--crop-x,50%) var(--crop-y,42%);
+  background-repeat:no-repeat;
+  overflow:hidden;
+}
+.card-relief.has-figure-depth::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:linear-gradient(145deg,#101b2b1c,#08132044);
+  -webkit-backdrop-filter:blur(13px) brightness(.62) saturate(.88);
+  backdrop-filter:blur(13px) brightness(.62) saturate(.88);
+  pointer-events:none;
+  z-index:0;
+}
+.card-relief.has-figure-depth>.card-back{
+  object-fit:contain!important;
+  object-position:center center!important;
+  filter:none!important;
+  transform:translateZ(6px);
+  z-index:1;
+}
+.card-relief.has-figure-depth .card-inner-contour{opacity:.15}
+.art-inner:has(.card-relief.has-figure-depth){padding:0;border-width:0}
 .card-relief.has-figure-depth .card-inner-contour{transform:translateZ(14px)}
 .card-relief.has-figure-depth .card-glass-light{transform:translateZ(18px)}
 .card-relief.has-figure-depth .card-light-sweep{transform:translateZ(22px)}
