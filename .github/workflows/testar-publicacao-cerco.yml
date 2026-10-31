@@ -683,28 +683,22 @@ jobs:
               layers:node.querySelectorAll('img').length,dust:node.querySelectorAll('.card-stardust i').length,
               cover:getComputedStyle(node.querySelector('.card-back')).objectFit}));
             assert.equal(relief.kind,'liliti');assert.equal(relief.layers,2);assert.ok(relief.dust>=20);assert.equal(relief.cover,'cover');
-            // As oito artes mantêm o fundo INTEIRO e o contorno é um traço, não uma silhueta amarela.
-            const golden=await page.evaluate(()=>{
-              const stages=[...document.querySelectorAll('#cardGrid .card-relief.has-figure-outline')];
-              return {ids:stages.map(s=>s.dataset.card),
-                aligned:stages.every(s=>{
-                  const contour=s.querySelector('.card-gold-outline svg');
-                  const metal=contour?.querySelector('.gold-contour-metal');
-                  const shadow=contour?.querySelector('.gold-contour-shadow');
-                  const background=s.querySelector('.card-back');
-                  return metal&&shadow&&metal.getAttribute('fill')==='none'&&
-                    shadow.getAttribute('fill')==='none'&&metal.getAttribute('stroke').startsWith('url(#cerco-metallic-gold-')&&
-                    metal.getAttribute('points').split(' ').length>18&&
-                    !s.querySelector('.card-gold-outline img')&&
-                    getComputedStyle(background).filter==='none'&&
-                    getComputedStyle(background).objectFit==='cover';
-                }),
-                featuredGlow:getComputedStyle(document.querySelector('#artOuter .gold-contour-metal')).filter,
-                normalGlow:getComputedStyle(stages.find(s=>s.dataset.card==='soldado').querySelector('.gold-contour-metal')).filter};
+            // Todas as oito cartas de personagens mantêm a arte e o fundo, sem contorno dourado.
+            const portraits=await page.evaluate(()=>{
+              const stages=[...document.querySelectorAll('#cardGrid .card-relief.has-figure-depth')];
+              return {
+                count:stages.length,
+                noOutline:document.querySelectorAll('.card-gold-outline,.gold-contour-metal,.gold-contour-shadow').length===0,
+                backgrounds:stages.every(s=>s.querySelector('.card-back')?.naturalWidth>0&&
+                  getComputedStyle(s.querySelector('.card-back')).objectFit==='cover'&&
+                  s.querySelectorAll('img').length===2),
+                lilitiDust:document.querySelector('#artOuter .card-stardust i')!==null
+              };
             });
-            assert.equal(golden.ids.length,8,'O contorno deve alcançar os oito personagens');
-            assert.ok(golden.aligned,'Contorno preenchido ou fundo da imagem alterado');
-            assert.notEqual(golden.featuredGlow,golden.normalGlow,'Liliti não recebeu brilho adicional');
+            assert.equal(portraits.count,8,'Arte dos oito personagens ausente');
+            assert.ok(portraits.noOutline,'Contorno indesejado ainda aparece sobre os personagens');
+            assert.ok(portraits.backgrounds,'Fundo integral ou relevo das cartas foi alterado');
+            assert.ok(portraits.lilitiDust,'Brilho e partículas da Liliti foram removidos');
             assert.ok((await page.locator('#cardBadges').innerText()).includes('Suprema'));
             assert.ok((await page.locator('#cardOffer').innerText()).includes('10,00'));
             // A animação solicitada deve ser testada com movimento habilitado; acessibilidade mantém fallback estático.

@@ -44,47 +44,23 @@
 .tile-img:has(.card-relief[data-card="liliti"]){border-color:#edcb85;box-shadow:0 0 0 1px #745936,0 0 15px #efbb4d44}
 
 
-/* Contorno DOURADO METÁLICO em linha, nunca uma silhueta amarela.
-   O retrato original continua ocupando 100% da carta, com seu fundo intacto.
-   O personagem recebe somente profundidade, sombra e contorno fino. */
-.card-relief.has-figure-outline>.card-back{
+/* Profundidade das figuras preservada, sem contornos decorativos ao redor dos personagens. */
+.card-relief.has-figure-depth>.card-back{
   filter:none;transform:translateZ(0) scale(1);
 }
-.card-relief.has-figure-outline .card-subject{
+.card-relief.has-figure-depth .card-subject{
   transform:translateZ(23px) scale(1.008);
   filter:drop-shadow(0 4px 6px #0009) drop-shadow(0 1px 1px #38251780);
 }
-.card-gold-outline{
-  position:absolute;inset:0;display:block;
-  pointer-events:none;border-radius:inherit;overflow:visible;
-  transform:translateZ(28px) scale(1.008);transform-origin:center;
-}
-.card-gold-outline svg{
-  position:absolute;inset:0;width:100%;height:100%;
-  overflow:visible;display:block;pointer-events:none;
-}
-.card-gold-outline polygon{fill:none;stroke-linejoin:round}
-.card-gold-outline .gold-contour-shadow{
-  stroke-width:3.6px;opacity:.84;
-  filter:drop-shadow(0 1.4px 2px #0007);
-}
-.card-gold-outline .gold-contour-metal{
-  stroke-width:1.85px;opacity:1;
-  filter:drop-shadow(0 0 1px #8a653a99);
-}
-.card-relief.has-figure-outline .card-inner-contour{transform:translateZ(32px)}
-.card-relief.has-figure-outline .card-glass-light{transform:translateZ(35px)}
-.card-relief.has-figure-outline .card-light-sweep{transform:translateZ(38px)}
-.card-relief.has-figure-outline .card-stardust{transform:translateZ(41px)}
-.card-relief.has-figure-outline.card-touch-3d,
-.card-relief.has-figure-outline.is-shining{
+.card-relief.has-figure-depth .card-inner-contour{transform:translateZ(32px)}
+.card-relief.has-figure-depth .card-glass-light{transform:translateZ(35px)}
+.card-relief.has-figure-depth .card-light-sweep{transform:translateZ(38px)}
+.card-relief.has-figure-depth .card-stardust{transform:translateZ(41px)}
+.card-relief.has-figure-depth.card-touch-3d,
+.card-relief.has-figure-depth.is-shining{
   transform:rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)) scale(1.018);
 }
-/* Liliti recebe o mesmo ouro metálico, com reflexo mais luminoso. */
-.card-relief[data-card="liliti"] .card-gold-outline .gold-contour-metal{
-  stroke-width:2.25px;
-  filter:drop-shadow(0 0 2px #d9ba7a) drop-shadow(0 0 5px #ad824a80);
-}
+/* Liliti mantém seu brilho próprio sem qualquer contorno sobre o personagem. */
 .card-relief[data-card="liliti"] .card-subject{
   filter:drop-shadow(0 4px 6px #000a) drop-shadow(0 0 2px #be965c66);
 }
@@ -99,8 +75,7 @@
   box-shadow:0 0 7px #eddaad,0 0 12px #ae854b;
 }
 @media(prefers-reduced-motion:reduce){
-  .card-relief.has-figure-outline.card-touch-3d,
-  .card-relief.has-figure-outline.is-shining{transform:none}
-  .card-relief.has-figure-outline .card-subject{transform:translateZ(0) scale(1.008)}
-  .card-relief.has-figure-outline .card-gold-outline{transform:translateZ(0) scale(1.008)}
+  .card-relief.has-figure-depth.card-touch-3d,
+  .card-relief.has-figure-depth.is-shining{transform:none}
+  .card-relief.has-figure-depth .card-subject{transform:translateZ(0) scale(1.008)}
 }
