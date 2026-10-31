@@ -67,13 +67,15 @@ jobs:
             const browser=await chromium.launch({headless:true,args:['--no-sandbox','--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
             const problems=[];
             const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
-            await page.route('https://cerco-dos-reis-loja.onrender.com/collection',async route=>{
-              const options=route.request().method()==='OPTIONS';
-              await route.fulfill({status:options?204:200,headers:{'Access-Control-Allow-Origin':'http://127.0.0.1:8080','Access-Control-Allow-Headers':'Authorization,Content-Type','Access-Control-Allow-Methods':'GET,OPTIONS','Content-Type':'application/json'},body:options?'':JSON.stringify({exists:false,owned:[],equipped:null,orders:[]})});
-            });
             // Motor TTS de teste: valida falas, perfis e controles independentemente
             // das vozes instaladas no runner. No Android real o sistema usa as vozes pt-BR do aparelho.
             await page.addInitScript(()=>{
+              const realFetch=window.fetch.bind(window);
+              window.fetch=(input,options)=>{
+                const url=typeof input==='string'?input:input?.url;
+                if(url==='https://cerco-dos-reis-loja.onrender.com/collection')return Promise.resolve(new Response(JSON.stringify({exists:false,owned:[],equipped:null,orders:[]}),{status:200,headers:{'Content-Type':'application/json'}}));
+                return realFetch(input,options);
+              };
               const synth={
                 speaking:false,pending:false,cancel(){this.speaking=false},
                 getVoices(){return [{name:'Português Brasil 1',lang:'pt-BR',default:true},
@@ -408,7 +410,7 @@ jobs:
             // Centro + inimigo a direita: tropas desviam juntas para defender/atacar.
             await page.evaluate(()=>window.__cercoTest.reset());
             await page.locator('#start').click();
-            await page.evaluate(()=>window.__cercoTest.createEnemy('soldado',266,313));
+            await page.evaluate(()=>window.__cercoTest.createEnemy('soldado',310,313));
             await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.57}});
             await page.waitForTimeout(90);
             group=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
@@ -418,7 +420,7 @@ jobs:
             // Unidade unica no centro identifica o inimigo em qualquer rota.
             await page.evaluate(()=>window.__cercoTest.reset());
             await page.locator('#start').click();
-            await page.evaluate(()=>window.__cercoTest.createEnemy('soldado',266,315));
+            await page.evaluate(()=>window.__cercoTest.createEnemy('soldado',310,315));
             await page.locator('#hand button').nth(2).click();
             await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.57}});
             await page.waitForTimeout(90);
