@@ -6,13 +6,28 @@
 'use strict';
 const KEY='cerco-dos-reis-vozes-v1';
 const CAST={
- arqueiro:{name:'Arqueiro',style:'jovem, ágil e preciso',lines:['Alvo à vista!','Disparo certeiro!'],hurt:['Preciso de cobertura!']},
- soldado:{name:'Soldado',style:'guerreiro firme',lines:['Pela linha de frente!','Minha espada não falha!'],hurt:['Ainda estou de pé!']},
- colosso:{name:'Colosso',style:'cavernoso e pesado',lines:['Vou esmagar!','O chão vai tremer!'],hurt:['Isso não me detém!']},
- guardiao:{name:'Guardião',style:'solene, protetor e ancestral',lines:['Nada passa!','Protegerei o reino!'],hurt:['Minha defesa resiste!']},
- batedor:{name:'Batedor',style:'rápido e ameaçador',lines:['Você está marcado!','Não existe fuga!'],hurt:['Ainda posso lutar!']},
- rei:{name:'Rei',style:'imponente e majestoso',lines:['Pelo meu reino!','O trono será defendido!'],hurt:['Não me derrotarão!'],victory:['A vitória é nossa!']},
- liliti:{name:'Liliti',style:'misteriosa, elegante e encantadora',lines:['Sua vontade é minha.','Sinta o meu encanto.'],hurt:['Você vai se arrepender!']},
+ arqueiro:{name:'Arqueiro',style:'arqueiro jovem, vigilante das pontes, arco certeiro',
+   lines:['As pontes não podem cair!','Pelo reino, flechas ao alto!','O trono ainda resiste!'],
+   hurt:['A muralha precisa de cobertura!']},
+ soldado:{name:'Soldado',style:'soldado fiel, guerreiro do reino dividido',
+   lines:['Uma espada pelo nosso povo.','Não deixem o rei sozinho!','Ninguém atravessa esta ponte!'],
+   hurt:['Ainda defendo o juramento!']},
+ colosso:{name:'Colosso',style:'colosso gigantesco, especialista em romper muralhas',
+   lines:['Minhas passadas abrem o cerco.','Pela brecha na muralha!','O castelo vai ruir!'],
+   hurt:['Pedra não se ajoelha!']},
+ guardiao:{name:'Guardião',style:'guardião ancestral e juramentado ao trono',
+   lines:['Meu juramento vive além da guerra.','Para alcançar o rei, atravesse minha guarda!','Nem dois reinos romperão esta defesa.'],
+   hurt:['Ainda guardo o trono!']},
+ batedor:{name:'Batedor',style:'batedor veloz, marca o inimigo antes do segundo golpe',
+   lines:['Minha marca precede a sentença!','Primeira marca. Segundo golpe!','A próxima descarga será a última!'],
+   hurt:['Minha marca ainda queima!']},
+ rei:{name:'Rei',style:'rei de uma guerra entre irmãos, imponente e atormentado',
+   lines:['Dois irmãos. Um reino dividido.','O povo não pagará por esta guerra!','Não entregarei meu trono ao sangue!'],
+   hurt:['A coroa não vale outra vida!'],
+   victory:['Que este reino encontre a paz!']},
+ liliti:{name:'Liliti',style:'Liliti ruiva, misteriosa, ligada aos segredos da guerra entre irmãos',
+   lines:['A história esqueceu minha voz.','Nem toda guerra nasce do ódio.','O que foi selado ainda pulsa.'],
+   hurt:['Vocês não conhecem a verdade!']},
  lobo:{name:'Lobo',style:'mordida original, sem fala ou uivo',lines:[],hurt:[]}
 };
 let enabled=true;
@@ -30,7 +45,7 @@ function load(){
  if(!Ctx)return Promise.resolve(false);
  if(!context)context=new Ctx();
  if(!manifest){
-  return fetch('./voice-pack/manifest.json?v=1',{cache:'force-cache'}).then(async r=>{
+  return fetch('./voice-pack/manifest.json?v=2',{cache:'force-cache'}).then(async r=>{
     if(!r.ok)throw Error('Pacote de dublagem não publicado');
     manifest=await r.json();
     const jobs=[];
@@ -39,7 +54,7 @@ function load(){
        files.forEach((file,index)=>{
         const key=id+':'+event+':'+index;
         if(pending.has(key))return;
-        const promise=fetch('./voice-pack/'+file,{cache:'force-cache'})
+        const promise=fetch('./voice-pack/'+file+'?v=2',{cache:'force-cache'})
           .then(r=>{if(!r.ok)throw Error('Arquivo ausente: '+file);return r.arrayBuffer()})
           .then(bytes=>context.decodeAudioData(bytes))
           .then(buffer=>{samples.set(key,buffer);return true})
