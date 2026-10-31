@@ -573,6 +573,7 @@ function createActor(u){
  const shadow=fakeShadow(u.card.id==='colosso'?.95:u.card.id==='lobo'?.75:.72);
  scene.add(model);scene.add(bar);scene.add(shadow);
  scene.add(shadowProxy);
+ atmosphere.invalidate();
  if(appearance)scene.add(appearance.mesh);
  return {model,bar,shadow,shadowProxy,appearance,side:u.side,lastFrame:0,position:new THREE.Vector3()};
 }
@@ -581,6 +582,7 @@ function syncActors(game){
  for(const [id,rec] of actors){
   if(!live.has(id)){
     scene.remove(rec.model);scene.remove(rec.bar);scene.remove(rec.shadow);scene.remove(rec.shadowProxy);
+    atmosphere.invalidate();
     if(rec.appearance){scene.remove(rec.appearance.mesh);rec.appearance.mesh.material.dispose();rec.appearance.sheet.dispose();}
     actors.delete(id);
   }

@@ -42,7 +42,7 @@ jobs:
           assert 'src="./voices.js?v=4"' in html
           assert 'src="./realm-ui.js?v=5"' in html
           assert 'href="./interface.css?v=36"' in html
-          assert 'src="./arena3d.js?v=15"' in html
+          assert 'src="./arena3d.js?v=16"' in html
           for name in ['game-ui.css','interface.css','assets/interface-icons.svg','app.js','rewards.js','home.js','arena3d.js','arena-atmosphere.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
               assert Path('cerco-dos-reis',name).is_file(),name
           print('Seis ambientes, recompensas, arquivos, navegacao e scripts: OK')
