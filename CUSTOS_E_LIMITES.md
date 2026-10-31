@@ -65,3 +65,8 @@ O APK mantém a assinatura original. Para atualizar, instalar sobre a versão an
 A loja do Cerco usa seu próprio catálogo, pedidos e coleção. O serviço `cerco-dos-reis-loja` utiliza o plano Free do Render, com parada por inatividade; não foi contratado plano pago. O banco utiliza o projeto Neon existente, com o esquema `cerco_shop` e um usuário restrito, sem leitura dos pedidos do Khar Tall. Os limites do projeto Neon não foram ampliados. A InfinitePay recebe compras avulsas; permanecem somente as tarifas de venda autorizadas pelo usuário. Não há mensalidade de pagamentos, geração de mídia paga ou serviços de IA durante as partidas.
 
 O código privado da coleção fica no navegador do comprador e pode ser guardado/restaurado pela interface; o banco armazena somente seu hash. Não usar esse código como senha de contas do Khar Tall. Retorno de checkout e webhook exigem confirmação em `payment_check` antes da entrega. Arquivos privados de configuração ficam nas variáveis do serviço, fora do Git.
+
+
+### Carta Liliti — 31/10/2026
+
+A carta Liliti tem raridade Suprema e preço único de R$ 10,00. A compra inclui seu desbloqueio e a progressão até o nível 100, sem cobrança adicional por nível para essa carta. O custo de invocação continua em 6 de mana. Os direitos da carta ficam em tabelas próprias dentro de `cerco_shop`, separados das skins de R$ 2,50. A migração é aditiva e os testes usam PostgreSQL isolado e respostas simuladas de pagamento, sem compras reais. O serviço, o banco e o recebedor existentes são preservados; nenhuma infraestrutura ou geração de mídia paga foi adicionada.

@@ -10,6 +10,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="stylesheet" href="./game-ui.css?v=18">
 <link rel="stylesheet" href="./interface.css?v=50">
+<link rel="stylesheet" href="./card-art.css?v=1">
 </head>
 <body>
 <div class="aurora" aria-hidden="true"></div>
@@ -171,7 +172,7 @@
  <div class="catalog-layout"><aside class="panel card-list"><div class="overline">SUAS CARTAS</div><div id="cardGrid" class="card-grid"></div></aside>
  <article class="panel detail"><div class="detail-row">
   <div class="art-outer" id="artOuter"><div class="art-inner"><img id="fullArt" src="" alt="Personagem completo"></div></div>
-  <div class="facts"><div class="overline" id="cardType">TROPA</div><h2 id="cardName">Lobo</h2><p id="cardText"></p><div id="cardBadges" class="badges"></div><div id="cardStats" class="stats"></div>
+  <div class="facts"><div class="overline" id="cardType">TROPA</div><h2 id="cardName">Lobo</h2><p id="cardText"></p><div id="cardBadges" class="badges"></div><button id="cardOffer" class="card-offer" data-cerco-buy="card_liliti" type="button" hidden>OBTER LILITI · R$ 10,00</button><div id="cardStats" class="stats"></div>
    <div class="ability"><b id="cardSkill"></b><span id="cardSkillText"></span></div>
    <div class="exp-label"><span>PROGRESSO</span><b id="xpLabel">0 / 100 XP</b></div><div class="exp-bar"><div id="xpFill"></div></div>
   </div>
@@ -199,8 +200,8 @@
 <section class="page" data-page="profile">
  <div class="view-heading"><div class="overline">SALA DO COMANDANTE</div><h1>SEU PERFIL</h1><p>Conquistas locais de treinamento, independentes da conta original.</p></div>
  <div class="profile-layout">
-  <div class="profile-identity panel"><div class="profile-banner"><img src="./origem-apk/assets/portrait_rei.webp" alt="Rei de Khar Thal"></div><div class="profile-content"><div class="overline">COMANDANTE</div><h2>VICTORYNO</h2><span class="vip-flag">♛ TODAS AS CARTAS LIBERADAS NO TREINO</span></div></div>
-  <div class="profile-records"><div class="profile-kpis"><div class="profile-kpi"><small>VITÓRIAS NO TREINO</small><strong id="profileWins">0</strong><span>Contra IA</span></div><div class="profile-kpi"><small>ARSENAL</small><strong>11 / 11</strong><span>Cartas de treino</span></div><div class="profile-kpi"><small>CARTAS EVOLUÍDAS</small><strong id="profileEvolved">0</strong><span>Progresso local</span></div></div>
+  <div class="profile-identity panel"><div class="profile-banner"><img src="./origem-apk/assets/portrait_rei.webp" alt="Rei de Khar Thal"></div><div class="profile-content"><div class="overline">COMANDANTE</div><h2>VICTORYNO</h2><span class="vip-flag">♛ 10 CARTAS DISPONÍVEIS</span></div></div>
+  <div class="profile-records"><div class="profile-kpis"><div class="profile-kpi"><small>VITÓRIAS NO TREINO</small><strong id="profileWins">0</strong><span>Contra IA</span></div><div class="profile-kpi"><small>ARSENAL</small><strong id="profileCardCount">10 / 11</strong><span>Cartas de treino</span></div><div class="profile-kpi"><small>CARTAS EVOLUÍDAS</small><strong id="profileEvolved">0</strong><span>Progresso local</span></div></div>
    <div class="profile-inventory panel"><div class="overline">INVENTÁRIO DO COMANDANTE</div><h3>Cartas em destaque</h3><div id="profileCards" class="profile-cards"></div></div>
    <div class="profile-actions"><span class="profile-safety">♛ Compras do Cerco ficam na sua coleção. O progresso de treinamento continua salvo neste aparelho.</span><button id="clearProgress" class="secondary-btn" type="button">Limpar progresso do treino</button></div>
   </div>
@@ -213,9 +214,11 @@
 <script src="./rewards.js?v=3" defer></script>
 <script src="./home.js?v=5" defer></script>
 <script src="./arena-layout.js?v=2" defer></script>
-<script src="./app.js?v=28" defer></script>
-<script src="./realm-ui.js?v=6" defer></script>
-<script src="./store.js?v=2" defer></script>
-<script type="module" src="./arena3d.js?v=21"></script>
+<script src="./card-art.js?v=2" defer></script>
+<script src="./liliti-healing.js?v=1" defer></script>
+<script src="./app.js?v=29" defer></script>
+<script src="./realm-ui.js?v=7" defer></script>
+<script src="./store.js?v=3" defer></script>
+<script type="module" src="./arena3d.js?v=22"></script>
 </body>
 </html>

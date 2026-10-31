@@ -1,18 +1,30 @@
 name: Testar as seis telas do Cerco dos Reis
 on:
   push:
-    branches: [cerco-dos-reis-migracao-2026-10]
+    branches: [cerco-dos-reis-migracao-2026-10, cerco-liliti-cartas-20261031]
     paths:
       - 'cerco-dos-reis/**'
+      - 'cerco-commerce/**'
       - '.github/workflows/testar-publicacao-cerco.yml'
   workflow_dispatch:
 jobs:
   testar-jogo:
     runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cerco_test
+          POSTGRES_PASSWORD: cerco_test_local
+          POSTGRES_DB: cerco_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U cerco_test -d cerco_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: cerco-dos-reis-migracao-2026-10
+          ref: ${{ github.ref }}
       - name: Validar scripts e estrutura das telas
         run: |
           set -e
@@ -32,6 +44,8 @@ jobs:
           node cerco-dos-reis/tests/presentation.mjs
           node --check cerco-dos-reis/character-cloth.js
           node --check cerco-dos-reis/store.js
+          node --check cerco-dos-reis/card-art.js
+          node cerco-dos-reis/tests/liliti.mjs
           node --check cerco-commerce/server.cjs
           node --test cerco-commerce/tests/provider.cjs
           python3 - <<'PY'
@@ -42,17 +56,23 @@ jobs:
           for name in ['#shopGrid','#featuredCards','#cardGrid','#arena']:
               assert name[1:] in html, name
           assert 'https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/' not in html
-          assert 'src="./app.js?v=28"' in html
+          assert 'src="./app.js?v=29"' in html
           assert 'src="./rewards.js?v=3"' in html
           assert 'src="./home.js?v=5"' in html
           assert 'src="./voices.js?v=5"' in html
-          assert 'src="./realm-ui.js?v=6"' in html
+          assert 'src="./realm-ui.js?v=7"' in html
           assert 'href="./interface.css?v=50"' in html
-          assert 'src="./arena3d.js?v=21"' in html
+          assert 'src="./arena3d.js?v=22"' in html
           for name in ['game-ui.css','interface.css','assets/interface-icons.svg','app.js','rewards.js','home.js','arena3d.js','arena-atmosphere.js','arena-layout.js','character-models.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
               assert Path('cerco-dos-reis',name).is_file(),name
           print('Seis ambientes, recompensas, arquivos, navegacao e scripts: OK')
           PY
+      - name: Testar compra, entrega e reembolso da Liliti em banco isolado
+        env:
+          CERCO_TEST_DATABASE_URL: postgres://cerco_test:cerco_test_local@127.0.0.1:5432/cerco_test
+        run: |
+          npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+          node --test cerco-commerce/tests/integration.cjs
       - name: Instalar navegador de teste
         run: |
           npm install --prefix /tmp/cerco-tests --no-audit --no-fund playwright@1.56.1
@@ -75,7 +95,7 @@ jobs:
               const realFetch=window.fetch.bind(window);
               window.fetch=(input,options)=>{
                 const url=typeof input==='string'?input:input?.url;
-                if(url==='https://cerco-dos-reis-loja.onrender.com/collection')return Promise.resolve(new Response(JSON.stringify({exists:false,owned:[],equipped:null,orders:[]}),{status:200,headers:{'Content-Type':'application/json'}}));
+                if(url==='https://cerco-dos-reis-loja.onrender.com/collection')return Promise.resolve(new Response(JSON.stringify({exists:true,owned:[],cards:window.__testOwnedCards||[],equipped:null,orders:[]}),{status:200,headers:{'Content-Type':'application/json'}}));
                 return realFetch(input,options);
               };
               const synth={
@@ -409,12 +429,40 @@ jobs:
               }
             }
 
+            // Soldados em dupla e Liliti só após confirmação da coleção.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            const noPurchase=await page.evaluate(()=>window.__cercoTest.cast('liliti'));
+            assert.equal(noPurchase.length,0,'Liliti foi liberada sem compra');
+            await page.evaluate(async()=>{window.__testOwnedCards=['liliti'];await window.CercoStore.sync()});
+            await page.evaluate(()=>window.__cercoTest.setProgress('liliti',99,99));
+            const paid=await page.evaluate(()=>window.__cercoTest.cast('liliti'));
+            assert.equal(await page.evaluate(()=>window.__cercoTest.progress('liliti').level),100,'Liliti não alcançou nível 100');
+            assert.equal(paid.filter(u=>u.card==='liliti').length,1);
+            await page.evaluate(()=>window.__cercoTest.setMana(10));
+            const duplicate=await page.evaluate(()=>window.__cercoTest.cast('liliti'));
+            assert.equal(duplicate.filter(u=>u.card==='liliti').length,1,'Invocou duas Lilitis vivas');
+            await page.evaluate(async()=>{window.__testOwnedCards=[];await window.CercoStore.sync();window.__cercoTest.setProgress('liliti',1,0)});
+            for(const level of [1,40,60,80,100]){
+              const healed=await page.evaluate(level=>window.__cercoTest.healImpact(level,10),level);
+              const soldiers=healed.allies.slice(1);
+              assert.ok(soldiers[0].hp>100,'Cura não saiu do impacto real');
+              assert.equal(soldiers[1].hp>100,level>=40,'Cura da outra rota no marco errado');
+              assert.ok(soldiers.reduce((sum,u)=>sum+u.hp-100,0)<=5.0001,'Usou dano excedente para gerar cura');
+              assert.equal(healed.towers[0]>1000,level>=60);
+              assert.equal(healed.towers[1]>1000,level>=80);
+              assert.equal(healed.castle>2000,level===100);
+            }
+
             // Centro + inimigo a direita: tropas desviam juntas para defender/atacar.
             await page.evaluate(()=>window.__cercoTest.reset());
             await page.locator('#start').click();
             await page.evaluate(()=>window.__cercoTest.createEnemy('soldado',310,313));
             await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.57}});
-            await page.waitForTimeout(90);
+            await page.waitForFunction(()=>{
+              const ally=window.__cercoTest.units().filter(u=>u.side==='ally');
+              return ally.length===2&&ally.every(u=>u.lane===1)&&ally.some(u=>u.targetId);
+            },null,{timeout:5000});
             group=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
             assert.deepEqual(group.map(u=>u.lane),[1,1],'Inimigo proximo deve alterar a rota do grupo');
             assert.ok(group.some(u=>u.targetId),'Grupo nao adquiriu alvo proximo');
@@ -425,11 +473,14 @@ jobs:
             await page.evaluate(()=>window.__cercoTest.createEnemy('soldado',310,315));
             await page.locator('#hand button').nth(2).click();
             await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.57}});
-            await page.waitForTimeout(90);
+            await page.waitForFunction(()=>{
+              const ally=window.__cercoTest.units().filter(u=>u.side==='ally');
+              return ally.length===2&&ally.every(u=>u.lane===1&&u.targetId);
+            },null,{timeout:5000});
             const solo=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
-            assert.equal(solo.length,1);
-            assert.equal(solo[0].lane,1,'Unidade solitaria ignorou inimigo proximo');
-            assert.ok(solo[0].targetId,'Unidade solitaria nao perseguiu o inimigo');
+            assert.equal(solo.length,2,'Soldados devem invocar duas unidades');
+            assert.ok(solo.every(u=>u.lane===1),'Soldados ignoraram inimigo próximo');
+            assert.ok(solo.every(u=>u.targetId),'Soldados não adquiriram alvo');
 
             // Ponto livre: colocar no lado superior nao teleporta de volta a uma origem fixa.
             await page.evaluate(()=>window.__cercoTest.reset());
@@ -625,7 +676,32 @@ jobs:
             await page.locator('#navigation [data-view="home"]').click();
             assert.equal(await page.locator('#homeOpened').innerText(),'1','Presente aberto não foi atualizado na home');
             assert.equal(await page.locator('#homeWins').innerText(),'1','Vitória não foi atualizada na home');
+            await page.locator('#navigation [data-view="cards"]').click();
+            await page.getByRole('button',{name:/^Liliti, nível/}).click();
+            await page.waitForFunction(()=>document.querySelector('#fullArt')?.complete&&document.querySelector('#fullArt')?.naturalWidth>0);
+            const relief=await page.locator('#artOuter .card-relief').evaluate(node=>({kind:node.dataset.card,
+              layers:node.querySelectorAll('img').length,dust:node.querySelectorAll('.card-stardust i').length,
+              cover:getComputedStyle(node.querySelector('.card-back')).objectFit}));
+            assert.equal(relief.kind,'liliti');assert.equal(relief.layers,2);assert.ok(relief.dust>=20);assert.equal(relief.cover,'cover');
+            assert.ok((await page.locator('#cardBadges').innerText()).includes('Suprema'));
+            assert.ok((await page.locator('#cardOffer').innerText()).includes('10,00'));
+            // A animação solicitada deve ser testada com movimento habilitado; acessibilidade mantém fallback estático.
+            await page.emulateMedia({reducedMotion:'no-preference'});
+            await page.locator('#fullArt').click();
+            // A captura de estilo ocorre no mesmo evento de toque; o runner 3D pode atrasar a inspeção por >950ms.
+            const shining=await page.evaluate(()=>{
+              const art=document.getElementById('fullArt');
+              art.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch'}));
+              const stage=art.closest('.card-relief');
+              return {active:stage?.classList.contains('is-shining'),
+                animation:getComputedStyle(stage.querySelector('.card-light-sweep'),'::after').animationName};
+            });
+            assert.ok(shining.active,'Toque não ativou o brilho da carta');
+            assert.equal(shining.animation,'card-reflection','Reflexo não se iniciou no toque');
+            await page.locator('#artOuter').scrollIntoViewIfNeeded();
+            await page.screenshot({path:'/tmp/cerco-cartas-liliti.png'});
             await page.locator('#navigation [data-view="shop"]').click();
+            assert.equal(await page.locator('.liliti-store-card [data-cerco-buy="card_liliti"]').count(),1);
             await page.screenshot({path:'/tmp/cerco-loja-mobile.png'});
             assert.deepEqual(problems,[]);
             const demoContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1,recordVideo:{dir:'/tmp/cerco-recording',size:{width:390,height:844}}});
@@ -659,6 +735,7 @@ jobs:
             /tmp/cerco-combate-3d.png
             /tmp/cerco-personagens-3d.png
             /tmp/cerco-identidade-3d.png
+            /tmp/cerco-cartas-liliti.png
             /tmp/cerco-batalha-3d.webm
             /tmp/cerco-loja-mobile.png
           if-no-files-found: ignore

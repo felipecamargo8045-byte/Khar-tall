@@ -423,6 +423,7 @@ function syncActors(game){
    const ratio=clamp(u.hp/u.maxHp,0,1);
    fill.scale.x=Math.max(.01,ratio);
    fill.position.x=-rec.bar.userData.width*(1-ratio)/2;
+   fill.material.color.setHex(u.healPulse>0?0xb2efbe:u.side==='ally'?0x80e0e8:0xed879a);
   }
   const polarity=u.side==='ally'?-1:1;
   // Frontal para alvo real, ou em direção ao castelo adversário.
@@ -519,7 +520,7 @@ function syncBolts(game){
 }
 
 // Cada personagem mantém sua assinatura de ataque nos gestos, projéteis e impactos.
-const ATTACK_COLORS={arrow:0xffe6a7,mark:0xe25458,enchant:0xe8bb65,shield:0xa1eaf1,
+const ATTACK_COLORS={heal:0x96e9bb,arrow:0xffe6a7,mark:0xe25458,enchant:0xe8bb65,shield:0xa1eaf1,
  slash:0xffeac6,bite:0xffb1a0,slam:0xffa45c,royal:0xf4ca72};
 function emissiveMaterial(color,opacity=1){
  return new THREE.MeshBasicMaterial({color,transparent:true,opacity,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
@@ -569,7 +570,10 @@ function attackProjectile(shot){
 function buildHitEffect(fx){
  const color=ATTACK_COLORS[fx.kind]||0xffdeaa,group=new THREE.Group();
  const kind=fx.kind;
- if(kind==='bite'){
+ if(kind==='heal'){
+   const ring=new THREE.Mesh(new THREE.TorusGeometry(.23,.018,5,24),emissiveMaterial(0x9ee8ba,.8));group.add(ring);
+   for(const [w,h] of [[.07,.28],[.28,.07]])put(group,box(w,h,.025,emissiveMaterial(0xe7d4a0,.9)),0,0,0);
+ }else if(kind==='bite'){
    for(const side of [-1,0,1]){
      const line=box(.045,.48,.04,emissiveMaterial(0xffaca0,.90));
      line.rotation.z=.42;
