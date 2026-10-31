@@ -13,16 +13,38 @@
  const crops={lobo:.80,arqueiro:.58,soldado:.52,colosso:.5,guardiao:.52,batedor:.58,rei:.5,liliti:.5};
  const files={lobo:'lobo',arqueiro:'aprendiz_arqueiro',soldado:'aprendiz_soldado',colosso:'colosso',guardiao:'guardiao',batedor:'batedor',rei:'rei',liliti:'lilith_ruiva'};
  const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+ // O contorno é uma linha metálica transparente, jamais uma silhueta preenchida.
+ let goldNumber=0;
+ function createGoldContour(id){
+  const svgNS='http://www.w3.org/2000/svg',wrap=document.createElement('span');
+  wrap.className='card-gold-outline';wrap.setAttribute('aria-hidden','true');
+  const svg=document.createElementNS(svgNS,'svg');
+  svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','none');
+  const defs=document.createElementNS(svgNS,'defs'),gradient=document.createElementNS(svgNS,'linearGradient');
+  const gradientId='cerco-metallic-gold-'+(++goldNumber);
+  gradient.setAttribute('id',gradientId);gradient.setAttribute('x1','0%');gradient.setAttribute('y1','0%');
+  gradient.setAttribute('x2','90%');gradient.setAttribute('y2','100%');
+  for(const [offset,color] of [['0%','#8b612d'],['20%','#d9bc7e'],['42%','#aa7b36'],['64%','#f0d6a0'],['83%','#95703a'],['100%','#c5a064']]){
+   const stop=document.createElementNS(svgNS,'stop');stop.setAttribute('offset',offset);stop.setAttribute('stop-color',color);gradient.append(stop);
+  }
+  defs.append(gradient);svg.append(defs);
+  const points=shapes[id].split(',').map(pair=>pair.trim().split(/\s+/).map(Number.parseFloat).join(',')).join(' ');
+  for(const [kind,stroke] of [['gold-contour-shadow','#48331d'],['gold-contour-metal',`url(#${gradientId})`]]){
+   const polygon=document.createElementNS(svgNS,'polygon');
+   polygon.setAttribute('class',kind);polygon.setAttribute('points',points);
+   polygon.setAttribute('fill','none');polygon.setAttribute('stroke',stroke);
+   polygon.setAttribute('stroke-linejoin','round');polygon.setAttribute('vector-effect','non-scaling-stroke');
+   svg.append(polygon);
+  }
+  wrap.append(svg);return wrap;
+ }
  let flashing='',flashUntil=0;
  function fitSubject(stage){
-  const image=stage.querySelector('.card-back'),copy=stage.querySelector('.card-subject img'),gold=stage.querySelector('.card-gold-outline img');
+  const image=stage.querySelector('.card-back'),copy=stage.querySelector('.card-subject img');
   if(!image?.naturalWidth||!copy||!stage.clientWidth||!stage.clientHeight)return;
   const w=stage.clientWidth,h=stage.clientHeight,scale=Math.max(w/image.naturalWidth,h/image.naturalHeight);
   const iw=image.naturalWidth*scale,ih=image.naturalHeight*scale;
-  for(const [property,value]of Object.entries({width:iw+'px',height:ih+'px',left:(w-iw)*(crops[stage.dataset.card]??.5)+'px',top:(h-ih)*(stage.dataset.card==='liliti'?.12:.4)+'px'})){
-   copy.style.setProperty(property,value,'important');
-   gold?.style.setProperty(property,value,'important');
-  }
+  for(const [property,value]of Object.entries({width:iw+'px',height:ih+'px',left:(w-iw)*(crops[stage.dataset.card]??.5)+'px',top:(h-ih)*(stage.dataset.card==='liliti'?.12:.4)+'px'}))copy.style.setProperty(property,value,'important');
  }
  function decorate(image,id){
   if(!image||!id)return;
@@ -30,11 +52,8 @@
   if(!stage){
    stage=document.createElement('span');stage.className='card-relief';
    image.replaceWith(stage);stage.append(image);image.classList.add('card-back');image.addEventListener('load',()=>fitSubject(stage));
-   // O dourado acompanha a silhueta recortada, não a moldura retangular da carta.
-   if(shapes[id]){
-    const outline=document.createElement('span');outline.className='card-gold-outline';outline.setAttribute('aria-hidden','true');
-    const goldImage=document.createElement('img');goldImage.alt='';goldImage.draggable=false;outline.append(goldImage);stage.append(outline);
-   }
+   // Linha dourada sobre o perímetro do personagem, com o fundo original intacto.
+   if(shapes[id])stage.append(createGoldContour(id));
    const subject=document.createElement('span');subject.className='card-subject';subject.setAttribute('aria-hidden','true');
    const duplicate=document.createElement('img');duplicate.alt='';duplicate.draggable=false;subject.append(duplicate);stage.append(subject);
    for(const name of ['card-inner-contour','card-glass-light','card-light-sweep']){
@@ -42,9 +61,8 @@
    }
   }
   stage.dataset.card=id;stage.classList.toggle('has-figure-outline',Boolean(shapes[id]));stage.style.setProperty('--crop-y',id==='liliti'?'12%':'40%');stage.style.setProperty('--crop-x',((crops[id]??.5)*100)+'%');stage.style.setProperty('--figure',`polygon(${shapes[id]||'0 0,100% 0,100% 100%,0 100%'})`);
-  const copy=stage.querySelector('.card-subject img'),gold=stage.querySelector('.card-gold-outline img');
+  const copy=stage.querySelector('.card-subject img');
   if(copy.getAttribute('src')!==image.getAttribute('src'))copy.src=image.getAttribute('src');
-  if(gold&&gold.getAttribute('src')!==image.getAttribute('src'))gold.src=image.getAttribute('src');
   if(id==='liliti'&&!stage.querySelector('.card-stardust')){
    const dust=document.createElement('span');dust.className='card-stardust';dust.setAttribute('aria-hidden','true');
    for(let n=0;n<22;n++){
