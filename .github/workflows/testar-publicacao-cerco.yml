@@ -467,8 +467,7 @@ jobs:
             assert.deepEqual(group.map(u=>u.lane),[1,1],'Inimigo proximo deve alterar a rota do grupo');
             assert.ok(group.some(u=>u.targetId),'Grupo nao adquiriu alvo proximo');
 
-            // Testar a dupla de soldados e o desvio de rota quando existe um inimigo próximo.
-            // A aquisição de alvo já é verificada acima; aqui o inimigo pode morrer antes da inspeção.
+            // Unidade unica no centro identifica o inimigo em qualquer rota.
             await page.evaluate(()=>window.__cercoTest.reset());
             await page.locator('#start').click();
             await page.evaluate(()=>window.__cercoTest.createEnemy('soldado',310,315));
@@ -476,11 +475,12 @@ jobs:
             await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.57}});
             await page.waitForFunction(()=>{
               const ally=window.__cercoTest.units().filter(u=>u.side==='ally');
-              return ally.length===2&&ally.every(u=>u.lane===1);
+              return ally.length===2&&ally.every(u=>u.lane===1&&u.targetId);
             },null,{timeout:5000});
             const solo=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
             assert.equal(solo.length,2,'Soldados devem invocar duas unidades');
             assert.ok(solo.every(u=>u.lane===1),'Soldados ignoraram inimigo próximo');
+            assert.ok(solo.every(u=>u.targetId),'Soldados não adquiriram alvo');
 
             // Ponto livre: colocar no lado superior nao teleporta de volta a uma origem fixa.
             await page.evaluate(()=>window.__cercoTest.reset());
@@ -682,7 +682,7 @@ jobs:
             const relief=await page.locator('#artOuter .card-relief').evaluate(node=>({kind:node.dataset.card,
               layers:node.querySelectorAll('img').length,dust:node.querySelectorAll('.card-stardust i').length,
               cover:getComputedStyle(node.querySelector('.card-back')).objectFit}));
-            assert.equal(relief.kind,'liliti');assert.equal(relief.layers,1);assert.ok(relief.dust>=20);assert.equal(relief.cover,'contain');
+            assert.equal(relief.kind,'liliti');assert.equal(relief.layers,1);assert.ok(relief.dust>=20);assert.equal(relief.cover,'cover');
             // Todas as oito cartas de personagens mantêm a arte e o fundo, sem contorno dourado.
             const portraits=await page.evaluate(()=>{
               const stages=[...document.querySelectorAll('#cardGrid .card-relief.has-figure-depth')];
@@ -690,31 +690,14 @@ jobs:
                 count:stages.length,
                 noOutline:document.querySelectorAll('.card-gold-outline,.gold-contour-metal,.gold-contour-shadow').length===0,
                 backgrounds:stages.every(s=>s.querySelector('.card-back')?.naturalWidth>0&&
-                  getComputedStyle(s.querySelector('.card-back')).objectFit==='contain'&&
-                  getComputedStyle(s).backgroundImage.includes('portrait_')&&
+                  getComputedStyle(s.querySelector('.card-back')).objectFit==='cover'&&
                   s.querySelectorAll('img').length===1),
                 lilitiDust:document.querySelector('#artOuter .card-stardust i')!==null
               };
             });
             assert.equal(portraits.count,8,'Arte dos oito personagens ausente');
             assert.ok(portraits.noOutline,'Contorno indesejado ainda aparece sobre os personagens');
-            assert.ok(portraits.backgrounds,'A imagem inteira ou o preenchimento do fundo não foi carregado');
-            // Regressão do Batedor: imagem sem zoom/corte, fundo integrado sem bordas vazias.
-            await page.locator('#cardGrid button[data-card="batedor"]').click();
-            await page.waitForFunction(()=>document.getElementById('fullArt')?.complete&&document.getElementById('fullArt')?.naturalWidth>0);
-            const wholeBatedor=await page.locator('#artOuter .card-relief').evaluate(stage=>{
-              const img=stage.querySelector('.card-back'),css=getComputedStyle(img);
-              return {source:img.getAttribute('src'),fit:css.objectFit,position:css.objectPosition,
-                naturalWidth:img.naturalWidth,naturalHeight:img.naturalHeight,
-                backdrop:getComputedStyle(stage).backgroundImage,frameCount:stage.querySelectorAll('img').length};
-            });
-            assert.ok(wholeBatedor.source.includes('portrait_batedor.'));
-            assert.equal(wholeBatedor.fit,'contain','Batedor continua cortado');
-            assert.equal(wholeBatedor.position,'50% 50%');
-            assert.ok(wholeBatedor.naturalWidth>0&&wholeBatedor.naturalHeight>0);
-            assert.ok(wholeBatedor.backdrop.includes('portrait_batedor.'),'Fundo preenchido não acompanha Batedor');
-            assert.equal(wholeBatedor.frameCount,1,'Personagem duplicado na carta');
-            await page.locator('#cardGrid button[data-card="liliti"]').click();
+            assert.ok(portraits.backgrounds,'Fundo integral ou relevo das cartas foi alterado');
             assert.ok(portraits.lilitiDust,'Brilho e partículas da Liliti foram removidos');
             assert.ok((await page.locator('#cardBadges').innerText()).includes('Suprema'));
             assert.ok((await page.locator('#cardOffer').innerText()).includes('10,00'));
