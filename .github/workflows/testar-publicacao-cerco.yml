@@ -682,7 +682,7 @@ jobs:
             const relief=await page.locator('#artOuter .card-relief').evaluate(node=>({kind:node.dataset.card,
               layers:node.querySelectorAll('img').length,dust:node.querySelectorAll('.card-stardust i').length,
               cover:getComputedStyle(node.querySelector('.card-back')).objectFit}));
-            assert.equal(relief.kind,'liliti');assert.equal(relief.layers,2);assert.ok(relief.dust>=20);assert.equal(relief.cover,'cover');
+            assert.equal(relief.kind,'liliti');assert.equal(relief.layers,1);assert.ok(relief.dust>=20);assert.equal(relief.cover,'cover');
             // Todas as oito cartas de personagens mantêm a arte e o fundo, sem contorno dourado.
             const portraits=await page.evaluate(()=>{
               const stages=[...document.querySelectorAll('#cardGrid .card-relief.has-figure-depth')];
@@ -691,7 +691,7 @@ jobs:
                 noOutline:document.querySelectorAll('.card-gold-outline,.gold-contour-metal,.gold-contour-shadow').length===0,
                 backgrounds:stages.every(s=>s.querySelector('.card-back')?.naturalWidth>0&&
                   getComputedStyle(s.querySelector('.card-back')).objectFit==='cover'&&
-                  s.querySelectorAll('img').length===2),
+                  s.querySelectorAll('img').length===1),
                 lilitiDust:document.querySelector('#artOuter .card-stardust i')!==null
               };
             });
@@ -716,6 +716,25 @@ jobs:
             assert.equal(shining.animation,'card-reflection','Reflexo não se iniciou no toque');
             await page.locator('#artOuter').scrollIntoViewIfNeeded();
             await page.screenshot({path:'/tmp/cerco-cartas-liliti.png'});
+            // Cartas de magia agora têm imagens próprias completas, sem corpos duplicados,
+            // com arte visível em todas as dimensões e sem alterar seus efeitos em batalha.
+            for(const [id,filename] of [['cura','spell_heal.svg'],['chama','spell_fire.svg'],['armadilha','spell_trap.svg']]){
+              await page.locator('#cardGrid button[data-card="'+id+'"]').click();
+              await page.waitForFunction(filename=>{
+                const im=document.getElementById('fullArt');
+                return im?.complete&&im.naturalWidth>=320&&im.getAttribute('src')?.includes(filename);
+              },filename,{timeout:12000});
+              const spell=await page.locator('#artOuter .card-relief').evaluate(node=>({
+                id:node.dataset.card,magic:node.classList.contains('has-spell-art'),
+                imageCount:node.querySelectorAll('img').length,
+                imageFit:getComputedStyle(node.querySelector('.card-back')).objectFit,
+                hasGlass:!!node.querySelector('.card-glass-light')
+              }));
+              assert.equal(spell.id,id);
+              assert.ok(spell.magic&&spell.hasGlass&&spell.imageCount===1&&spell.imageFit==='cover',
+                'Imagem de magia duplicada, deformada ou sem arte própria: '+id);
+            }
+            await page.locator('#cardGrid button[data-card="liliti"]').click();
             await page.locator('#navigation [data-view="shop"]').click();
             assert.equal(await page.locator('.liliti-store-card [data-cerco-buy="card_liliti"]').count(),1);
             await page.screenshot({path:'/tmp/cerco-loja-mobile.png'});
