@@ -16,12 +16,12 @@
  let flashing='',flashUntil=0;
  function fitSubject(stage){
   const image=stage.querySelector('.card-back'),copy=stage.querySelector('.card-subject img'),gold=stage.querySelector('.card-gold-outline img');
-  if(!image?.naturalWidth||!copy||!gold||!stage.clientWidth||!stage.clientHeight)return;
+  if(!image?.naturalWidth||!copy||!stage.clientWidth||!stage.clientHeight)return;
   const w=stage.clientWidth,h=stage.clientHeight,scale=Math.max(w/image.naturalWidth,h/image.naturalHeight);
   const iw=image.naturalWidth*scale,ih=image.naturalHeight*scale;
   for(const [property,value]of Object.entries({width:iw+'px',height:ih+'px',left:(w-iw)*(crops[stage.dataset.card]??.5)+'px',top:(h-ih)*(stage.dataset.card==='liliti'?.12:.4)+'px'})){
    copy.style.setProperty(property,value,'important');
-   gold.style.setProperty(property,value,'important');
+   gold?.style.setProperty(property,value,'important');
   }
  }
  function decorate(image,id){
@@ -31,18 +31,20 @@
    stage=document.createElement('span');stage.className='card-relief';
    image.replaceWith(stage);stage.append(image);image.classList.add('card-back');image.addEventListener('load',()=>fitSubject(stage));
    // O dourado acompanha a silhueta recortada, não a moldura retangular da carta.
-   const outline=document.createElement('span');outline.className='card-gold-outline';outline.setAttribute('aria-hidden','true');
-   const goldImage=document.createElement('img');goldImage.alt='';goldImage.draggable=false;outline.append(goldImage);stage.append(outline);
+   if(shapes[id]){
+    const outline=document.createElement('span');outline.className='card-gold-outline';outline.setAttribute('aria-hidden','true');
+    const goldImage=document.createElement('img');goldImage.alt='';goldImage.draggable=false;outline.append(goldImage);stage.append(outline);
+   }
    const subject=document.createElement('span');subject.className='card-subject';subject.setAttribute('aria-hidden','true');
    const duplicate=document.createElement('img');duplicate.alt='';duplicate.draggable=false;subject.append(duplicate);stage.append(subject);
    for(const name of ['card-inner-contour','card-glass-light','card-light-sweep']){
     const layer=document.createElement('i');layer.className=name;layer.setAttribute('aria-hidden','true');stage.append(layer);
    }
   }
-  stage.dataset.card=id;stage.style.setProperty('--crop-y',id==='liliti'?'12%':'40%');stage.style.setProperty('--crop-x',((crops[id]??.5)*100)+'%');stage.style.setProperty('--figure',`polygon(${shapes[id]||'0 0,100% 0,100% 100%,0 100%'})`);
+  stage.dataset.card=id;stage.classList.toggle('has-figure-outline',Boolean(shapes[id]));stage.style.setProperty('--crop-y',id==='liliti'?'12%':'40%');stage.style.setProperty('--crop-x',((crops[id]??.5)*100)+'%');stage.style.setProperty('--figure',`polygon(${shapes[id]||'0 0,100% 0,100% 100%,0 100%'})`);
   const copy=stage.querySelector('.card-subject img'),gold=stage.querySelector('.card-gold-outline img');
   if(copy.getAttribute('src')!==image.getAttribute('src'))copy.src=image.getAttribute('src');
-  if(gold.getAttribute('src')!==image.getAttribute('src'))gold.src=image.getAttribute('src');
+  if(gold&&gold.getAttribute('src')!==image.getAttribute('src'))gold.src=image.getAttribute('src');
   if(id==='liliti'&&!stage.querySelector('.card-stardust')){
    const dust=document.createElement('span');dust.className='card-stardust';dust.setAttribute('aria-hidden','true');
    for(let n=0;n<22;n++){
@@ -85,7 +87,7 @@
  document.addEventListener('pointerout',event=>{const stage=event.target.closest('.card-relief');if(stage&&!stage.contains(event.relatedTarget)){stage.style.setProperty('--tilt-x','0deg');stage.style.setProperty('--tilt-y','0deg')}});
  document.addEventListener('pointerdown',event=>{
   const stage=event.target.closest('.card-relief');if(!stage)return;
-  if(event.pointerType==='touch'&&!reduced()){
+  if(event.pointerType==='touch'&&!reduced()&&stage.classList.contains('has-figure-outline')){
    const bounds=stage.getBoundingClientRect(),x=Math.max(0,Math.min(1,(event.clientX-bounds.left)/bounds.width)),y=Math.max(0,Math.min(1,(event.clientY-bounds.top)/bounds.height));
    stage.style.setProperty('--tilt-x',(4-(y-.5)*12)+'deg');
    stage.style.setProperty('--tilt-y',(5+(x-.5)*14)+'deg');
