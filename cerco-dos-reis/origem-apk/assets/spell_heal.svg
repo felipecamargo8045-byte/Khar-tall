@@ -1,1 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 420"><defs><radialGradient id="b"><stop stop-color="#4a6382"/><stop offset="1" stop-color="#252321"/></radialGradient></defs><path fill="url(#b)" d="M0 0h320v420H0z"/><g fill="none" stroke="#d9d2cc"><circle cx="160" cy="200" r="103" opacity=".35"/><circle cx="160" cy="200" r="94" opacity=".3"/><ellipse cx="160" cy="270" rx="90" ry="24" opacity=".4"/><ellipse cx="160" cy="276" rx="69" ry="16" opacity=".4"/></g><path d="m160 95 18 81 69 24-69 23-18 82-18-82-69-23 69-24Z" fill="#d2ccc7" opacity=".25"/><path d="m160 118 9 72 53 10-53 10-9 72-9-72-53-10 53-10Z" fill="#ece8e3"/><g stroke="#d7d1cb" opacity=".5"><path d="M95 95v19m-9-10h18m139 139v19m-9-10h18M87 285v19m-9-10h18"/><path d="M119 293v-60m82 60v-73M160 320v-26"/></g><path d="M65 353h190M115 368h90" stroke="#b5afa9" opacity=".5"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="420" viewBox="0 0 320 420" role="img" aria-label="Campo de Cura: cristal esmeralda sobre um círculo de magia restauradora">
+<defs>
+ <radialGradient id="sky" cx=".53" cy=".39" r=".83"><stop stop-color="#316b76"/><stop offset=".43" stop-color="#163d50"/><stop offset="1" stop-color="#081927"/></radialGradient>
+ <linearGradient id="beam" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#8bf3d2" stop-opacity="0"/><stop offset=".48" stop-color="#a8ffe3" stop-opacity=".68"/><stop offset="1" stop-color="#8bf3d2" stop-opacity="0"/></linearGradient>
+ <linearGradient id="crystal" x1=".16" y1="0" x2=".85" y2="1"><stop stop-color="#ffffff"/><stop offset=".2" stop-color="#c7fff0"/><stop offset=".48" stop-color="#54c9aa"/><stop offset="1" stop-color="#147985"/></linearGradient>
+ <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#faf5da"/><stop offset=".5" stop-color="#9fc7b7"/><stop offset="1" stop-color="#b7a16b"/></linearGradient>
+ <radialGradient id="floor"><stop stop-color="#7effc2" stop-opacity=".85"/><stop offset=".5" stop-color="#40bca0" stop-opacity=".24"/><stop offset="1" stop-color="#163b44" stop-opacity="0"/></radialGradient>
+ <filter id="bloom" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="12"/></filter>
+ <filter id="small" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="3"/></filter>
+</defs>
+<rect width="320" height="420" fill="url(#sky)"/>
+<path d="M0 360 Q65 333 140 356 T320 351V420H0Z" fill="#081e2e"/>
+<g opacity=".24" stroke="#74b09c" fill="none"><path d="M0 300 78 279 130 312 224 288 320 314M-12 345 61 319 160 345 256 316 334 341M16 377 120 357 190 375 300 357"/><path d="M40 420 95 311M281 420 235 311M160 420V312"/></g>
+<ellipse cx="161" cy="340" rx="142" ry="64" fill="url(#floor)"/>
+<path d="M129 316Q141 180 131 51L151 32 168 52Q174 190 190 317Z" fill="url(#beam)" opacity=".6" filter="url(#bloom)"/>
+<path d="M130 312Q145 151 149 54L160 35 171 54Q175 151 190 312Z" fill="url(#beam)" opacity=".48"/>
+<g fill="none" stroke="#b3ffe3" opacity=".18" stroke-width="3"><ellipse cx="160" cy="320" rx="124" ry="36"/><ellipse cx="160" cy="320" rx="100" ry="27"/></g>
+<g transform="translate(160 315) scale(1 .3)" stroke="url(#silver)" fill="none"><circle r="113" stroke-width="4" opacity=".8"/><circle r="94" stroke-width="2"/><circle r="68" stroke-width="3" opacity=".9"/><circle r="49" stroke-width="1.5"/><path d="M0-115V-82M0 115V82M-115 0h33M115 0H82M-81-81-58-58M81 81 58 58M-81 81-58-58M81-81 58-58" stroke-width="6"/><path d="M0-91 78 45-78 45ZM0 91 78-45-78-45Z" stroke-width="2"/></g>
+<ellipse cx="160" cy="313" rx="89" ry="22" fill="#9dffce" opacity=".24" filter="url(#small)"/>
+<g stroke="#b3ffd9" fill="none" opacity=".65"><path d="M68 267Q19 224 70 155" stroke-width="2"/><path d="M246 252Q302 211 242 134" stroke-width="2"/><path d="M84 134Q159 80 239 137" stroke-width="1.5"/></g>
+<g fill="#b3ffe7" opacity=".86"><circle cx="67" cy="178" r="3"/><circle cx="235" cy="153" r="3"/><circle cx="87" cy="102" r="2"/><circle cx="267" cy="255" r="2"/><circle cx="48" cy="294" r="2"/><circle cx="224" cy="90" r="2"/></g>
+<path d="M160 101 202 157 197 222 160 261 123 222 118 157Z" fill="#67e0bd" opacity=".6" filter="url(#bloom)"/>
+<path d="M160 91 202 156 195 217 160 264 125 217 118 156Z" fill="url(#crystal)" stroke="#e3fff6" stroke-width="2.5"/>
+<path d="M160 91 160 264 125 217 118 156Z" fill="#f1ffef" opacity=".3"/>
+<path d="M160 91 202 156 160 170 118 156Z" fill="#ffffff" opacity=".36"/>
+<path d="M160 170 195 217 160 264Z" fill="#0c8184" opacity=".48"/>
+<path d="M160 110V251M129 158l31 10 31-10M131 215l29-45 29 45" stroke="#edfff5" fill="none" stroke-width="1.5" opacity=".65"/>
+<g stroke="#e6fff3" fill="none" stroke-width="4" stroke-linecap="round" opacity=".96"><path d="M85 196v31m-15-15h30M243 192v28m-14-14h28M160 57v25m-12-12h24"/></g>
+<path d="M81 369Q160 390 239 368" stroke="#d9e6ae" stroke-width="2" opacity=".42" fill="none"/>
+</svg>
