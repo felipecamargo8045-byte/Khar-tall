@@ -81,6 +81,7 @@ function openDrawer(which='scroll'){
  previousFocus=document.activeElement;
  activeDrawer=which;
  drawer.hidden=false;
+ document.body.classList.add('has-lobby-drawer');
  drawerTitle.textContent=titles[which];
  for(const [name,section] of Object.entries(sections))section.hidden=name!==which;
  drawerContent.scrollTop=0;
@@ -90,6 +91,7 @@ function openDrawer(which='scroll'){
 function closeDrawer(){
  if(drawer.hidden)return;
  drawer.hidden=true;
+ document.body.classList.remove('has-lobby-drawer');
  for(const section of Object.values(sections))section.hidden=false;
  if(previousFocus?.isConnected)previousFocus.focus({preventScroll:true});
 }
@@ -139,7 +141,15 @@ $('#lobbyProfile').addEventListener('click',()=>go('profile'));
 $('#lobbyDrawerClose').addEventListener('click',closeDrawer);
 $('#lobbySound').addEventListener('click',()=>{document.querySelector('#soundToggle')?.click();syncSound()});
 $('#lobbyVoice').addEventListener('click',()=>{document.querySelector('#voiceToggle')?.click();syncSound()});
-document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!drawer.hidden)closeDrawer()});
+document.addEventListener('keydown',event=>{
+ if(drawer.hidden)return;
+ if(event.key==='Escape'){event.preventDefault();closeDrawer();return}
+ if(event.key!=='Tab')return;
+ const controls=[...drawer.querySelectorAll('button:not(:disabled),a[href],summary,input:not(:disabled),select:not(:disabled),[tabindex="0"]')].filter(el=>el.getClientRects().length);
+ const first=controls[0],last=controls[controls.length-1];
+ if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus()}
+ else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus()}
+});
 document.querySelectorAll('#navigation [data-view]').forEach(btn=>btn.addEventListener('click',()=>{
  if(btn.dataset.view!=='home')closeDrawer();
  syncSound();
