@@ -371,7 +371,7 @@ jobs:
             await page.locator('#start').click();
             const box=await page.locator('#arena').boundingBox();
             assert.ok(box && box.width>200 && box.height>200,'Arena indisponivel');
-            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.57}});
+            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.66}});
             let group=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
             assert.equal(group.length,2,'Lobo precisa gerar duas unidades');
             assert.deepEqual(group.map(u=>u.lane).sort(),[0,1],'Centro deve dividir entre duas rotas');
@@ -380,7 +380,7 @@ jobs:
             assert.ok(Math.abs(group[0].x-group[1].x)>42,'Dois personagens sobrepostos');
             const clickPoint=await page.evaluate(()=>{
               const rect=document.getElementById('arena').getBoundingClientRect();
-              return window.Cerco3D.screenToBattle(rect.left+rect.width*.5,rect.top+rect.height*.57,rect);
+              return window.Cerco3D.screenToBattle(rect.left+rect.width*.5,rect.top+rect.height*.66,rect);
             });
             const riverClick=clickPoint.y>256&&clickPoint.y<304 && 
                 [110,310].every(bridgeX=>Math.abs(clickPoint.x-bridgeX)>39);
@@ -458,7 +458,7 @@ jobs:
             await page.evaluate(()=>window.__cercoTest.reset());
             await page.locator('#start').click();
             await page.evaluate(()=>window.__cercoTest.createEnemy('soldado',310,313));
-            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.57}});
+            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.66}});
             await page.waitForFunction(()=>{
               const ally=window.__cercoTest.units().filter(u=>u.side==='ally');
               return ally.length===2&&ally.every(u=>u.lane===1)&&ally.some(u=>u.targetId);
@@ -472,7 +472,7 @@ jobs:
             await page.locator('#start').click();
             await page.evaluate(()=>window.__cercoTest.createEnemy('soldado',310,315));
             await page.locator('#hand button').nth(2).click();
-            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.57}});
+            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.66}});
             await page.waitForFunction(()=>{
               const ally=window.__cercoTest.units().filter(u=>u.side==='ally');
               return ally.length===2&&ally.every(u=>u.lane===1&&u.targetId);
@@ -547,7 +547,7 @@ jobs:
             await page.evaluate(()=>window.__cercoTest.reset());
             await page.locator('#start').click();
             await page.evaluate(()=>window.__cercoTest.createEnemy('colosso',210,313));
-            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.56}});
+            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.65}});
             await page.waitForFunction(()=>{
               const u=window.__cercoTest.units().find(x=>x.side==='ally');
               return u && window.__cercoTest.animation(u.id)?.attacks>0;
