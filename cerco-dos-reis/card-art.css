@@ -48,7 +48,7 @@
    o mesmo recorte/crop da arte, atrás da figura e à frente do cenário.
    Não modifica a paleta original das ilustrações nem as bordas de raridade. */
 .card-relief{transform-style:preserve-3d}
-.card-relief>.card-back{transform:translateZ(-6px) scale(1.016)}
+.card-relief.has-figure-outline>.card-back{transform:translateZ(-6px) scale(1.016)}
 .card-gold-outline{
   position:absolute;inset:0;display:block;pointer-events:none;
   border-radius:inherit;overflow:hidden;
@@ -65,15 +65,15 @@
   clip-path:var(--figure);
   filter:brightness(0) saturate(100%) invert(86%) sepia(29%) saturate(1144%) hue-rotate(340deg) brightness(101%);
 }
-.card-relief .card-subject{
+.card-relief.has-figure-outline .card-subject{
   transform:translateZ(32px) scale(1.012);
   filter:drop-shadow(0 3px 4px #000a) drop-shadow(0 0 1px #f6d899);
 }
-.card-relief .card-inner-contour{transform:translateZ(43px)}
-.card-relief .card-glass-light{transform:translateZ(46px)}
-.card-relief .card-light-sweep{transform:translateZ(49px)}
-.card-relief .card-stardust{transform:translateZ(54px)}
-.card-relief.card-touch-3d,.card-relief.is-shining{
+.card-relief.has-figure-outline .card-inner-contour{transform:translateZ(43px)}
+.card-relief.has-figure-outline .card-glass-light{transform:translateZ(46px)}
+.card-relief.has-figure-outline .card-light-sweep{transform:translateZ(49px)}
+.card-relief.has-figure-outline .card-stardust{transform:translateZ(54px)}
+.card-relief.has-figure-outline.card-touch-3d,.card-relief.has-figure-outline.is-shining{
   transform:rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)) scale(1.027);
 }
 /* A Liliti mantém os reflexos e a porpurina existentes, com destaque extra. */
@@ -95,7 +95,7 @@
   box-shadow:0 0 7px #ffe8a4,0 0 13px #f6c45e;
 }
 @media(prefers-reduced-motion:reduce){
-  .card-relief.card-touch-3d,.card-relief.is-shining{transform:none}
-  .card-relief .card-gold-outline{transform:translateZ(0) scale(1.055)}
-  .card-relief .card-subject{transform:translateZ(0) scale(1.012)}
+  .card-relief.has-figure-outline.card-touch-3d,.card-relief.has-figure-outline.is-shining{transform:none}
+  .card-relief.has-figure-outline .card-gold-outline{transform:translateZ(0) scale(1.055)}
+  .card-relief.has-figure-outline .card-subject{transform:translateZ(0) scale(1.012)}
 }
