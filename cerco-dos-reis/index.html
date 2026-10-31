@@ -8,7 +8,7 @@
 <title>Cerco dos Reis · Khar Thal</title>
 <link rel="icon" href="./origem-apk/assets/emblem.svg">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="stylesheet" href="./game-ui.css?v=14">
+<link rel="stylesheet" href="./game-ui.css?v=15">
 </head>
 <body>
 <div class="aurora" aria-hidden="true"></div>
@@ -26,62 +26,101 @@
 </nav>
 <main class="game-body">
 
-<section class="page active home-page" data-page="home" aria-label="Início do comandante">
- <div class="home-hero">
-  <div class="home-hero-copy">
-   <span class="overline">KHAR TALL · CERCO DOS REIS</span>
-   <h1>O seu reino começa aqui.</h1>
-   <p>Vença batalhas, alcance novos níveis e desvende as recompensas dos <strong>Pergaminhos de Liliti</strong>.</p>
-   <span class="home-training-note">Progresso e presentes deste treinamento são salvos neste aparelho.</span>
-   <div class="home-buttons">
-    <button id="homePlay" class="gold home-primary" type="button">⚔ ENTRAR NA BATALHA</button>
-    <button id="homeToCards" class="secondary-btn" type="button">▣ Ver cartas e evolução</button>
+<section class="page active home-page" data-page="home" aria-label="Lobby do comandante">
+ <div class="lobby-shell">
+  <div class="lobby-hud" role="group" aria-label="Seu comandante e recursos">
+   <button class="lobby-player" type="button" id="lobbyProfile" aria-label="Abrir perfil do comandante">
+    <span class="lobby-avatar"><img src="./origem-apk/assets/portrait_rei.webp" alt=""></span>
+    <span class="lobby-player-details">
+     <strong>VICTORYNO</strong>
+     <span class="lobby-level">NÍVEL <b id="homeLevel">1</b> <small id="homeXp">0 / 100 XP</small></span>
+     <span class="home-xp-track"><i id="homeXpFill"></i></span>
+    </span>
+   </button>
+   <div class="lobby-hud-right">
+    <div class="lobby-stat-currency" title="Vitórias em batalhas">
+     <span>⚔</span><strong id="homeWins">0</strong>
+    </div>
+    <button id="lobbySound" type="button" class="lobby-hud-icon" aria-label="Alternar som do jogo">♫</button>
+    <button id="lobbyVoice" type="button" class="lobby-hud-icon" aria-label="Alternar vozes dos personagens">🗣</button>
    </div>
   </div>
-  <div class="home-hero-art" aria-hidden="true"><img src="./origem-apk/assets/portrait_lilith_ruiva.webp" alt=""></div>
- </div>
- <div class="home-stats" aria-label="Resumo do comandante">
-  <div class="home-stat"><span>♛</span><div><small>NÍVEL DO COMANDANTE</small><strong id="homeLevel">1</strong><div class="home-xp-track"><i id="homeXpFill"></i></div><small id="homeXp">0 / 100 XP</small></div></div>
-  <div class="home-stat"><span>⚔</span><div><small>VITÓRIAS</small><strong id="homeWins">0</strong><small id="homeRecord">0 derrotas</small></div></div>
-  <div class="home-stat"><span>📜</span><div><small>PERGAMINHOS GUARDADOS</small><strong id="homeScrolls">0</strong><small>1 por vitória</small></div></div>
-  <div class="home-stat"><span>✦</span><div><small>PRESENTES ABERTOS</small><strong id="homeOpened">0</strong><small>Recompensas encontradas</small></div></div>
- </div>
- <div class="home-main-grid">
-  <section class="home-scroll-panel" aria-labelledby="scrollsTitle">
-   <div class="home-panel-heading"><div><span class="overline">SUSSURROS DO PASSADO</span><h2 id="scrollsTitle">Pergaminhos de Liliti</h2></div><span class="home-scroll-chip">☽ RECOMPENSAS</span></div>
-   <p>Uma vitória rende um pergaminho. Abra para receber materiais de evolução, forjar suas cartas e preparar seu exército.</p>
-   <div class="home-scroll-stage">
-    <div class="scroll-art" aria-hidden="true"><span>☽</span><b>✦</b></div>
-    <div class="scroll-info"><strong id="homeScrollStock">0 pergaminhos disponíveis</strong><small>Os prêmios são revelados ao abrir. Os materiais permanecem no inventário deste aparelho.</small>
-     <button id="homeOpenScroll" class="gold" type="button" disabled>✦ ABRIR PERGAMINHO</button>
-    </div>
+  <div class="lobby-world" aria-label="Salão de batalha dos dois reinos">
+   <div class="lobby-stars" aria-hidden="true"></div>
+   <div class="lobby-castle-silhouette lobby-castle-left" aria-hidden="true"></div>
+   <div class="lobby-castle-silhouette lobby-castle-right" aria-hidden="true"></div>
+   <img class="lobby-actor lobby-actor-left" src="./origem-apk/assets/portrait_rei.webp" alt="" aria-hidden="true">
+   <img class="lobby-actor lobby-actor-right" src="./origem-apk/assets/portrait_lilith_ruiva.webp" alt="" aria-hidden="true">
+   <div class="lobby-world-glow" aria-hidden="true"></div>
+   <div class="lobby-game-title">
+    <span class="lobby-crest"><img src="./origem-apk/assets/emblem.svg" alt=""></span>
+    <span class="lobby-eyebrow">DOIS REINOS · UM DESTINO</span>
+    <h1>CERCO <span>DOS REIS</span></h1>
+    <span class="lobby-subtitle">KHAR TALL</span>
    </div>
-   <div id="homeRewardMessage" class="home-reward-message" role="status" aria-live="polite">Vença uma partida para conquistar o primeiro pergaminho.</div>
-   <details class="home-rates"><summary>Ver recompensas e chances</summary><div class="home-drop-list">
-     <div>⚒ Ferro Ancestral ×15 <b>50%</b></div>
-     <div>✦ Fragmentos de Eco ×8 <b>26%</b></div>
-     <div>◆ Cristais da Chama ×3 <b>17%</b></div>
-     <div>☽ Essência de Liliti ×1 <b>7%</b></div>
-   </div><p>Essas chances são do treinamento local. Os prêmios cosméticos premium são exclusivos de assinantes mensais verificados e permanecem bloqueados até existir integração com o servidor.</p></details>
-  </section>
-  <section class="home-inventory" aria-labelledby="inventoryTitle">
-   <div class="home-panel-heading"><div><span class="overline">FORJA DOS DOIS REINOS</span><h2 id="inventoryTitle">Seu inventário</h2></div></div>
-   <div class="home-materials" id="homeMaterials" aria-label="Materiais acumulados"></div>
-   <p class="home-forge-note">Materiais são usados na aba <strong>Evolução</strong> das cartas. Não é necessário pagar para conseguir materiais.</p>
-   <button type="button" class="secondary-btn" id="homeToForge">Ir para a forja das cartas</button>
-  </section>
+   <div class="lobby-play-wrap">
+    <span class="lobby-match-mode">⚔ BATALHA CONTRA IA</span>
+    <button id="homePlay" class="lobby-play" type="button"><span class="lobby-play-icon">⚔</span><strong>BATALHAR</strong><span class="lobby-play-arrow">▶</span></button>
+    <span class="lobby-play-caption">Vitória = 1 Pergaminho de Liliti + 75 XP</span>
+   </div>
+  </div>
+  <div class="lobby-quick-actions" aria-label="Presentes e progressão">
+   <button type="button" class="lobby-quick-item lobby-quick-scroll" id="lobbyOpenScroll">
+    <span class="lobby-quick-art" aria-hidden="true">📜</span><span class="lobby-quick-body"><strong>PERGAMINHOS</strong><small>Recompensas de vitória</small></span>
+    <span class="lobby-quick-counter" id="homeScrolls">0</span>
+   </button>
+   <button type="button" class="lobby-quick-item lobby-quick-forge" id="lobbyOpenInventory">
+    <span class="lobby-quick-art" aria-hidden="true">⚒</span><span class="lobby-quick-body"><strong>FORJA</strong><small>Materiais e evolução</small></span>
+    <span class="lobby-quick-arrow" aria-hidden="true">›</span>
+   </button>
+  </div>
+  <div class="lobby-lowerbar">
+   <button id="lobbyProgress" type="button"><span>♛</span> PROGRESSO <strong id="homeRecord">0 derrotas</strong></button>
+   <button id="lobbySkins" type="button"><span>✦</span> SKINS <small>🔒 PREMIUM</small></button>
+   <button id="lobbyHistory" type="button"><span>◈</span> CONQUISTAS <strong id="homeOpened">0</strong></button>
+  </div>
+  <p class="lobby-local-note">Treinamento local · conquistas salvas neste aparelho · sem cobranças</p>
  </div>
- <div class="home-main-grid home-bottom">
-  <section class="home-premium" aria-labelledby="premiumTitle">
-   <div class="home-panel-heading"><div><span class="overline">CONTEÚDO EXCLUSIVO</span><h2 id="premiumTitle">Skins dos Reinos</h2></div><span class="home-premium-tag">♛ ASSINATURA MENSAL</span></div>
-   <p>Skins são aparências cosméticas. Apenas assinantes mensais com assinatura ativa e confirmada pelo servidor poderão conquistá-las e equipá-las.</p>
-   <div id="homePremiumSkins" class="home-skin-grid"></div>
-   <small class="home-premium-warning">🔒 Assinaturas e pagamentos ainda não estão conectados neste treinamento. Nenhuma compra será cobrada aqui.</small>
-  </section>
-  <section class="home-history" aria-labelledby="historyTitle">
-   <div class="home-panel-heading"><div><span class="overline">CRÔNICAS DO COMANDANTE</span><h2 id="historyTitle">Últimas conquistas</h2></div></div>
-   <div id="homeHistory" class="home-history-list" aria-live="polite">Suas vitórias aparecerão aqui.</div>
-  </section>
+ <div class="lobby-drawer" id="lobbyDrawer" hidden role="dialog" aria-modal="true" aria-labelledby="lobbyDrawerTitle">
+  <div class="lobby-drawer-top">
+   <span id="lobbyDrawerTitle">PRESENTES DO REINO</span>
+   <button type="button" class="lobby-drawer-close" id="lobbyDrawerClose" aria-label="Voltar para o lobby">✕</button>
+  </div>
+  <div class="lobby-drawer-content" id="lobbyDrawerContent">
+   <section class="home-scroll-panel lobby-drawer-panel" id="lobbyScrollPanel" aria-labelledby="scrollsTitle">
+    <div class="home-panel-heading"><div><span class="overline">PRESENTES DA VITÓRIA</span><h2 id="scrollsTitle">Pergaminhos de Liliti</h2></div><span class="home-scroll-chip">☽ RECOMPENSAS</span></div>
+    <div class="home-scroll-stage">
+     <div class="scroll-art" aria-hidden="true"><span>☽</span><b>✦</b></div>
+     <div class="scroll-info"><strong id="homeScrollStock">0 pergaminhos disponíveis</strong><small>Abra um pergaminho para descobrir seu prêmio.</small>
+      <button id="homeOpenScroll" class="gold" type="button" disabled>✦ ABRIR PERGAMINHO</button>
+     </div>
+    </div>
+    <div id="homeRewardMessage" class="home-reward-message" role="status" aria-live="polite">Vença uma batalha para conquistar o primeiro pergaminho.</div>
+    <div id="lobbyRewardBurst" class="lobby-reward-burst" hidden aria-live="polite"><strong id="lobbyRewardPrize">Prêmio encontrado!</strong></div>
+    <details class="home-rates"><summary>Chances dos presentes</summary><div class="home-drop-list">
+      <div>⚒ Ferro Ancestral ×15 <b>50%</b></div>
+      <div>✦ Fragmentos de Eco ×8 <b>26%</b></div>
+      <div>◆ Cristais da Chama ×3 <b>17%</b></div>
+      <div>☽ Essência de Liliti ×1 <b>7%</b></div>
+    </div><p>Probabilidades do treinamento local. Skins premium dependem de assinatura mensal confirmada pelo servidor e não estão disponíveis para resgate neste modo.</p></details>
+   </section>
+   <section class="home-inventory lobby-drawer-panel" id="lobbyInventoryPanel" aria-labelledby="inventoryTitle">
+    <div class="home-panel-heading"><div><span class="overline">FORJA DOS DOIS REINOS</span><h2 id="inventoryTitle">Materiais</h2></div></div>
+    <div class="home-materials" id="homeMaterials" aria-label="Materiais acumulados"></div>
+    <p class="home-forge-note">Ganhe materiais em Pergaminhos de Liliti e use-os para aprimorar suas cartas.</p>
+    <button type="button" class="secondary-btn" id="homeToForge">EVOLUIR CARTAS ⚒</button>
+    <button type="button" class="secondary-btn" id="homeToCards">VER BARALHO ▣</button>
+   </section>
+   <section class="home-premium lobby-drawer-panel" id="lobbySkinsPanel" aria-labelledby="premiumTitle">
+    <div class="home-panel-heading"><div><span class="overline">EXCLUSIVO PARA ASSINANTES</span><h2 id="premiumTitle">Skins dos Reinos</h2></div><span class="home-premium-tag">♛ MENSAL</span></div>
+    <div id="homePremiumSkins" class="home-skin-grid"></div>
+    <small class="home-premium-warning">🔒 Só assinantes mensais verificados podem desbloquear skins. As assinaturas ainda não estão conectadas neste treinamento.</small>
+   </section>
+   <section class="home-history lobby-drawer-panel" id="lobbyHistoryPanel" aria-labelledby="historyTitle">
+    <div class="home-panel-heading"><div><span class="overline">CRÔNICAS DO COMANDANTE</span><h2 id="historyTitle">Conquistas</h2></div></div>
+    <div id="homeHistory" class="home-history-list" aria-live="polite"></div>
+   </section>
+  </div>
  </div>
 </section>
 
@@ -171,7 +210,7 @@
 <script src="./sfx.js?v=7" defer></script>
 <script src="./voices.js?v=4" defer></script>
 <script src="./rewards.js?v=1" defer></script>
-<script src="./home.js?v=1" defer></script>
+<script src="./home.js?v=2" defer></script>
 <script src="./app.js?v=24" defer></script>
 <script src="./realm-ui.js?v=4" defer></script>
 <script type="module" src="./arena3d.js?v=13"></script>
