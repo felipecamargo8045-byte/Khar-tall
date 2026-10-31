@@ -625,7 +625,7 @@ body:has(.home-page.active):not(.battle-mode)>.game-nav button.active{
 .lobby-castle-right{right:-10%;transform:scaleX(-1);background:linear-gradient(#8a576e,#291b34)}
 .lobby-actor{position:absolute;z-index:-1;bottom:7%;width:clamp(145px,30vw,400px);height:86%;
  object-fit:contain;object-position:bottom center;filter:drop-shadow(0 16px 15px #050611cc);
- mask-image:linear-gradient(0deg,transparent 0%,#000 17%,#000 90%,transparent 100%);
+ mask-image:radial-gradient(ellipse 83% 72% at 50% 57%,#000 38%,#000d 58%,transparent 100%);
  animation:lobbyFloat 5s ease-in-out infinite alternate;
  pointer-events:none}
 .lobby-actor-left{left:clamp(-48px,-3vw,0px);transform:translateX(-4%)}
