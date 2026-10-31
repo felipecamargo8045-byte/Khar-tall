@@ -238,8 +238,10 @@ jobs:
             assert.match(await page.locator('#cardName').innerText(),/Liliti/i);
             const img=await page.locator('#fullArt').evaluate(e=>e.complete&&e.naturalWidth>0);
             assert.ok(img,'Imagem Liliti nao carregou');
-            await page.locator('#navigation [data-view="arena"]').click();
-            await page.locator('#start').click();
+            // O botão principal do lobby deve entrar diretamente na batalha,
+            // sem abrir uma segunda página ou exigir outro toque.
+            await page.locator('#navigation [data-view="home"]').click();
+            await page.locator('#homePlay').click();
             await page.waitForFunction(()=>document.body.classList.contains('battle-mode'),{timeout:6000});
             const fullscreenView=await page.evaluate(()=>{
               const stage=document.querySelector('#battleStage').getBoundingClientRect(),
