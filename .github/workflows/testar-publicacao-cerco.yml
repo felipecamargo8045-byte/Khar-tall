@@ -682,7 +682,7 @@ jobs:
             const relief=await page.locator('#artOuter .card-relief').evaluate(node=>({kind:node.dataset.card,
               layers:node.querySelectorAll('img').length,dust:node.querySelectorAll('.card-stardust i').length,
               cover:getComputedStyle(node.querySelector('.card-back')).objectFit}));
-            assert.equal(relief.kind,'liliti');assert.equal(relief.layers,1);assert.ok(relief.dust>=20);assert.equal(relief.cover,'cover');
+            assert.equal(relief.kind,'liliti');assert.equal(relief.layers,1);assert.ok(relief.dust>=20);assert.equal(relief.cover,'contain');
             // Todas as oito cartas de personagens mantêm a arte e o fundo, sem contorno dourado.
             const portraits=await page.evaluate(()=>{
               const stages=[...document.querySelectorAll('#cardGrid .card-relief.has-figure-depth')];
@@ -690,14 +690,30 @@ jobs:
                 count:stages.length,
                 noOutline:document.querySelectorAll('.card-gold-outline,.gold-contour-metal,.gold-contour-shadow').length===0,
                 backgrounds:stages.every(s=>s.querySelector('.card-back')?.naturalWidth>0&&
-                  getComputedStyle(s.querySelector('.card-back')).objectFit==='cover'&&
+                  getComputedStyle(s.querySelector('.card-back')).objectFit==='contain'&&
+                  getComputedStyle(s).backgroundImage.includes('portrait_')&&
                   s.querySelectorAll('img').length===1),
                 lilitiDust:document.querySelector('#artOuter .card-stardust i')!==null
               };
             });
             assert.equal(portraits.count,8,'Arte dos oito personagens ausente');
             assert.ok(portraits.noOutline,'Contorno indesejado ainda aparece sobre os personagens');
-            assert.ok(portraits.backgrounds,'Fundo integral ou relevo das cartas foi alterado');
+            assert.ok(portraits.backgrounds,'A imagem inteira ou o preenchimento do fundo não foi carregado');
+            // Regressão do Batedor: imagem sem zoom/corte, fundo integrado sem bordas vazias.
+            await page.locator('#cardGrid button[data-card="batedor"]').click();
+            const wholeBatedor=await page.locator('#artOuter .card-relief').evaluate(stage=>{
+              const img=stage.querySelector('.card-back'),css=getComputedStyle(img);
+              return {source:img.getAttribute('src'),fit:css.objectFit,position:css.objectPosition,
+                naturalWidth:img.naturalWidth,naturalHeight:img.naturalHeight,
+                backdrop:getComputedStyle(stage).backgroundImage,frameCount:stage.querySelectorAll('img').length};
+            });
+            assert.ok(wholeBatedor.source.includes('portrait_batedor.'));
+            assert.equal(wholeBatedor.fit,'contain','Batedor continua cortado');
+            assert.equal(wholeBatedor.position,'50% 50%');
+            assert.ok(wholeBatedor.naturalWidth>0&&wholeBatedor.naturalHeight>0);
+            assert.ok(wholeBatedor.backdrop.includes('portrait_batedor.'),'Fundo preenchido não acompanha Batedor');
+            assert.equal(wholeBatedor.frameCount,1,'Personagem duplicado na carta');
+            await page.locator('#cardGrid button[data-card="liliti"]').click();
             assert.ok(portraits.lilitiDust,'Brilho e partículas da Liliti foram removidos');
             assert.ok((await page.locator('#cardBadges').innerText()).includes('Suprema'));
             assert.ok((await page.locator('#cardOffer').innerText()).includes('10,00'));
