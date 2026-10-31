@@ -35,12 +35,22 @@ function render(){
  }
  const skins=$('#homePremiumSkins');skins.replaceChildren();
  for(const skin of api.skins){
+  const info=api.purchaseInfo(skin.id);
+  const fragments=api.fragmentProgress(skin.id);
   const tile=element('div','home-skin');
   tile.style.setProperty('--skin-accent',skin.color);
   tile.append(element('span','home-skin-symbol','♜'));
   const details=element('div','home-skin-content');
-  details.append(element('strong','',skin.name),element('small','',skin.character+' · Assinantes mensais'));
-  tile.append(details,element('span','home-lock','🔒'));skins.append(tile);
+  details.append(element('strong','',skin.name),
+    element('small','', 'Compra avulsa · disponível para todos'),
+    element('small','',fragments.count+' / '+fragments.required+' fragmentos · só assinantes nos pergaminhos'));
+  const buy=document.createElement('a');
+  buy.className='home-skin-buy';
+  buy.href=info.url;
+  buy.target='_blank';buy.rel='noopener noreferrer';
+  buy.textContent='COMPRAR R$ 2,50';
+  buy.setAttribute('aria-label','Abrir loja oficial do Khar Tall para comprar '+skin.name);
+  tile.append(details,buy);skins.append(tile);
  }
  const history=$('#homeHistory');history.replaceChildren();
  if(!s.history.length)history.append(element('p','home-history-empty','Vença uma batalha para começar sua história e conquistar um Pergaminho de Liliti.'));
@@ -65,7 +75,7 @@ const drawer=$('#lobbyDrawer'),drawerContent=$('#lobbyDrawerContent');
 const drawerTitle=$('#lobbyDrawerTitle');
 let activeDrawer='scroll';
 const sections={scroll:$('#lobbyScrollPanel'),inventory:$('#lobbyInventoryPanel'),skins:$('#lobbySkinsPanel'),history:$('#lobbyHistoryPanel')};
-const titles={scroll:'PERGAMINHOS DE LILITI',inventory:'FORJA & INVENTÁRIO',skins:'SKINS DOS REINOS',history:'CONQUISTAS'};
+const titles={scroll:'PERGAMINHOS DE LILITI',inventory:'FORJA & INVENTÁRIO',skins:'SKINS · LOJA',history:'CONQUISTAS'};
 function openDrawer(which='scroll'){
  if(!sections[which])which='scroll';
  previousFocus=document.activeElement;
