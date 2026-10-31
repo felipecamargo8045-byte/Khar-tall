@@ -3,7 +3,7 @@
 const $=selector=>document.querySelector(selector);
 const api=window.CercoRewards;
 if(!api)return;
-let latestPrize=null;
+let latestPrize=null,previousFocus=null,hideBurst=null;
 const format=n=>Number(n||0).toLocaleString('pt-BR');
 function element(tag,className,text){
  const el=document.createElement(tag);
@@ -61,7 +61,38 @@ function render(){
   $('#homeRewardMessage').textContent=s.scrolls?'Abra um pergaminho para revelar o seu prêmio.':'Vença uma partida para conquistar o primeiro pergaminho.';
  }
 }
+const drawer=$('#lobbyDrawer'),drawerContent=$('#lobbyDrawerContent');
+const drawerTitle=$('#lobbyDrawerTitle');
+let activeDrawer='scroll';
+const sections={scroll:$('#lobbyScrollPanel'),inventory:$('#lobbyInventoryPanel'),skins:$('#lobbySkinsPanel'),history:$('#lobbyHistoryPanel')};
+const titles={scroll:'PERGAMINHOS DE LILITI',inventory:'FORJA & INVENTÁRIO',skins:'SKINS DOS REINOS',history:'CONQUISTAS'};
+function openDrawer(which='scroll'){
+ if(!sections[which])which='scroll';
+ previousFocus=document.activeElement;
+ activeDrawer=which;
+ drawer.hidden=false;
+ drawerTitle.textContent=titles[which];
+ for(const [name,section] of Object.entries(sections))section.hidden=name!==which;
+ drawerContent.scrollTop=0;
+ $('#lobbyDrawerClose').focus({preventScroll:true});
+ render();
+}
+function closeDrawer(){
+ if(drawer.hidden)return;
+ drawer.hidden=true;
+ for(const section of Object.values(sections))section.hidden=false;
+ if(previousFocus?.isConnected)previousFocus.focus({preventScroll:true});
+}
+function syncSound(){
+ const sound=window.CercoAudio?.getSettings?.();
+ $('#lobbySound').textContent=sound?.on===false?'♪̸':'♫';
+ $('#lobbySound').setAttribute('aria-pressed',String(sound?.on!==false));
+ const voice=window.CercoVoices?.enabled?.()!==false;
+ $('#lobbyVoice').textContent=voice?'🗣':'⊘';
+ $('#lobbyVoice').setAttribute('aria-pressed',String(voice));
+}
 function go(view){
+ closeDrawer();
  const btn=$('#navigation [data-view="'+view+'"]');
  btn?.click();
 }
@@ -76,11 +107,36 @@ $('#homeToForge').addEventListener('click',()=>{
 });
 $('#homeOpenScroll').addEventListener('click',()=>{
  const won=api.openScroll();
- if(won)latestPrize=won;
+ if(won){
+  latestPrize=won;
+  const burst=$('#lobbyRewardBurst');
+  $('#lobbyRewardPrize').textContent='✦ +'+won.qty+' '+won.name;
+  burst.hidden=false;
+  burst.classList.remove('is-revealing');
+  void burst.offsetWidth;
+  burst.classList.add('is-revealing');
+  clearTimeout(hideBurst);
+  hideBurst=setTimeout(()=>{burst.hidden=true},2100);
+ }
  render();
 });
+$('#lobbyOpenScroll').addEventListener('click',()=>openDrawer('scroll'));
+$('#lobbyOpenInventory').addEventListener('click',()=>openDrawer('inventory'));
+$('#lobbySkins').addEventListener('click',()=>openDrawer('skins'));
+$('#lobbyHistory').addEventListener('click',()=>openDrawer('history'));
+$('#lobbyProgress').addEventListener('click',()=>openDrawer('history'));
+$('#lobbyProfile').addEventListener('click',()=>go('profile'));
+$('#lobbyDrawerClose').addEventListener('click',closeDrawer);
+$('#lobbySound').addEventListener('click',()=>{document.querySelector('#soundToggle')?.click();syncSound()});
+$('#lobbyVoice').addEventListener('click',()=>{document.querySelector('#voiceToggle')?.click();syncSound()});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!drawer.hidden)closeDrawer()});
+document.querySelectorAll('#navigation [data-view]').forEach(btn=>btn.addEventListener('click',()=>{
+ if(btn.dataset.view!=='home')closeDrawer();
+ syncSound();
+}));
+
 document.addEventListener('cerco:rewards',render);
 document.querySelector('#navigation [data-view="home"]')?.addEventListener('click',render);
-window.CercoHome={render};
-render();
+window.CercoHome={render,openDrawer,closeDrawer,syncSound};
+render();syncSound();
 })();
