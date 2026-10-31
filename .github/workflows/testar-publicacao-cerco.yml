@@ -259,6 +259,10 @@ jobs:
             await page.locator('#featuredCards button').first().click();
             assert.equal(await page.locator('.page.active').getAttribute('data-page'),'cards');
             assert.match(await page.locator('#cardName').innerText(),/Liliti/i);
+            await page.waitForFunction(()=>{
+              const art=document.getElementById('fullArt');
+              return art?.complete&&art.naturalWidth>0&&art.src.includes('portrait_lilith_ruiva.webp');
+            },null,{timeout:15000});
             const img=await page.locator('#fullArt').evaluate(e=>e.complete&&e.naturalWidth>0);
             assert.ok(img,'Imagem Liliti nao carregou');
             // O botão principal do lobby deve entrar diretamente na batalha,
