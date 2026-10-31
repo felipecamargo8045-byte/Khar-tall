@@ -86,6 +86,7 @@ jobs:
               assert.ok(await page.locator('#'+id).count(),'Campo da tela inicial ausente: '+id);
             }
             assert.equal(await page.locator('#homeScrolls').innerText(),'0');
+            await page.screenshot({path:'/tmp/cerco-home-mobile.png',fullPage:true});
             assert.ok(await page.locator('#homeOpenScroll').isDisabled(),'Pergaminho aberto sem vitória');
             const rewardsInitial=await page.evaluate(()=>window.CercoRewards.snapshot());
             assert.equal(rewardsInitial.level,1,'O novo comandante deveria começar no nível 1');
@@ -523,6 +524,7 @@ jobs:
         with:
           name: cerco-dos-reis-mobile-preview
           path: |
+            /tmp/cerco-home-mobile.png
             /tmp/cerco-arena-mobile.png
             /tmp/cerco-loja-mobile.png
           if-no-files-found: ignore
