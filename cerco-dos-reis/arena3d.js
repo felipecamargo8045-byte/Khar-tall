@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {bevelBox,reliefMap,floorHeight,pickGround,fitArena,createAtmosphere,characterShadow,batchStatic,framingInfo} from './arena-atmosphere.js?v=1';
+import {bevelBox,reliefMap,floorHeight,pickGround,fitArena,createAtmosphere,characterShadow,batchStatic,framingInfo} from './arena-atmosphere.js?v=2';
 
 // Arena WebGL 3D local, geometria própria e sem serviços pagos.
 // Modelo visual independente do motor de combate; não substitui suas regras.
@@ -944,7 +944,7 @@ function size(){
  const w=host.clientWidth||gameCanvas.clientWidth||420;
  const h=host.clientHeight||gameCanvas.clientHeight||560;
  renderer.setSize(w,h,false);
- fitArena(camera,w,h);
+ fitArena(camera,w,h,forts);
  atmosphere?.invalidate();
 }
 function init(){

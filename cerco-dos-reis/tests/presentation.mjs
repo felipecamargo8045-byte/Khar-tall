@@ -8,8 +8,10 @@ camera.position.set(0,23,18);camera.lookAt(0,.4,0);
 const caster=new THREE.Raycaster(),hit=new THREE.Vector3();
 for(const [width,height] of [[360,520],[390,610],[844,300],[1200,700]]){
  fitArena(camera,width,height);
- for(const x of [-6.18,6.18])for(const y of [-.78,4.95])for(const z of [-7.8,7.8]){
-  const projected=new THREE.Vector3(x,y,z).project(camera);
+ const landmarks=[[0,4.95,-6.77],[0,4.95,6.77]];
+ for(const x of [-5.25,5.25])for(const z of [-7,7])landmarks.push([x,floorHeight(x,z),z]);
+ for(const point of landmarks){
+  const projected=new THREE.Vector3(...point).project(camera);
   assert.ok(Math.abs(projected.x)<1&&Math.abs(projected.y)<1,'Cenário cortado em '+width+'x'+height);
  }
  for(const [x,z] of [[-2.5,0],[2.5,-.6],[-2.5,3.2],[2.5,-4],[0,4],[-4.6,2]]){

@@ -47,13 +47,35 @@ export function pickGround(ray,target){
  return target;
 }
 
-export function fitArena(camera,width,height){
- // Inclui plataformas e coroas das seis fortalezas. A câmera ortográfica
- // mantém a leitura e o raycast precisos, com uma inclinação mais profunda.
- camera.updateMatrixWorld(true);
+function projectedForts(camera,forts){
  const bounds=new THREE.Box2();
- for(const x of [-6.18,6.18])for(const y of [-.78,4.95])for(const z of [-7.8,7.8]){
-  const p=new THREE.Vector3(x,y,z).applyMatrix4(camera.matrixWorldInverse);
+ for(const fort of forts){
+  fort.mesh.updateWorldMatrix(true,true);
+  fort.mesh.traverse(mesh=>{
+   if(!mesh.isMesh)return;
+   if(mesh.isInstancedMesh){if(!mesh.boundingBox)mesh.computeBoundingBox()}
+   else if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
+   const box=mesh.isInstancedMesh?mesh.boundingBox:mesh.geometry.boundingBox;
+   for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z]){
+    const p=new THREE.Vector3(x,y,z).applyMatrix4(mesh.matrixWorld).applyMatrix4(camera.matrixWorldInverse);
+    bounds.expandByPoint(new THREE.Vector2(p.x,p.y));
+   }
+  });
+ }
+ return bounds;
+}
+
+export function fitArena(camera,width,height,forts=[]){
+ // Enquadra as peças de arquitetura, em vez de um volume vazio acima delas.
+ // No retrato, apenas o parapeito decorativo pode sair do quadro; toda a
+ // área jogável, coroas e barras de vida permanecem acessíveis.
+ camera.updateMatrixWorld(true);
+ const bounds=projectedForts(camera,forts);
+ const points=[];
+ for(const x of [-5.5,5.5])for(const z of [-7.6,7.6])points.push([x,-.81,z]);
+ if(!forts.length)for(const z of [-6.77,6.77])points.push([0,4.95,z]);
+ for(const point of points){
+  const p=new THREE.Vector3(...point).applyMatrix4(camera.matrixWorldInverse);
   bounds.expandByPoint(new THREE.Vector2(p.x,p.y));
  }
  const aspect=Math.max(.28,width/Math.max(1,height));
@@ -102,7 +124,12 @@ export function createAtmosphere(renderer,scene){
  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.10;
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
- scene.background=new THREE.Color(0x14263b);scene.fog=new THREE.Fog(0x14263b,35,60);
+ const backdrop=document.createElement('canvas');backdrop.width=backdrop.height=256;
+ const background=backdrop.getContext('2d'),glow=background.createRadialGradient(128,150,10,128,150,190);
+ glow.addColorStop(0,'#2a4256');glow.addColorStop(.6,'#192e43');glow.addColorStop(1,'#101e31');
+ background.fillStyle=glow;background.fillRect(0,0,256,256);
+ scene.background=new THREE.CanvasTexture(backdrop);scene.background.colorSpace=THREE.SRGBColorSpace;
+ scene.fog=new THREE.Fog(0x14263b,35,60);
  scene.environment=environment();scene.environmentIntensity=.55;
  scene.add(new THREE.HemisphereLight(0xdceaff,0x3c4c50,1.18));
  scene.add(new THREE.AmbientLight(0xffe4c5,.16));
@@ -211,14 +238,7 @@ export function batchStatic(root,exclude=[]){
 
 export function framingInfo(camera,forts){
  camera.updateMatrixWorld(true);
- const extent={left:Infinity,right:-Infinity,top:-Infinity,bottom:Infinity};
- for(const fort of forts){
-  const bounds=new THREE.Box3().setFromObject(fort.mesh);
-  for(const x of [bounds.min.x,bounds.max.x])for(const y of [bounds.min.y,bounds.max.y])for(const z of [bounds.min.z,bounds.max.z]){
-   const p=new THREE.Vector3(x,y,z).project(camera);
-   extent.left=Math.min(extent.left,p.x);extent.right=Math.max(extent.right,p.x);
-   extent.top=Math.max(extent.top,p.y);extent.bottom=Math.min(extent.bottom,p.y);
-  }
- }
- return extent;
+ const b=projectedForts(camera,forts),width=camera.right-camera.left,height=camera.top-camera.bottom;
+ return {left:2*(b.min.x-camera.left)/width-1,right:2*(b.max.x-camera.left)/width-1,
+  bottom:2*(b.min.y-camera.bottom)/height-1,top:2*(b.max.y-camera.bottom)/height-1};
 }
