@@ -60,7 +60,10 @@
  function shine(id){
   flashing=id;flashUntil=performance.now()+950;
   for(const stage of document.querySelectorAll('.card-relief'))if(stage.dataset.card===id){
-   stage.classList.remove('is-shining');requestAnimationFrame(()=>stage.classList.add('is-shining'));
+   stage.classList.remove('is-shining');
+   // Reinicia o reflexo imediatamente no toque, sem esperar um frame do renderizador 3D.
+   void stage.offsetWidth;
+   stage.classList.add('is-shining');
    setTimeout(()=>stage.classList.remove('is-shining'),950);
   }
  }
