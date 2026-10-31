@@ -3,38 +3,30 @@
 const $=s=>document.querySelector(s);
 const ASSET='./origem-apk/assets/';
 const KEY='cerco-dos-reis-forja-local-v1';
-const bannerStyles=[
- {id:'steel',name:'Aço Real',code:'AÇO',color:'#7797b3',detail:'Prata e azul aço'},
- {id:'ember',name:'Brasa Antiga',code:'BRASA',color:'#d49b55',detail:'Cobre e ouro'},
- {id:'forest',name:'Bosque Real',code:'VERDE',color:'#3ba37e',detail:'Verde e esmeralda'},
- {id:'amethyst',name:'Coroa Mítica',code:'MÍTICO',color:'#9967d0',detail:'Violeta e prata'},
- {id:'scarlet',name:'Estandarte Rubro',code:'RUBRO',color:'#c55b73',detail:'Bordô imperial'},
- {id:'divine',name:'Chama Divina',code:'DIVINO',color:'#8dcfe3',detail:'Azul celeste e ouro'},
- {id:'night',name:'Cavaleiro da Noite',code:'NOITE',color:'#3e5377',detail:'Carvão e aço'},
- {id:'sun',name:'Trono Dourado',code:'OURO',color:'#e8b858',detail:'Dourado antigo'}
-];
-// A seleção visual antiga não concede direito a skins premium.
-let selection='steel';
-function label(){const s=bannerStyles.find(x=>x.id===selection);$('#shopStatus').textContent='ACABAMENTO ATUAL: '+s.name.toUpperCase();document.documentElement.style.setProperty('--chosen-banner',s.color)}
+// Skin individual à venda para QUALQUER jogador na loja já existente
+// do Khar Tall. Fragmentos dos Pergaminhos de Liliti são exclusivos
+// de assinantes mensais, e não fazem parte da compra normal.
+const bannerStyles=window.CercoRewards?.skins||[];
+const STORE_URL='https://khar-tall-online.onrender.com/loja';
 function renderShop(){
  const grid=$('#shopGrid');grid.replaceChildren();
  for(const entry of bannerStyles){
-  const btn=document.createElement('button');btn.type='button';btn.className='shop-item'+(entry.id===selection?' active':'');
-  btn.setAttribute('aria-pressed',entry.id===selection?'true':'false');
-  const swatch=document.createElement('span');swatch.className='swatch';swatch.style.setProperty('--swatch',entry.color);
+  const link=document.createElement('a');
+  link.href=STORE_URL;
+  link.target='_blank';link.rel='noopener noreferrer';
+  link.className='shop-item';
+  link.dataset.skinId=entry.id;
+  link.dataset.purchaseUrl=STORE_URL;
+  link.setAttribute('aria-label','Comprar skin '+entry.name+' na loja do Khar Tall por R$ 2,50');
+  const swatch=document.createElement('span');
+  swatch.className='swatch';swatch.style.setProperty('--swatch',entry.color);
   const name=document.createElement('strong');name.textContent=entry.name;
-  const info=document.createElement('small');info.textContent=entry.id===selection?'PADRÃO':'🔒 ASSINANTES MENSAIS';
-  btn.append(swatch,name,info);
-  btn.addEventListener('click',()=>{
-    if(entry.id!=='steel'&&!window.CercoRewards?.hasMonthlyMembership?.()){
-      $('#shopStatus').textContent='🔒 APARÊNCIAS EXCLUSIVAS DE ASSINANTES MENSAIS — ASSINATURA NÃO CONECTADA';
-      return;
-    }
-    // Só a aparência padrão está disponível neste treinamento local.
-    selection='steel';label();renderShop();
-  });grid.append(btn);
+  const price=document.createElement('small');price.textContent='COMPRAR • R$ 2,50';
+  const fragments=document.createElement('small');fragments.textContent='Fragmentos nos pergaminhos: só assinantes';
+  link.append(swatch,name,price,fragments);
+  grid.append(link);
  }
- label();
+ $('#shopStatus').textContent='TODOS PODEM COMPRAR SKINS • R$ 2,50 CADA';
 }
 const featured=[
  ['Liliti','portrait_lilith_ruiva.webp','liliti'],
