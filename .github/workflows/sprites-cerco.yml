@@ -1,0 +1,30 @@
+name: Gerar sprites das tropas para a arena
+on:
+  push:
+    branches: [cerco-dos-reis-migracao-2026-10]
+    paths:
+      - 'cerco-dos-reis/make_sprites.py'
+      - '.github/workflows/sprites-cerco.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sprites:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cerco-dos-reis-migracao-2026-10
+      - name: Instalar ferramentas de recorte
+        run: python -m pip install --quiet pillow scipy opencv-python-headless
+      - name: Separar personagens do fundo
+        run: python cerco-dos-reis/make_sprites.py
+      - name: Versionar sprites para publicacao na Render
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cerco-dos-reis/sprites/
+          if ! git diff --cached --quiet; then
+            git commit -m "assets(cerco): sprites de personagem sem fundo para a arena"
+            git push origin HEAD:cerco-dos-reis-migracao-2026-10
+          fi

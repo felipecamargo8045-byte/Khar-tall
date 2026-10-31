@@ -1,0 +1,36 @@
+name: Recuperar ícones Android do Cerco dos Reis
+on:
+  push:
+    branches: [cerco-dos-reis-migracao-2026-10]
+    paths: ['.github/workflows/icones-cerco.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  icones:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cerco-dos-reis-migracao-2026-10
+      - name: Extrair ícones originais sem alterar assinatura do APK
+        run: |
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          from pathlib import Path
+          with ZipFile('downloads/cerco-dos-reis-1.0.0.apk') as z:
+              for name in ('icon-192.png','icon-512.png'):
+                  out=Path('cerco-dos-reis/icons')/name
+                  out.parent.mkdir(parents=True,exist_ok=True)
+                  out.write_bytes(z.read('assets/web/icons/'+name))
+                  print('extraido',out,len(out.read_bytes()))
+          PY
+      - name: Versionar apenas os ícones
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cerco-dos-reis/icons
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(cerco): recuperar icones originais para PWA Android"
+            git push origin HEAD:cerco-dos-reis-migracao-2026-10
+          fi

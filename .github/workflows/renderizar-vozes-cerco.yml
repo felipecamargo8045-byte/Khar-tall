@@ -1,0 +1,64 @@
+name: Produzir vozes originais dos personagens Khar Tall
+on:
+  push:
+    branches: [cerco-dos-reis-migracao-2026-10]
+    paths:
+      - '.github/workflows/renderizar-vozes-cerco.yml'
+      - 'cerco-dos-reis/render-voice-pack.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: cerco-vozes-kokoro
+  cancel-in-progress: true
+jobs:
+  produce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cerco-dos-reis-migracao-2026-10
+          persist-credentials: true
+      - name: Instalar motor aberto sem APIs pagas
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq espeak-ng libespeak-ng1 ffmpeg libsndfile1
+          python -m pip install --disable-pip-version-check -q "kokoro-onnx>=0.5.0" "misaki-fork[en]" soundfile
+      - name: Baixar modelo Kokoro Apache-2.0 para CPU
+        run: |
+          curl --fail --location --retry 4 --connect-timeout 30 --output /tmp/kokoro-v1.0.int8.onnx \
+            https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.int8.onnx
+          curl --fail --location --retry 4 --connect-timeout 30 --output /tmp/voices-v1.0.bin \
+            https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
+          test "$(stat -c %s /tmp/kokoro-v1.0.int8.onnx)" -gt 60000000
+          test "$(stat -c %s /tmp/voices-v1.0.bin)" -gt 10000000
+      - name: Renderizar falas de cada personagem com direção vocal própria
+        run: |
+          python cerco-dos-reis/render-voice-pack.py
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          root=Path("cerco-dos-reis/voice-pack")
+          m=json.loads((root/"manifest.json").read_text())
+          characters=m["characters"]
+          assert len(characters)==7
+          assert {x for x in characters}=={"soldado","arqueiro","guardiao","batedor","rei","colosso","liliti"}
+          for char,meta in characters.items():
+            for scene,names in meta["clips"].items():
+              for name in names:
+                f=root/name
+                assert f.is_file() and f.stat().st_size>2000,(char,scene,name)
+          print("Dublagens pré-gravadas e verificadas: OK")
+          PY
+      - name: Incluir gravações prontas na versão do jogo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cerco-dos-reis/voice-pack/
+          if ! git diff --cached --quiet; then
+            git commit -m "assets(cerco): dublagens portugues original fantasia gravadas para sete classes"
+            git fetch origin cerco-dos-reis-migracao-2026-10
+            git rebase origin/cerco-dos-reis-migracao-2026-10
+            git push origin HEAD:cerco-dos-reis-migracao-2026-10
+          fi
