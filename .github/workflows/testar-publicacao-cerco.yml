@@ -459,7 +459,10 @@ jobs:
             await page.locator('#start').click();
             await page.evaluate(()=>window.__cercoTest.createEnemy('soldado',310,313));
             await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.57}});
-            await page.waitForTimeout(90);
+            await page.waitForFunction(()=>{
+              const ally=window.__cercoTest.units().filter(u=>u.side==='ally');
+              return ally.length===2&&ally.every(u=>u.lane===1)&&ally.some(u=>u.targetId);
+            },null,{timeout:5000});
             group=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
             assert.deepEqual(group.map(u=>u.lane),[1,1],'Inimigo proximo deve alterar a rota do grupo');
             assert.ok(group.some(u=>u.targetId),'Grupo nao adquiriu alvo proximo');
@@ -470,7 +473,10 @@ jobs:
             await page.evaluate(()=>window.__cercoTest.createEnemy('soldado',310,315));
             await page.locator('#hand button').nth(2).click();
             await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.57}});
-            await page.waitForTimeout(90);
+            await page.waitForFunction(()=>{
+              const ally=window.__cercoTest.units().filter(u=>u.side==='ally');
+              return ally.length===2&&ally.every(u=>u.lane===1&&u.targetId);
+            },null,{timeout:5000});
             const solo=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
             assert.equal(solo.length,2,'Soldados devem invocar duas unidades');
             assert.ok(solo.every(u=>u.lane===1),'Soldados ignoraram inimigo próximo');
