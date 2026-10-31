@@ -701,6 +701,7 @@ jobs:
             assert.ok(portraits.backgrounds,'A imagem inteira ou o preenchimento do fundo não foi carregado');
             // Regressão do Batedor: imagem sem zoom/corte, fundo integrado sem bordas vazias.
             await page.locator('#cardGrid button[data-card="batedor"]').click();
+            await page.waitForFunction(()=>document.getElementById('fullArt')?.complete&&document.getElementById('fullArt')?.naturalWidth>0);
             const wholeBatedor=await page.locator('#artOuter .card-relief').evaluate(stage=>{
               const img=stage.querySelector('.card-back'),css=getComputedStyle(img);
               return {source:img.getAttribute('src'),fit:css.objectFit,position:css.objectPosition,
