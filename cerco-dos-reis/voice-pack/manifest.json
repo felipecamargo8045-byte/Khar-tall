@@ -1,15 +1,16 @@
 {
-  "version": 1,
-  "provider": "Kokoro-82M / pt-BR (Apache-2.0) + FFmpeg",
+  "version": 2,
+  "provider": "Kokoro-82M / pt-BR (Apache-2.0) + FFmpeg 72 kbps voz limpa",
   "engine": "pre-generated-static-audio",
   "characters": {
     "arqueiro": {
-      "style": "jovem, ágil, valente",
+      "style": "arqueiro jovem, vigilante das pontes, arco certeiro",
       "voice": "pm_alex",
       "clips": {
         "attack": [
           "arqueiro-attack-0.ogg",
-          "arqueiro-attack-1.ogg"
+          "arqueiro-attack-1.ogg",
+          "arqueiro-attack-2.ogg"
         ],
         "hurt": [
           "arqueiro-hurt-0.ogg"
@@ -18,22 +19,24 @@
       },
       "dialogue": {
         "attack": [
-          "Alvo à vista!",
-          "Disparo certeiro!"
+          "As pontes não podem cair!",
+          "Pelo reino, flechas ao alto!",
+          "O trono ainda resiste!"
         ],
         "hurt": [
-          "Preciso de cobertura!"
+          "A muralha precisa de cobertura!"
         ],
         "victory": []
       }
     },
     "soldado": {
-      "style": "guerreiro firme, golpe decidido",
+      "style": "soldado fiel, guerreiro do reino dividido",
       "voice": "pm_alex",
       "clips": {
         "attack": [
           "soldado-attack-0.ogg",
-          "soldado-attack-1.ogg"
+          "soldado-attack-1.ogg",
+          "soldado-attack-2.ogg"
         ],
         "hurt": [
           "soldado-hurt-0.ogg"
@@ -42,22 +45,24 @@
       },
       "dialogue": {
         "attack": [
-          "Pela linha de frente!",
-          "Minha espada não falha!"
+          "Uma espada pelo nosso povo.",
+          "Não deixem o rei sozinho!",
+          "Ninguém atravessa esta ponte!"
         ],
         "hurt": [
-          "Ainda estou de pé!"
+          "Ainda defendo o juramento!"
         ],
         "victory": []
       }
     },
     "colosso": {
-      "style": "enorme, cavernoso e ameaçador",
+      "style": "colosso gigantesco, especialista em romper muralhas",
       "voice": "pm_santa",
       "clips": {
         "attack": [
           "colosso-attack-0.ogg",
-          "colosso-attack-1.ogg"
+          "colosso-attack-1.ogg",
+          "colosso-attack-2.ogg"
         ],
         "hurt": [
           "colosso-hurt-0.ogg"
@@ -66,22 +71,24 @@
       },
       "dialogue": {
         "attack": [
-          "Vou esmagar!",
-          "O chão vai tremer!"
+          "Minhas passadas abrem o cerco.",
+          "Pela brecha na muralha!",
+          "O castelo vai ruir!"
         ],
         "hurt": [
-          "Isso não me detém!"
+          "Pedra não se ajoelha!"
         ],
         "victory": []
       }
     },
     "guardiao": {
-      "style": "ancião austero, voz de guardião",
+      "style": "guardião ancestral e juramentado ao trono",
       "voice": "pm_santa",
       "clips": {
         "attack": [
           "guardiao-attack-0.ogg",
-          "guardiao-attack-1.ogg"
+          "guardiao-attack-1.ogg",
+          "guardiao-attack-2.ogg"
         ],
         "hurt": [
           "guardiao-hurt-0.ogg"
@@ -90,22 +97,24 @@
       },
       "dialogue": {
         "attack": [
-          "Nada passa!",
-          "Protegerei o reino!"
+          "Meu juramento vive além da guerra.",
+          "Para alcançar o rei, atravesse minha guarda!",
+          "Nem dois reinos romperão esta defesa."
         ],
         "hurt": [
-          "Minha defesa resiste!"
+          "Ainda guardo o trono!"
         ],
         "victory": []
       }
     },
     "batedor": {
-      "style": "veloz e sarcástico, ataque preciso",
+      "style": "batedor veloz, marca o inimigo antes do segundo golpe",
       "voice": "pm_alex",
       "clips": {
         "attack": [
           "batedor-attack-0.ogg",
-          "batedor-attack-1.ogg"
+          "batedor-attack-1.ogg",
+          "batedor-attack-2.ogg"
         ],
         "hurt": [
           "batedor-hurt-0.ogg"
@@ -114,22 +123,24 @@
       },
       "dialogue": {
         "attack": [
-          "Você está marcado!",
-          "Não existe fuga!"
+          "Minha marca precede a sentença!",
+          "Primeira marca. Segundo golpe!",
+          "A próxima descarga será a última!"
         ],
         "hurt": [
-          "Ainda posso lutar!"
+          "Minha marca ainda queima!"
         ],
         "victory": []
       }
     },
     "rei": {
-      "style": "monarca nobre, comando firme",
+      "style": "rei de uma guerra entre irmãos, imponente e atormentado",
       "voice": "pm_santa",
       "clips": {
         "attack": [
           "rei-attack-0.ogg",
-          "rei-attack-1.ogg"
+          "rei-attack-1.ogg",
+          "rei-attack-2.ogg"
         ],
         "hurt": [
           "rei-hurt-0.ogg"
@@ -140,24 +151,26 @@
       },
       "dialogue": {
         "attack": [
-          "Pelo meu reino!",
-          "O trono será defendido!"
+          "Dois irmãos. Um reino dividido.",
+          "O povo não pagará por esta guerra!",
+          "Não entregarei meu trono ao sangue!"
         ],
         "hurt": [
-          "Não me derrotarão!"
+          "A coroa não vale outra vida!"
         ],
         "victory": [
-          "A vitória é nossa!"
+          "Que este reino encontre a paz!"
         ]
       }
     },
     "liliti": {
-      "style": "mulher poderosa, sedutora e misteriosa",
+      "style": "Liliti ruiva, misteriosa, ligada aos segredos da guerra entre irmãos",
       "voice": "pf_dora",
       "clips": {
         "attack": [
           "liliti-attack-0.ogg",
-          "liliti-attack-1.ogg"
+          "liliti-attack-1.ogg",
+          "liliti-attack-2.ogg"
         ],
         "hurt": [
           "liliti-hurt-0.ogg"
@@ -166,11 +179,12 @@
       },
       "dialogue": {
         "attack": [
-          "Sua vontade é minha.",
-          "Sinta o meu encanto."
+          "A história esqueceu minha voz.",
+          "Nem toda guerra nasce do ódio.",
+          "O que foi selado ainda pulsa."
         ],
         "hurt": [
-          "Você vai se arrepender!"
+          "Vocês não conhecem a verdade!"
         ],
         "victory": []
       }
