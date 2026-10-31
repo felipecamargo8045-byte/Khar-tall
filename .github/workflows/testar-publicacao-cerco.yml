@@ -34,10 +34,10 @@ jobs:
               assert name[1:] in html, name
           assert 'https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/' not in html
           assert 'src="./app.js?v=24"' in html
-          assert 'src="./rewards.js?v=1"' in html
-          assert 'src="./home.js?v=1"' in html
+          assert 'src="./rewards.js?v=2"' in html
+          assert 'src="./home.js?v=3"' in html
           assert 'src="./voices.js?v=4"' in html
-          assert 'src="./realm-ui.js?v=4"' in html
+          assert 'src="./realm-ui.js?v=5"' in html
           for name in ['game-ui.css','app.js','rewards.js','home.js','arena3d.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
               assert Path('cerco-dos-reis',name).is_file(),name
           print('Seis ambientes, recompensas, arquivos, navegacao e scripts: OK')
@@ -86,6 +86,30 @@ jobs:
               assert.ok(await page.locator('#'+id).count(),'Campo da tela inicial ausente: '+id);
             }
             assert.equal(await page.locator('#homeScrolls').innerText(),'0');
+            const lobbyRect=await page.evaluate(()=>{
+              const shell=document.querySelector('.lobby-shell').getBoundingClientRect(),
+                    nav=document.querySelector('#navigation').getBoundingClientRect(),
+                    battle=document.querySelector('#homePlay').getBoundingClientRect(),
+                    header=getComputedStyle(document.querySelector('.game-header'));
+              return {shell:{w:shell.width,h:shell.height},nav:{top:nav.top,bottom:nav.bottom},
+                battle:{w:battle.width,h:battle.height,bottom:battle.bottom},
+                screen:{w:innerWidth,h:innerHeight},header:header.display};
+            });
+            assert.equal(lobbyRect.header,'none','Lobby ainda exibe cabeçalho de site');
+            assert.ok(lobbyRect.shell.w>=lobbyRect.screen.w-2,'Lobby não ocupa toda a largura');
+            assert.ok(lobbyRect.nav.top>lobbyRect.screen.h*.8,'Navegação não está na parte inferior');
+            assert.ok(lobbyRect.battle.w>190&&lobbyRect.battle.h>=50,'Botão Batalhar não é dominante');
+            await page.locator('#lobbyOpenScroll').click();
+            assert.ok(await page.locator('#lobbyDrawer').isVisible(),'Menu de pergaminhos não abriu');
+            assert.ok(await page.locator('#lobbyScrollPanel').isVisible(),'Pergaminhos ausentes do menu');
+            await page.locator('#lobbyDrawerClose').click();
+            await page.locator('#lobbySkins').click();
+            assert.ok(await page.locator('#lobbySkinsPanel').isVisible(),'Menu de skins não abriu');
+            assert.equal(await page.locator('.home-skin-buy').count(),8,'Catálogo de skins ausente no lobby');
+            assert.equal(await page.locator('.home-skin-buy').first().getAttribute('href'),
+              'https://khar-tall-online.onrender.com/loja','Skin não comprável por todos');
+            await page.locator('#lobbyDrawerClose').click();
+
             await page.screenshot({path:'/tmp/cerco-home-mobile.png',fullPage:true});
             assert.ok(await page.locator('#homeOpenScroll').isDisabled(),'Pergaminho aberto sem vitória');
             const rewardsInitial=await page.evaluate(()=>window.CercoRewards.snapshot());
@@ -125,9 +149,9 @@ jobs:
             assert.equal(unique.size,7,'Personagens não têm direção vocal única');
             assert.ok(voiceAudit.clips.every(c=>c.file.endsWith('.ogg')),'Formato da dublagem não é OGG');
             // A ativação precisa partir de um clique real no navegador, como no jogo.
-            await page.locator('#voiceToggle').click();
+            await page.locator('#lobbyVoice').click();
             assert.equal(await page.evaluate(()=>window.CercoVoices.enabled()),false,'Falha ao silenciar dublagem');
-            await page.locator('#voiceToggle').click();
+            await page.locator('#lobbyVoice').click();
             assert.equal(await page.evaluate(()=>window.CercoVoices.enabled()),true,'Falha ao reativar dublagem');
             await page.waitForTimeout(160);
             const spoken=await page.evaluate(()=>{
@@ -139,10 +163,10 @@ jobs:
             assert.equal(spoken.latest.id,'arqueiro','Personagem errado na reprodução');
             assert.ok(spoken.latest.file.endsWith('.ogg'),'Fala não usou arquivo de áudio gravado');
             await page.evaluate(()=>window.CercoVoices.stop());
-            await page.locator('#voiceToggle').click();
+            await page.locator('#lobbyVoice').click();
             assert.equal(await page.evaluate(()=>window.CercoVoices.speak('rei','attack')),false,
               'Uma fala tocou com as vozes desligadas');
-            await page.locator('#voiceToggle').click();
+            await page.locator('#lobbyVoice').click();
 
             const originalAudio=await page.evaluate(()=>window.CercoAudio?.status());
             assert.ok(originalAudio?.original===true,'Motor original Khar Tall não ativado');
@@ -188,10 +212,10 @@ jobs:
               'Sons originais de mordida, flecha, passo, ferimento, destruição e vitória não foram vinculados');
             assert.ok(soundAudit.log.every(x=>!x.sample.toLowerCase().includes('howl')),'Uivo permaneceu no jogo');
 
-            await page.locator('#soundToggle').click();
+            await page.locator('#lobbySound').click();
             const muted=await page.evaluate(()=>window.CercoAudio.getSettings());
             assert.equal(muted.on,false,'Botao nao silencia som');
-            await page.locator('#soundToggle').click();
+            await page.locator('#lobbySound').click();
 
             assert.equal(await page.locator('.game-nav button').count(),6);
             const tabs=['home','arena','cards','shop','clans','profile'];
@@ -203,9 +227,11 @@ jobs:
             }
             await page.locator('#navigation [data-view="shop"]').click();
             assert.equal(await page.locator('#shopGrid .shop-item').count(),8);
-            await page.locator('#shopGrid .shop-item').nth(2).click();
-            assert.match(await page.locator('#shopStatus').innerText(),/ASSINANTES MENSAIS/i);
-            assert.ok(await page.locator('#shopGrid .shop-item').nth(2).getAttribute('aria-pressed')==='false','Skin premium equipada sem assinatura');
+            assert.match(await page.locator('#shopStatus').innerText(),/TODOS PODEM COMPRAR/i);
+            const buyUrl=await page.locator('#shopGrid .shop-item').nth(2).getAttribute('href');
+            assert.equal(buyUrl,'https://khar-tall-online.onrender.com/loja','Link da loja oficial não disponível para qualquer jogador');
+            assert.match(await page.locator('#shopGrid .shop-item').nth(2).innerText(),/COMPRAR.*R\$ 2,50/i);
+            assert.equal(await page.locator('#shopGrid .shop-item').nth(2).getAttribute('target'),'_blank');
             assert.equal(await page.locator('#featuredCards button').count(),8);
             await page.locator('#featuredCards button').first().click();
             assert.equal(await page.locator('.page.active').getAttribute('data-page'),'cards');
@@ -479,7 +505,17 @@ jobs:
             assert.equal(rewarded.after.scrolls,0,'Pergaminho não foi consumido');
             assert.equal(rewarded.after.opened,1,'Pergaminho não foi registrado');
             assert.ok(Object.values(rewarded.after.materials).some(n=>n>0),'Material não foi guardado');
-            assert.equal(rewarded.skinUnlocked,false,'Skins premium não devem ser liberadas sem assinatura verificada');
+            assert.equal(rewarded.skinUnlocked,false,'Assinatura mensal sem verificação não pode conceder fragmentos');
+            const skinRules=await page.evaluate(()=>{
+              const api=window.CercoRewards;
+              const skin=api.skins[0],purchase=api.purchaseInfo(skin.id);
+              return {purchase,canShop:api.checkPremiumSkin(skin.id),fragment:api.fragmentProgress(skin.id)};
+            });
+            assert.ok(skinRules.canShop,'Compra avulsa não está liberada para não assinantes');
+            assert.equal(skinRules.purchase.priceCents,250,'Preço da skin diferente do catálogo oficial');
+            assert.ok(skinRules.purchase.availableToAll,'Compra exige assinatura indevidamente');
+            assert.equal(skinRules.fragment.verified,false,'Fragmentos habilitados sem assinatura verificada');
+            assert.equal(skinRules.fragment.count,0,'Fragmentos de assinante foram criados sem verificação');
             await page.evaluate(()=>window.__cercoTest.reset());
             await page.locator('#start').click();
             // Tamanho variável dos celulares: HUD, arena e cartas não podem sair da tela.
@@ -516,7 +552,7 @@ jobs:
             await page.screenshot({path:'/tmp/cerco-loja-mobile.png'});
             assert.deepEqual(problems,[]);
             await browser.close();
-            console.log('PASSOU: 5 telas, loja embutida, estandartes, arte Liliti, batalha, viewport Android, sem erros JS');
+            console.log('PASSOU: lobby de jogo, skins à venda para todos, pergaminhos, combate 3D, controles Android e sem erros JS');
           })().catch(e=>{console.error(e);process.exit(1)});
           JS
       - uses: actions/upload-artifact@v4
