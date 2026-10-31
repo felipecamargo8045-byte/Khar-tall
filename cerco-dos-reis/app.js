@@ -39,7 +39,7 @@ const c=chosen,p=prog(c.id),t=tier(p.level);cssTier($('#artOuter'),t);$('#fullAr
   panelForge.className='evolution-forge';
   const heading=document.createElement('h3');heading.textContent='⚒ Forja de evolução · estágio '+recipe.stage+' / '+recipe.limit;
   panelForge.append(heading);
-  const body=document.createElement('p');body.textContent='A forja reforça dano e vida em 4% por estágio, com materiais dos Pergaminhos de Liliti.';
+  const body=document.createElement('p');body.textContent='Cada nível reforça os atributos-base em 1%. A forja acrescenta 4% por estágio, com materiais dos Pergaminhos de Liliti.';
   panelForge.append(body);
   const req=document.createElement('div');req.className='spec-grid';
   const items=upgradeApi.materials;
@@ -192,8 +192,8 @@ function addUnit(c,location,side){
    const lane=tacticalLane(spot.x,spot.y,side,i,count);
    const nearby=closestEnemyAt(side,{x,y},TARGET_AWARENESS);
    const id=cryptoRandom();
-   const level=c.id==='liliti'?Math.min(100,Math.max(1,Number(prog(c.id).level)||1)):prog(c.id).level;
-   const boost=(1+0.04*(window.CercoRewards?.snapshot?.().upgrades?.[c.id]||0))*(c.id==='liliti'?1+level*.01:1);
+   const level=Math.min(100,Math.max(1,Number(prog(c.id).level)||1));
+   const boost=(1+0.04*(window.CercoRewards?.snapshot?.().upgrades?.[c.id]||0))*(1+level*.01);
    const maxHp=Math.round(c.hp*boost);
    const unit={id,card:c,side,lane,x,y,level,hp:maxHp,maxHp,damageMultiplier:boost,cooldown:0,
      first:true,mark:null,stun:0,targetId:nearby?.id||null,state:'walk'};

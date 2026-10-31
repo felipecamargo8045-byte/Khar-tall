@@ -679,6 +679,9 @@ jobs:
             assert.equal(relief.kind,'liliti');assert.equal(relief.layers,2);assert.ok(relief.dust>=20);assert.equal(relief.cover,'cover');
             assert.ok((await page.locator('#cardBadges').innerText()).includes('Suprema'));
             assert.ok((await page.locator('#cardOffer').innerText()).includes('10,00'));
+            await page.locator('#fullArt').click();
+            assert.equal(await page.locator('#artOuter .card-light-sweep').evaluate(node=>getComputedStyle(node,'::after').animationName),'card-reflection');
+            await page.locator('#artOuter').scrollIntoViewIfNeeded();
             await page.screenshot({path:'/tmp/cerco-cartas-liliti.png'});
             await page.locator('#navigation [data-view="shop"]').click();
             assert.equal(await page.locator('.liliti-store-card [data-cerco-buy="card_liliti"]').count(),1);

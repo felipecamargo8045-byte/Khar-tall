@@ -19,7 +19,7 @@
   if(!image?.naturalWidth||!copy||!stage.clientWidth||!stage.clientHeight)return;
   const w=stage.clientWidth,h=stage.clientHeight,scale=Math.max(w/image.naturalWidth,h/image.naturalHeight);
   const iw=image.naturalWidth*scale,ih=image.naturalHeight*scale;
-  for(const [property,value]of Object.entries({width:iw+'px',height:ih+'px',left:(w-iw)*(crops[stage.dataset.card]??.5)+'px',top:(h-ih)*.4+'px'}))copy.style.setProperty(property,value,'important');
+  for(const [property,value]of Object.entries({width:iw+'px',height:ih+'px',left:(w-iw)*(crops[stage.dataset.card]??.5)+'px',top:(h-ih)*(stage.dataset.card==='liliti'?.12:.4)+'px'}))copy.style.setProperty(property,value,'important');
  }
  function decorate(image,id){
   if(!image||!id)return;
@@ -33,7 +33,7 @@
     const layer=document.createElement('i');layer.className=name;layer.setAttribute('aria-hidden','true');stage.append(layer);
    }
   }
-  stage.dataset.card=id;stage.style.setProperty('--crop-x',((crops[id]??.5)*100)+'%');stage.style.setProperty('--figure',`polygon(${shapes[id]||'0 0,100% 0,100% 100%,0 100%'})`);
+  stage.dataset.card=id;stage.style.setProperty('--crop-y',id==='liliti'?'12%':'40%');stage.style.setProperty('--crop-x',((crops[id]??.5)*100)+'%');stage.style.setProperty('--figure',`polygon(${shapes[id]||'0 0,100% 0,100% 100%,0 100%'})`);
   const copy=stage.querySelector('.card-subject img');if(copy.getAttribute('src')!==image.getAttribute('src'))copy.src=image.getAttribute('src');
   if(id==='liliti'&&!stage.querySelector('.card-stardust')){
    const dust=document.createElement('span');dust.className='card-stardust';dust.setAttribute('aria-hidden','true');
