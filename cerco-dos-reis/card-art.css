@@ -44,58 +44,63 @@
 .tile-img:has(.card-relief[data-card="liliti"]){border-color:#edcb85;box-shadow:0 0 0 1px #745936,0 0 15px #efbb4d44}
 
 
-/* Relevo 3D das figuras: uma segunda silhueta dourada acompanha exatamente
-   o mesmo recorte/crop da arte, atrás da figura e à frente do cenário.
-   Não modifica a paleta original das ilustrações nem as bordas de raridade. */
-.card-relief{transform-style:preserve-3d}
-.card-relief.has-figure-outline>.card-back{transform:translateZ(-6px) scale(1.016)}
-.card-gold-outline{
-  position:absolute;inset:0;display:block;pointer-events:none;
-  border-radius:inherit;overflow:hidden;
-  transform:translateZ(16px) scale(1.055);
-  transform-origin:center center;
-  filter:drop-shadow(0 0 1px #fff3c6) drop-shadow(0 0 4px #cf9d40b5);
-}
-.card-gold-outline>img{
-  position:absolute!important;inset:0!important;display:block!important;
-  width:100%!important;height:100%!important;max-width:none!important;
-  max-height:none!important;min-height:0!important;aspect-ratio:auto!important;
-  object-fit:fill!important;object-position:center!important;
-  border:0!important;border-radius:inherit!important;padding:0!important;margin:0!important;
-  clip-path:var(--figure);
-  filter:brightness(0) saturate(100%) invert(86%) sepia(29%) saturate(1144%) hue-rotate(340deg) brightness(101%);
+/* Contorno DOURADO METÁLICO em linha, nunca uma silhueta amarela.
+   O retrato original continua ocupando 100% da carta, com seu fundo intacto.
+   O personagem recebe somente profundidade, sombra e contorno fino. */
+.card-relief.has-figure-outline>.card-back{
+  filter:none;transform:translateZ(0) scale(1);
 }
 .card-relief.has-figure-outline .card-subject{
-  transform:translateZ(32px) scale(1.012);
-  filter:drop-shadow(0 3px 4px #000a) drop-shadow(0 0 1px #f6d899);
+  transform:translateZ(23px) scale(1.008);
+  filter:drop-shadow(0 4px 6px #0009) drop-shadow(0 1px 1px #38251780);
 }
-.card-relief.has-figure-outline .card-inner-contour{transform:translateZ(43px)}
-.card-relief.has-figure-outline .card-glass-light{transform:translateZ(46px)}
-.card-relief.has-figure-outline .card-light-sweep{transform:translateZ(49px)}
-.card-relief.has-figure-outline .card-stardust{transform:translateZ(54px)}
-.card-relief.has-figure-outline.card-touch-3d,.card-relief.has-figure-outline.is-shining{
-  transform:rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)) scale(1.027);
+.card-gold-outline{
+  position:absolute;inset:0;display:block;
+  pointer-events:none;border-radius:inherit;overflow:visible;
+  transform:translateZ(28px) scale(1.008);transform-origin:center;
 }
-/* A Liliti mantém os reflexos e a porpurina existentes, com destaque extra. */
-.card-relief[data-card="liliti"] .card-gold-outline{
-  filter:drop-shadow(0 0 2px #fff5cc) drop-shadow(0 0 6px #f8c66b) drop-shadow(0 0 11px #eab44d9c);
+.card-gold-outline svg{
+  position:absolute;inset:0;width:100%;height:100%;
+  overflow:visible;display:block;pointer-events:none;
+}
+.card-gold-outline polygon{fill:none;stroke-linejoin:round}
+.card-gold-outline .gold-contour-shadow{
+  stroke-width:3.6px;opacity:.84;
+  filter:drop-shadow(0 1.4px 2px #0007);
+}
+.card-gold-outline .gold-contour-metal{
+  stroke-width:1.85px;opacity:1;
+  filter:drop-shadow(0 0 1px #8a653a99);
+}
+.card-relief.has-figure-outline .card-inner-contour{transform:translateZ(32px)}
+.card-relief.has-figure-outline .card-glass-light{transform:translateZ(35px)}
+.card-relief.has-figure-outline .card-light-sweep{transform:translateZ(38px)}
+.card-relief.has-figure-outline .card-stardust{transform:translateZ(41px)}
+.card-relief.has-figure-outline.card-touch-3d,
+.card-relief.has-figure-outline.is-shining{
+  transform:rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)) scale(1.018);
+}
+/* Liliti recebe o mesmo ouro metálico, com reflexo mais luminoso. */
+.card-relief[data-card="liliti"] .card-gold-outline .gold-contour-metal{
+  stroke-width:2.25px;
+  filter:drop-shadow(0 0 2px #d9ba7a) drop-shadow(0 0 5px #ad824a80);
 }
 .card-relief[data-card="liliti"] .card-subject{
-  filter:drop-shadow(0 3px 5px #000a) drop-shadow(0 0 2px #fff0ba) drop-shadow(0 0 6px #f3c56999);
+  filter:drop-shadow(0 4px 6px #000a) drop-shadow(0 0 2px #be965c66);
 }
 .card-relief[data-card="liliti"] .card-glass-light{
-  background:
-    radial-gradient(circle at var(--light-x,25%) var(--light-y,12%),#fff8db36,transparent 48%),
-    linear-gradient(135deg,#fff5d82b,transparent 24%,transparent 75%,#ffe2a02c);
+  background:radial-gradient(circle at var(--light-x,25%) var(--light-y,12%),#fff4da36,transparent 45%),
+             linear-gradient(135deg,#ffffff20,transparent 25%,transparent 76%,#c49a6728);
 }
 .card-relief[data-card="liliti"].is-shining{
-  box-shadow:0 0 0 1px #f4d394,0 0 22px #f9cc7799,0 10px 24px #0009;
+  box-shadow:0 0 0 1px #b89762,0 0 16px #c9a26955,0 10px 23px #0008;
 }
 .card-relief[data-card="liliti"] .card-stardust i{
-  box-shadow:0 0 7px #ffe8a4,0 0 13px #f6c45e;
+  box-shadow:0 0 7px #eddaad,0 0 12px #ae854b;
 }
 @media(prefers-reduced-motion:reduce){
-  .card-relief.has-figure-outline.card-touch-3d,.card-relief.has-figure-outline.is-shining{transform:none}
-  .card-relief.has-figure-outline .card-gold-outline{transform:translateZ(0) scale(1.055)}
-  .card-relief.has-figure-outline .card-subject{transform:translateZ(0) scale(1.012)}
+  .card-relief.has-figure-outline.card-touch-3d,
+  .card-relief.has-figure-outline.is-shining{transform:none}
+  .card-relief.has-figure-outline .card-subject{transform:translateZ(0) scale(1.008)}
+  .card-relief.has-figure-outline .card-gold-outline{transform:translateZ(0) scale(1.008)}
 }

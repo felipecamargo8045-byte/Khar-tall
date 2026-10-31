@@ -682,22 +682,28 @@ jobs:
             const relief=await page.locator('#artOuter .card-relief').evaluate(node=>({kind:node.dataset.card,
               layers:node.querySelectorAll('img').length,dust:node.querySelectorAll('.card-stardust i').length,
               cover:getComputedStyle(node.querySelector('.card-back')).objectFit}));
-            assert.equal(relief.kind,'liliti');assert.equal(relief.layers,3);assert.ok(relief.dust>=20);assert.equal(relief.cover,'cover');
-            // Todas as oito figuras usam o mesmo recorte na sombra dourada, não uma borda retangular.
+            assert.equal(relief.kind,'liliti');assert.equal(relief.layers,2);assert.ok(relief.dust>=20);assert.equal(relief.cover,'cover');
+            // As oito artes mantêm o fundo INTEIRO e o contorno é um traço, não uma silhueta amarela.
             const golden=await page.evaluate(()=>{
               const stages=[...document.querySelectorAll('#cardGrid .card-relief.has-figure-outline')];
               return {ids:stages.map(s=>s.dataset.card),
                 aligned:stages.every(s=>{
-                  const outline=s.querySelector('.card-gold-outline img'),figure=s.querySelector('.card-subject img');
-                  return outline&&figure&&outline.getAttribute('src')===figure.getAttribute('src')&&
-                    outline.style.width===figure.style.width&&outline.style.left===figure.style.left&&
-                    getComputedStyle(outline).clipPath!=='none';
+                  const contour=s.querySelector('.card-gold-outline svg');
+                  const metal=contour?.querySelector('.gold-contour-metal');
+                  const shadow=contour?.querySelector('.gold-contour-shadow');
+                  const background=s.querySelector('.card-back');
+                  return metal&&shadow&&metal.getAttribute('fill')==='none'&&
+                    shadow.getAttribute('fill')==='none'&&metal.getAttribute('stroke').startsWith('url(#cerco-metallic-gold-')&&
+                    metal.getAttribute('points').split(' ').length>18&&
+                    !s.querySelector('.card-gold-outline img')&&
+                    getComputedStyle(background).filter==='none'&&
+                    getComputedStyle(background).objectFit==='cover';
                 }),
-                featuredGlow:getComputedStyle(document.querySelector('#artOuter .card-gold-outline')).filter,
-                normalGlow:getComputedStyle(stages.find(s=>s.dataset.card==='soldado').querySelector('.card-gold-outline')).filter};
+                featuredGlow:getComputedStyle(document.querySelector('#artOuter .gold-contour-metal')).filter,
+                normalGlow:getComputedStyle(stages.find(s=>s.dataset.card==='soldado').querySelector('.gold-contour-metal')).filter};
             });
-            assert.equal(golden.ids.length,8,'Contorno deve alcançar todos os personagens');
-            assert.ok(golden.aligned,'O contorno dourado não acompanha a arte da personagem');
+            assert.equal(golden.ids.length,8,'O contorno deve alcançar os oito personagens');
+            assert.ok(golden.aligned,'Contorno preenchido ou fundo da imagem alterado');
             assert.notEqual(golden.featuredGlow,golden.normalGlow,'Liliti não recebeu brilho adicional');
             assert.ok((await page.locator('#cardBadges').innerText()).includes('Suprema'));
             assert.ok((await page.locator('#cardOffer').innerText()).includes('10,00'));
