@@ -6,7 +6,7 @@ let token=localStorage.getItem(KEY)||'',state={owned:[],equipped:null,orders:[]}
 function collectionKey(){if(!/^[A-Za-z0-9_-]{43}$/.test(token)){const data=crypto.getRandomValues(new Uint8Array(32));token=btoa(String.fromCharCode(...data)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');localStorage.setItem(KEY,token)}return token}
 async function request(path,data){const response=await fetch(API+path,{method:data?'POST':'GET',headers:{Authorization:'Bearer '+collectionKey(),...(data?{'Content-Type':'application/json'}:{})},body:data?JSON.stringify(data):undefined,signal:AbortSignal.timeout(60000)});const result=await response.json().catch(()=>({}));if(!response.ok)throw Error(result.error||'A loja não respondeu. Tente novamente.');return result}
 function message(text){const el=document.getElementById('cercoShopMessage');if(el)el.textContent=text}
-function notify(){document.dispatchEvent(new CustomEvent('cerco:collection',{detail:snapshot()}));render()}
+function notify(){const skin=snapshot().skin;for(const name of document.querySelectorAll('#lobbyProfile .lobby-player-details>strong,.profile-content h2'))name.style.color=skin?.color||'';document.dispatchEvent(new CustomEvent('cerco:collection',{detail:snapshot()}));render()}
 function snapshot(){return{owned:[...state.owned],equipped:state.equipped,skin:window.CercoRewards?.skins.find(s=>s.id===state.equipped)||null}}
 async function sync(){try{state=await request('/collection');notify()}catch{}}
 async function buy(id){
@@ -20,7 +20,8 @@ async function buy(id){
 function render(){
  for(const button of document.querySelectorAll('[data-cerco-buy]')){
   const id=button.dataset.cercoBuy;
-  button.textContent=state.equipped===id?'EQUIPADA':state.owned.includes(id)?'EQUIPAR':'COMPRAR R$ 2,50';
+  const label=state.equipped===id?'EQUIPADA':state.owned.includes(id)?'EQUIPAR':'COMPRAR R$ 2,50';
+  if(button.classList.contains('shop-item')){const price=button.querySelector('small');if(price)price.textContent=label}else button.textContent=label;
  }
  const orders=document.getElementById('cercoShopOrders');if(!orders)return;
  orders.replaceChildren();
@@ -39,7 +40,7 @@ function render(){
 function setup(){
  const shop=document.querySelector('[data-page="shop"]');if(!shop)return;
  const panel=document.createElement('section');panel.className='panel cerco-shop-account';
- panel.innerHTML='<div class="overline">LOJA DO CERCO DOS REIS</div><h3>Minha coleção e pedidos</h3><p id="cercoShopMessage" role="status">Compra única de aparência visual. Pagamento por Pix ou cartão no checkout da InfinitePay; a skin é liberada após a confirmação.</p><div id="cercoShopOrders"></div><details><summary>Usar a coleção em outro aparelho</summary><p>Guarde seu código de coleção em local privado. Ele permite recuperar suas compras e não deve ser compartilhado.</p><button class="secondary-btn" id="cercoSaveCollection">Mostrar meu código</button><input id="cercoCollectionCode" type="text" autocomplete="off" aria-label="Código privado da coleção" hidden><button class="secondary-btn" id="cercoRestoreCollection">Restaurar coleção</button></details><details><summary>Atendimento do Cerco dos Reis</summary><textarea id="cercoSupportText" rows="3" maxlength="3000" aria-label="Mensagem para o atendimento" placeholder="Descreva sua dúvida. Não envie senhas ou dados de cartão."></textarea><button class="secondary-btn" id="cercoSendSupport">Enviar mensagem</button></details>';
+ panel.innerHTML='<div class="overline">LOJA DO CERCO DOS REIS</div><h3>Minha coleção e pedidos</h3><p id="cercoShopMessage" role="status">Compra única de aparência visual. Pagamento por Pix ou cartão de crédito no checkout da InfinitePay; a skin é liberada após a confirmação.</p><div id="cercoShopOrders"></div><details><summary>Usar a coleção em outro aparelho</summary><p>Guarde seu código de coleção em local privado. Ele permite recuperar suas compras e não deve ser compartilhado.</p><button class="secondary-btn" id="cercoSaveCollection">Mostrar meu código</button><input id="cercoCollectionCode" type="text" autocomplete="off" aria-label="Código privado da coleção" hidden><button class="secondary-btn" id="cercoRestoreCollection">Restaurar coleção</button></details><details><summary>Atendimento do Cerco dos Reis</summary><textarea id="cercoSupportText" rows="3" maxlength="3000" aria-label="Mensagem para o atendimento" placeholder="Descreva sua dúvida. Não envie senhas ou dados de cartão."></textarea><button class="secondary-btn" id="cercoSendSupport">Enviar mensagem</button></details>';
  shop.append(panel);
  document.getElementById('cercoSaveCollection').addEventListener('click',()=>{const input=document.getElementById('cercoCollectionCode');input.hidden=false;input.value=collectionKey();input.focus();input.select()});
  document.getElementById('cercoRestoreCollection').addEventListener('click',async()=>{const input=document.getElementById('cercoCollectionCode');if(input.hidden){input.hidden=false;input.value='';input.focus();message('Cole o código privado da sua coleção e toque em Restaurar coleção.');return}const next=input.value.trim();if(!/^[A-Za-z0-9_-]{43}$/.test(next)){message('Confira o código da coleção.');return}const previous=token;token=next;try{const found=await request('/collection');if(!found.exists)throw Error('Coleção não encontrada. Confira o código.');localStorage.setItem(KEY,token);state=found;notify();input.hidden=true;message('Coleção restaurada.')}catch(error){token=previous;message(error.message)}});

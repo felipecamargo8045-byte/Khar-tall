@@ -15,7 +15,7 @@ const teams={
  enemy:{cloth:0x9e3d50,glow:0xf9a0ad,flag:0xc1536c}
 };
 const mat=(color,metalness=.08,roughness=.83)=>new THREE.MeshStandardMaterial({color,metalness,roughness,flatShading:false});
-const outfitMaterials=new Set();let activeOutfit=null;
+const outfitMaterials=new Set();let activeOutfit=window.CercoStore?.snapshot?.().skin?.color||null;
 function outfit(team,color=teams[team].cloth,metalness=.08){const material=mat(team==='ally'&&activeOutfit?activeOutfit:color,metalness);if(team==='ally'){material.userData.defaultColor=color;outfitMaterials.add(material)}return material}
 document.addEventListener('cerco:collection',event=>{activeOutfit=event.detail.skin?.color||null;for(const material of outfitMaterials)material.color.set(activeOutfit||material.userData.defaultColor)});
 const stone=mat(0x8194a8),darkStone=mat(0x344354),stoneLight=mat(0xb2c6d5);

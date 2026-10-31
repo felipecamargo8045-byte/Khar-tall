@@ -46,7 +46,7 @@ jobs:
           assert 'src="./voices.js?v=5"' in html
           assert 'src="./realm-ui.js?v=6"' in html
           assert 'href="./interface.css?v=50"' in html
-          assert 'src="./arena3d.js?v=18"' in html
+          assert 'src="./arena3d.js?v=19"' in html
           for name in ['game-ui.css','interface.css','assets/interface-icons.svg','app.js','rewards.js','home.js','arena3d.js','arena-atmosphere.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
               assert Path('cerco-dos-reis',name).is_file(),name
           print('Seis ambientes, recompensas, arquivos, navegacao e scripts: OK')
@@ -67,6 +67,10 @@ jobs:
             const browser=await chromium.launch({headless:true,args:['--no-sandbox','--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
             const problems=[];
             const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
+            await page.route('https://cerco-dos-reis-loja.onrender.com/collection',async route=>{
+              const options=route.request().method()==='OPTIONS';
+              await route.fulfill({status:options?204:200,headers:{'Access-Control-Allow-Origin':'http://127.0.0.1:8080','Access-Control-Allow-Headers':'Authorization,Content-Type','Access-Control-Allow-Methods':'GET,OPTIONS','Content-Type':'application/json'},body:options?'':JSON.stringify({exists:false,owned:[],equipped:null,orders:[]})});
+            });
             // Motor TTS de teste: valida falas, perfis e controles independentemente
             // das vozes instaladas no runner. No Android real o sistema usa as vozes pt-BR do aparelho.
             await page.addInitScript(()=>{
@@ -243,6 +247,9 @@ jobs:
             }
             await page.locator('#navigation [data-view="shop"]').click();
             assert.equal(await page.locator('#shopGrid .shop-item').count(),8);
+            await page.evaluate(()=>window.CercoStore.sync());
+            assert.equal(await page.locator('#shopGrid .shop-item .swatch').count(),8,'A atualização da coleção apagou as skins');
+            assert.equal(await page.locator('#shopGrid .shop-item strong').count(),8,'Nomes das skins foram apagados');
             assert.match(await page.locator('#shopStatus').innerText(),/TODOS PODEM COMPRAR/i);
             const buyUrl=await page.locator('#shopGrid .shop-item').nth(2).getAttribute('href');
             assert.equal(buyUrl,'#shop','Link da loja oficial não disponível para qualquer jogador');
