@@ -42,13 +42,13 @@ jobs:
           for name in ['#shopGrid','#featuredCards','#cardGrid','#arena']:
               assert name[1:] in html, name
           assert 'https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/' not in html
-          assert 'src="./app.js?v=27"' in html
+          assert 'src="./app.js?v=28"' in html
           assert 'src="./rewards.js?v=3"' in html
           assert 'src="./home.js?v=5"' in html
           assert 'src="./voices.js?v=5"' in html
           assert 'src="./realm-ui.js?v=6"' in html
           assert 'href="./interface.css?v=50"' in html
-          assert 'src="./arena3d.js?v=20"' in html
+          assert 'src="./arena3d.js?v=21"' in html
           for name in ['game-ui.css','interface.css','assets/interface-icons.svg','app.js','rewards.js','home.js','arena3d.js','arena-atmosphere.js','arena-layout.js','character-models.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
               assert Path('cerco-dos-reis',name).is_file(),name
           print('Seis ambientes, recompensas, arquivos, navegacao e scripts: OK')
@@ -505,7 +505,7 @@ jobs:
             const towerState=await page.evaluate(()=>window.__cercoTest.towers());
             assert.ok(towerState.shots.some(s=>s.side==='ally'&&s.slot===0),'Torre aliada nao disparou');
             assert.ok(towerState.shots.every(shot=>shot.kind==='arrow'),'Castelo ainda dispara outro projétil que não flecha');
-            await page.evaluate(()=>window.__cercoTest.createEnemy('colosso',210,505));
+            await page.evaluate(()=>window.__cercoTest.forceTowerTarget('ally',2));
             await page.waitForFunction(()=>window.__cercoTest.towers().shots.some(s=>s.side==='ally'&&s.slot===2&&s.kind==='arrow'),
               {timeout:12000});
             assert.ok(await page.evaluate(()=>window.Cerco3D.info().ready),'Cena 3D indisponível para flechas das fortalezas');
@@ -591,6 +591,24 @@ jobs:
               assert.ok(frame.left>=-1&&frame.right<=1&&frame.top<=1&&frame.bottom>=-1,
                 'Coroas ou bases dos castelos cortadas: '+JSON.stringify(frame));
             }
+            // As faixas que antes sobravam atrás das bases são jogáveis.
+            const rearRoutes=await page.evaluate(()=>[
+              window.__cercoTest.traceRoute(210,448,210,624,0),
+              window.__cercoTest.traceRoute(210,112,210,-64,0)
+            ]);
+            assert.ok(Math.abs(rearRoutes[0].final.y-624)<2&&Math.abs(rearRoutes[1].final.y+64)<2,
+              'Tropas não conseguem alcançar o castelo recuado');
+            for(const [fraction,upper] of [[.11,true],[.91,false]]){
+              await page.evaluate(()=>window.__cercoTest.reset());
+              await page.locator('#start').click();
+              const fieldBox=await page.locator('#arena').boundingBox();
+              await page.locator('#arena').click({position:{x:fieldBox.width*.5,y:fieldBox.height*fraction}});
+              const rearUnits=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
+              assert.equal(rearUnits.length,2);
+              assert.ok(rearUnits.every(u=>upper?u.y<0:u.y>560),'Invocação voltou ao limite antigo do campo');
+            }
+            const occupied=await page.evaluate(()=>window.Cerco3D.info().presentation.framing);
+            assert.ok(occupied.top>.89&&occupied.bottom<-.89,'Faixas atrás das bases continuam vazias');
             await page.waitForTimeout(500);
             await page.screenshot({path:'/tmp/cerco-arena-mobile.png'});
             console.log('Apresentação 3D:',JSON.stringify(await page.evaluate(()=>window.Cerco3D.info().presentation)));

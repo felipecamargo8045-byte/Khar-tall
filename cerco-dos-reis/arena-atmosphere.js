@@ -1,4 +1,5 @@
 import * as THREE from './vendor/three.module.js';
+import './arena-layout.js?v=2';
 
 // Acabamento exclusivamente visual. Coordenadas, rotas e regras pertencem ao motor.
 
@@ -74,8 +75,11 @@ export function fitArena(camera,width,height,forts=[]){
  camera.updateMatrixWorld(true);
  const bounds=projectedForts(camera,forts);
  const points=[];
- for(const x of [-5.4,5.4])for(const z of [-7.0,7.0])points.push([x,-.15,z]);
- if(!forts.length)for(const z of [-6.77,6.77])points.push([0,4.95,z]);
+ const layout=globalThis.CercoArenaLayout;
+ for(const x of [-5.4,5.4])for(const y of [layout.bounds.minY,layout.bounds.maxY])
+  points.push([x,-.15,(y-layout.height/2)/layout.scale]);
+ if(!forts.length)for(const side of ['enemy','ally'])
+  points.push([0,3.08,(layout.positions[side][2].y-layout.height/2)/layout.scale]);
  for(const point of points){
   const p=new THREE.Vector3(...point).applyMatrix4(camera.matrixWorldInverse);
   bounds.expandByPoint(new THREE.Vector2(p.x,p.y));

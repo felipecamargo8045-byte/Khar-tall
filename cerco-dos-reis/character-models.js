@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {bevelBox} from './arena-atmosphere.js?v=5';
+import {bevelBox} from './arena-atmosphere.js?v=6';
 import {makeCloak} from './character-cloth.js?v=1';
 
 // Silhuetas e equipamentos derivados das oito artes originais do próprio jogo.

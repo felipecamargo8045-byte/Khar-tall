@@ -8,13 +8,13 @@ camera.position.set(0,23,18);camera.lookAt(0,.4,0);
 const caster=new THREE.Raycaster(),hit=new THREE.Vector3();
 for(const [width,height] of [[360,520],[390,610],[844,300],[1200,700]]){
  fitArena(camera,width,height);
- const landmarks=[[0,4.95,-6.77],[0,4.95,6.77]];
- for(const x of [-5.25,5.25])for(const z of [-7,7])landmarks.push([x,floorHeight(x,z),z]);
+ const landmarks=[[0,3.05,-8.6],[0,3.05,8.6]];
+ for(const x of [-5.25,5.25])for(const z of [-9.6,9.6])landmarks.push([x,floorHeight(x,z),z]);
  for(const point of landmarks){
   const projected=new THREE.Vector3(...point).project(camera);
   assert.ok(Math.abs(projected.x)<1&&Math.abs(projected.y)<1,'Cenário cortado em '+width+'x'+height);
  }
- for(const [x,z] of [[-2.5,0],[2.5,-.6],[-2.5,3.2],[2.5,-4],[0,4],[-4.6,2]]){
+ for(const [x,z] of [[-2.5,0],[2.5,-.6],[-2.5,3.2],[2.5,-4],[0,4],[-4.6,2],[0,-8.5],[0,8.5]]){
   const point=new THREE.Vector3(x,floorHeight(x,z),z),projected=point.clone().project(camera);
   caster.setFromCamera(new THREE.Vector2(projected.x,projected.y),camera);
   const picked=pickGround(caster.ray,hit);
@@ -85,5 +85,5 @@ await import('../arena-layout.js');
 const layout=globalThis.CercoArenaLayout;
 for(let slot=0;slot<3;slot++)assert.equal(layout.positions.ally[slot].y+layout.positions.enemy[slot].y,layout.height,
  'As defesas não estão simétricas');
-assert.ok(layout.positions.enemy[0].y-layout.positions.enemy[2].y>=90,'Castelo e torre próximos demais');
+assert.ok(layout.positions.enemy[0].y-layout.positions.enemy[2].y>=176,'Castelo e torre próximos demais');
 console.log('PASSOU: identidade, proporções humanas, estatura do Colosso e bases simétricas.');

@@ -133,8 +133,9 @@ function log(s){const line=document.createElement('p');line.textContent=s;$('#ba
 
 const LANES=[110,310];
 const SPAWN_MARGIN=22;
+const MIN_FIELD_Y=arenaLayout.bounds.minY+SPAWN_MARGIN,MAX_FIELD_Y=arenaLayout.bounds.maxY-SPAWN_MARGIN;
 const TARGET_AWARENESS=165;
-const point=(x,y)=>({x:clamp(x,SPAWN_MARGIN,W-SPAWN_MARGIN),y:clamp(y,SPAWN_MARGIN,H-SPAWN_MARGIN)});
+const point=(x,y)=>({x:clamp(x,SPAWN_MARGIN,W-SPAWN_MARGIN),y:clamp(y,MIN_FIELD_Y,MAX_FIELD_Y)});
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 function closestEnemyAt(side,pos,maxDistance=TARGET_AWARENESS){
  let result=null,best=maxDistance;
@@ -176,7 +177,7 @@ function addUnit(c,location,side){
    const column=i-(count-1)/2;
    const spacing=count===2?57:43;
    const x=clamp(spot.x+column*spacing,SPAWN_MARGIN,W-SPAWN_MARGIN);
-   const y=clamp(spot.y+(i%2===0?-7:7),SPAWN_MARGIN,H-SPAWN_MARGIN);
+   const y=clamp(spot.y+(i%2===0?-7:7),MIN_FIELD_Y,MAX_FIELD_Y);
    const lane=tacticalLane(spot.x,spot.y,side,i,count);
    const nearby=closestEnemyAt(side,{x,y},TARGET_AWARENESS);
    const id=cryptoRandom();
@@ -234,7 +235,7 @@ function aiCast(){
  const c=choices[Math.floor(Math.random()*choices.length)];
  // A IA também usa um ponto, não uma posição artificial na frente do castelo.
  const x=Math.random()<.16?W/2:(Math.random()<.5?110:310);
- const y=clamp(78+Math.random()*92,SPAWN_MARGIN,H-SPAWN_MARGIN);
+ const y=clamp(78+Math.random()*92,MIN_FIELD_Y,MAX_FIELD_Y);
  addUnit(c,{x,y},'enemy');
  
  log('Exército rubro invocou '+c.name);
@@ -315,7 +316,7 @@ function moveUnit(u,goal,dt){
  const speed=u.card.speed||20;
  const travel=Math.min(wd,Math.max(0,speed*dt));
  const next={x:clamp(u.x+wx/wd*travel,SPAWN_MARGIN,W-SPAWN_MARGIN),
-             y:clamp(u.y+wy/wd*travel,SPAWN_MARGIN,H-SPAWN_MARGIN)};
+             y:clamp(u.y+wy/wd*travel,MIN_FIELD_Y,MAX_FIELD_Y)};
  safeRiverStep(u,next);
  const moved=Math.hypot(next.x-u.x,next.y-u.y);
  if(moved>.0001)u.heading=Math.atan2(next.y-u.y,next.x-u.x);
@@ -500,9 +501,9 @@ function separateFriendlyUnits(){
    const push=Math.min(4.4,(minDist-dist)/2);
    const ux=dist>.01?dx/dist:(a.id%2?1:-1),uy=dist>.01?dy/dist:0;
    const nextA={x:clamp(a.x-ux*push,SPAWN_MARGIN,W-SPAWN_MARGIN),
-                y:clamp(a.y-uy*push,SPAWN_MARGIN,H-SPAWN_MARGIN)};
+                y:clamp(a.y-uy*push,MIN_FIELD_Y,MAX_FIELD_Y)};
    const nextB={x:clamp(b.x+ux*push,SPAWN_MARGIN,W-SPAWN_MARGIN),
-                y:clamp(b.y+uy*push,SPAWN_MARGIN,H-SPAWN_MARGIN)};
+                y:clamp(b.y+uy*push,MIN_FIELD_Y,MAX_FIELD_Y)};
    safeRiverStep(a,nextA);safeRiverStep(b,nextB);
    a.x=nextA.x;a.y=nextA.y;
    b.x=nextB.x;b.y=nextB.y;
@@ -692,8 +693,8 @@ function drawMotionSprite(g,u,px,feet,width,height){
 function drawFortress(g,x,y,side,kind,hp){
  const asset=fortressArt[(kind==='castle'?'keep':'tower')+'_'+side];
  if(asset?.complete&&asset.naturalWidth){
-  const width=kind==='castle'?84:85;
-  const height=kind==='castle'?94:105;
+  const width=kind==='castle'?72:64;
+  const height=kind==='castle'?70:76;
   g.save();
   g.globalAlpha=hp<=0?.28:1;
   g.shadowColor='#020912b8';g.shadowBlur=6;g.shadowOffsetY=3;
@@ -780,21 +781,23 @@ function draw(){
  }
  const g=ctx;
  g.clearRect(0,0,W,H);
+ const field=arenaLayout.bounds,fieldHeight=field.maxY-field.minY;
+ g.save();g.scale(1,H/fieldHeight);g.translate(0,-field.minY);
  // Dois caminhos, rio central, fortificacoes e atmosfera de arena.
- const base=g.createLinearGradient(0,0,0,H);
+ const base=g.createLinearGradient(0,field.minY,0,field.maxY);
  base.addColorStop(0,'#4a2c38');base.addColorStop(.28,'#243d4f');
  base.addColorStop(.5,'#13354b');base.addColorStop(.72,'#234258');base.addColorStop(1,'#24415a');
- g.fillStyle=base;g.fillRect(0,0,W,H);
+ g.fillStyle=base;g.fillRect(0,field.minY,W,fieldHeight);
  if(boardArt.complete&&boardArt.naturalWidth){
-   g.globalAlpha=.35;g.drawImage(boardArt,0,0,W,H);g.globalAlpha=1;
+   g.globalAlpha=.35;g.drawImage(boardArt,0,field.minY,W,fieldHeight);g.globalAlpha=1;
  }
  for(let lane=0;lane<2;lane++){
    const x=lane?310:110;
    const road=g.createLinearGradient(x-45,0,x+45,0);
    road.addColorStop(0,'#3b4b4f');road.addColorStop(.5,'#66716a');road.addColorStop(1,'#394e58');
-   g.fillStyle=road;g.globalAlpha=.58;g.fillRect(x-42,34,84,H-68);g.globalAlpha=1;
+   g.fillStyle=road;g.globalAlpha=.58;g.fillRect(x-42,field.minY+25,84,fieldHeight-50);g.globalAlpha=1;
    g.strokeStyle='#ddc9a34f';g.lineWidth=1.5;
-   for(let y=47;y<H-35;y+=27){
+   for(let y=field.minY+25;y<field.maxY-25;y+=27){
      g.beginPath();g.moveTo(x-40,y);g.lineTo(x+40,y);g.stroke();
      g.beginPath();g.moveTo(x+(Math.floor(y/27)%2?0:-18),y);g.lineTo(x+(Math.floor(y/27)%2?0:-18),y+27);g.stroke();
    }
@@ -811,21 +814,21 @@ function draw(){
  }
  // Fortalezas em pedra. Cada estrutura usa seu próprio valor de vida.
  for(const side of ['enemy','ally']){
-   const enemy=side==='enemy',y=enemy?129:H-49;
+   const enemy=side==='enemy',y=arenaLayout.positions[side][0].y;
    const arr=game.towers[side];
    // Castelo real separado das duas torres de defesa.
-   drawFortress(g,W/2,enemy?96:H+2,side,'castle',game.castles[side]);
+   drawFortress(g,W/2,arenaLayout.positions[side][2].y+35,side,'castle',game.castles[side]);
    for(let lane=0;lane<2;lane++){
      const x=lane?310:110,hp=arr[lane];
-     drawFortress(g,x,y,side,'tower',hp);
-     const by=enemy?y+11:y-94;
+     drawFortress(g,x,y+38,side,'tower',hp);
+     const by=y-45;
      g.fillStyle='#111a29';g.fillRect(x-34,by,68,6);
      g.fillStyle=enemy?'#ca7180':'#74c6df';g.fillRect(x-33,by+1,66*clamp(hp/1400,0,1),4);
    }
    g.textAlign='center';g.font='bold 12px system-ui';
    g.shadowColor='#000';g.shadowBlur=5;
    g.fillStyle=enemy?'#f3bdbe':'#c4ecf7';
-   g.fillText('♛ '+fmt(Math.ceil(game.castles[side])),W/2,enemy?18:H-8);
+   g.fillText('♛ '+fmt(Math.ceil(game.castles[side])),W/2,arenaLayout.positions[side][2].y+52);
    g.shadowBlur=0;
  }
  // Personagens articulados por quadros de membros, com ritmo próprio por espécie.
@@ -922,6 +925,7 @@ function draw(){
    g.restore();
  }
 
+ g.restore();
 }
 function updateHand(){const node=$('#hand');node.replaceChildren();hand.forEach((id,i)=>{const c=cardData.find(x=>x.id===id);const b=document.createElement('button');b.type='button';b.className=i===activeIndex?'selected':'';b.setAttribute('aria-label',`Selecionar ${c.name}, ${c.cost} energia`);const im=document.createElement('img');im.src=cardImage(c);im.alt='';im.onerror=imgFallback;const label=document.createElement('b');label.textContent=c.name;const co=document.createElement('small');co.textContent=c.cost;b.append(im,label,co);b.addEventListener('click',()=>{activeIndex=i;chosen=c;selectedCard();updateHand()});node.append(b)})}
 function updateUI(){updateClock();$('#wins').textContent=String(local.wins);updateHand();selectedCard()}
@@ -934,7 +938,7 @@ canvas.addEventListener('click',e=>{
  // No modo 3D, o raio da câmera determina o ponto real sobre o terreno.
  const p=window.Cerco3D?.ready?window.Cerco3D.screenToBattle(e.clientX,e.clientY,r):null;
  const x=p?.x??(e.clientX-r.left)*W/r.width;
- const y=p?.y??(e.clientY-r.top)*H/r.height;
+ const y=p?.y??arenaLayout.bounds.minY+(e.clientY-r.top)*(arenaLayout.bounds.maxY-arenaLayout.bounds.minY)/r.height;
  placeCardAt(x,y);
 });
 window.addEventListener('keydown',e=>{

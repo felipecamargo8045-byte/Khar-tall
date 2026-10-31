@@ -1,8 +1,8 @@
 import * as THREE from './vendor/three.module.js';
-import './arena-layout.js?v=1';
-import {createCharacter,characterProfiles} from './character-models.js?v=1';
+import './arena-layout.js?v=2';
+import {createCharacter,characterProfiles} from './character-models.js?v=2';
 import {animateCloth,batchRig,updateRig} from './character-cloth.js?v=1';
-import {bevelBox,reliefMap,floorHeight,pickGround,fitArena,createAtmosphere,characterShadow,batchStatic,framingInfo} from './arena-atmosphere.js?v=5';
+import {bevelBox,reliefMap,floorHeight,pickGround,fitArena,createAtmosphere,characterShadow,batchStatic,framingInfo} from './arena-atmosphere.js?v=6';
 
 // Arena WebGL 3D local, geometria própria e sem serviços pagos.
 // Modelo visual independente do motor de combate; não substitui suas regras.
@@ -138,21 +138,31 @@ function terrain(){
   put(scene,field,0,-.059,z);field.receiveShadow=true;
  }
  // As pistas param na margem; a água está abaixo das tábuas da ponte.
- const pathMap=surfaceTexture('path');pathMap.repeat.set(1,1.85);
+ const roadEnd=(layout.bounds.maxY-H/2)/SCALE-.25;
+ const roadLength=roadEnd-.675,roadCenter=(roadEnd+.675)/2;
+ const pathMap=surfaceTexture('path');pathMap.repeat.set(1,roadLength/3.28);
  const roadMat=new THREE.MeshStandardMaterial({map:pathMap,bumpMap:reliefMap(pathMap),
   bumpScale:.048,roughness:.85,envMapIntensity:.3});
  for(const x of [-2.5,2.5]){
-   for(const z of [-3.705,3.705]){
-    const path=box(2.54,.045,6.07,roadMat);
+   for(const z of [-roadCenter,roadCenter]){
+    const path=box(2.54,.045,roadLength,roadMat);
     put(scene,path,x,.035,z);path.receiveShadow=true;
    }
    const sideLine=mat(0x777b64);
    for(const d of [-1,1]){
-    for(const z of [-3.705,3.705])put(scene,box(.075,.038,6.07,sideLine),x+d*1.32,.057,z);
+    for(const z of [-roadCenter,roadCenter])put(scene,box(.075,.038,roadLength,sideLine),x+d*1.32,.057,z);
    }
-   for(let z=-6.3;z<6.4;z+=.8){
+   for(let z=-roadEnd+.25;z<roadEnd;z+=.8){
      if(Math.abs(z)>.98)put(scene,box(2.5,.02,.032,mat(0x686e5d)),x,.065,z);
    }
+ }
+ // Os caminhos se unem atrás das torres e chegam aos castelos recuados.
+ const baseMap=surfaceTexture('path');baseMap.repeat.set(2.1,.45);
+ const baseRoad=roadMat.clone();baseRoad.map=baseMap;baseRoad.bumpMap=reliefMap(baseMap);
+ for(const side of ['enemy','ally']){
+  const z=(layout.positions[side][2].y-H/2)/SCALE;
+  const court=box(5.25,.043,1.50,baseRoad);
+  put(scene,court,0,.034,z);court.receiveShadow=true;
  }
  // Água ciano contrastante: rio intransponível, salvo pelas pontes.
  atmosphere.addWater();
@@ -796,7 +806,7 @@ function screenToBattle(clientX,clientY,rect){
  pointer.y=-((clientY-rect.top)/rect.height)*2+1;
  raycaster.setFromCamera(pointer,camera);
  if(!pickGround(raycaster.ray,hit))return null;
- return {x:clamp(hit.x*SCALE+W/2,0,W),y:clamp(hit.z*SCALE+H/2,0,H)};
+ return {x:clamp(hit.x*SCALE+W/2,0,W),y:clamp(hit.z*SCALE+H/2,layout.bounds.minY,layout.bounds.maxY)};
 }
 window.Cerco3D={
  get ready(){return ready},
