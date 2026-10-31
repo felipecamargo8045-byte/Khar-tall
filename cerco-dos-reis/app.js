@@ -168,8 +168,15 @@ function tacticalLane(x,y,side,index,count){
  }
  return x<W/2?0:1;
 }
-// O toque é livre em toda a arena, mas unidades terrestres não nascem dentro da água.
-// Ao tocar no rio fora da ponte, a unidade chega à margem do lado de seu exército.
+// As duas equipes só podem invocar tropas dentro de seu PRÓPRIO território.
+// Atravessar para atacar continua permitido pelas pontes; magias não são convocações.
+function canDeployTroop(side,spot){
+ if(!spot||!Number.isFinite(spot.x)||!Number.isFinite(spot.y))return false;
+ if(side==='ally')return spot.y>=RIVER_BOTTOM+SHORE_PADDING+4;
+ if(side==='enemy')return spot.y<=RIVER_TOP-SHORE_PADDING-4;
+ return false;
+}
+// Tropas válidas não nascem dentro d'água.
 function groundSpawn(location,side){
  const spot=point(location.x,location.y);
  if(spot.y>RIVER_TOP&&spot.y<RIVER_BOTTOM&&!onBridge(spot.x)){
@@ -212,9 +219,13 @@ function cast(id){
  if(c?.id==='liliti'&&!cardUnlocked(c)){log('Obtenha a Liliti na loja para adicionar esta carta ao seu exército.');return}
  if(c?.id==='liliti'&&game.units.some(u=>u.hp>0&&u.side==='ally'&&u.card.id==='liliti')){log('Sua Liliti já está no campo. Só pode haver uma viva por jogador.');return}
  if(!c||game.energy<c.cost){log('Energia insuficiente para '+(c?.name||'esta carta'));return}
- game.energy-=c.cost;
- 
  const spot=point(game.spawn?.x??W/2,game.spawn?.y??H*.7);
+ // Rejeição antes do gasto de mana, XP e rotação do baralho.
+ if(!c.spell&&!canDeployTroop('ally',spot)){
+  log('Invocação bloqueada: tropas só podem nascer no seu próprio campo.');
+  return;
+ }
+ game.energy-=c.cost;
  if(c.spell){
    const targets=game.units.filter(u=>u.side===(c.id==='cura'?'ally':'enemy')&&
      distance(u,spot)<=Math.max(65,c.range||85));
@@ -244,20 +255,21 @@ function cast(id){
  if(index>=0){const rotation=queue();hand[index]=rotation[next%rotation.length];next++}
  activeIndex=0;updateUI();
 }
-function aiCast(){
+function aiCast(requested=null){
  const choices=cardData.filter(c=>!c.spell&&c.cost<7&&
    (c.id!=='liliti'||(!game.units.some(u=>u.hp>0&&u.side==='enemy'&&u.card.id==='liliti')&&Math.random()<.16)));
  const c=choices[Math.floor(Math.random()*choices.length)];
- // A IA também usa um ponto, não uma posição artificial na frente do castelo.
- const x=Math.random()<.16?W/2:(Math.random()<.5?110:310);
- const y=clamp(78+Math.random()*92,MIN_FIELD_Y,MAX_FIELD_Y);
- addUnit(c,{x,y},'enemy');
- 
+ // A IA também deve respeitar seu próprio território, mesmo com posições personalizadas.
+ const x=requested?.x??(Math.random()<.16?W/2:(Math.random()<.5?110:310));
+ const y=requested?.y??clamp(78+Math.random()*92,MIN_FIELD_Y,MAX_FIELD_Y);
+ const spot=point(x,y);
+ if(!canDeployTroop('enemy',spot))return false;
+ addUnit(c,spot,'enemy');
  log('Exército rubro invocou '+c.name);
+ return true;
 }
 // O rio é uma barreira física. Somente as duas pontes permitem travessia.
-// A unidade pode nascer em qualquer ponto da arena; a restrição é sobre o
-// CAMINHO durante a travessia, nunca sobre a escolha da carta.
+// A invocação é exclusiva do próprio lado; a travessia ocorre durante a batalha.
 const RIVER_TOP=H/2-24;
 const RIVER_BOTTOM=H/2+24;
 const BRIDGE_HALF_WIDTH=39;
@@ -979,9 +991,16 @@ if(new URLSearchParams(location.search).has('test')){
     units:()=>game.units.map(u=>({id:u.id,side:u.side,lane:u.lane,x:u.x,y:u.y,
       state:u.state,targetId:u.targetId,card:u.card.id,hp:u.hp})),
     createEnemy:(cardId,x,y)=>{
+      // Ferramenta isolada para posicionar alvos artificiais em testes de combate.
       const c=cardData.find(c=>c.id===cardId);
       if(c&&!c.spell)return addUnit(c,{x,y},'enemy');
       return [];
+    },
+    canDeploy:(side,x,y)=>canDeployTroop(side,{x,y}),
+    aiSummon:(x,y)=>{
+      const before=game.units.filter(u=>u.side==='enemy').length;
+      const allowed=aiCast({x,y});
+      return {allowed,created:game.units.filter(u=>u.side==='enemy').length-before};
     },
     reset:()=>reset(),
     progress:id=>({...prog(id)}),
