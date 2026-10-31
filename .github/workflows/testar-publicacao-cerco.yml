@@ -482,13 +482,40 @@ jobs:
             assert.ok(solo.every(u=>u.lane===1),'Soldados ignoraram inimigo próximo');
             assert.ok(solo.every(u=>u.targetId),'Soldados não adquiriram alvo');
 
-            // Ponto livre: colocar no lado superior nao teleporta de volta a uma origem fixa.
+            // Cada exército só pode nascer em seu próprio território.
+            const deployLimits=await page.evaluate(()=>({
+              own:window.__cercoTest.canDeploy('ally',210,410),
+              allyEnemy:window.__cercoTest.canDeploy('ally',210,100),
+              enemyOwn:window.__cercoTest.canDeploy('enemy',210,100),
+              enemyAlly:window.__cercoTest.canDeploy('enemy',210,410),
+              river:window.__cercoTest.canDeploy('ally',210,280)
+            }));
+            assert.deepEqual(deployLimits,{own:true,allyEnemy:false,enemyOwn:true,enemyAlly:false,river:false});
             await page.evaluate(()=>window.__cercoTest.reset());
             await page.locator('#start').click();
+            const manaBefore=await page.evaluate(()=>window.__cercoTest.mana().actual);
+            const xpBefore=await page.evaluate(()=>window.__cercoTest.progress('lobo').xp);
             await page.locator('#arena').click({position:{x:box.width*.76,y:box.height*.22}});
-            const high=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
-            assert.equal(high.length,2);
-            assert.ok(high.every(u=>u.y<230),'Limite artificial do campo na invocacao');
+            assert.equal(await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally').length),0,
+              'Jogador invocou tropas diretamente na área do adversário');
+            assert.equal(await page.evaluate(()=>window.__cercoTest.mana().actual),manaBefore,
+              'A invocação inválida consumiu mana');
+            assert.equal(await page.evaluate(()=>window.__cercoTest.progress('lobo').xp),xpBefore,
+              'Invocação inválida ganhou XP');
+            // Mesmo que a IA tente usar coordenadas do jogador, não deve nascer ali.
+            const enemyDeploy=await page.evaluate(()=>({
+              illegal:window.__cercoTest.aiSummon(210,420),
+              legal:window.__cercoTest.aiSummon(210,125),
+              enemyPositions:window.__cercoTest.units().filter(u=>u.side==='enemy').map(u=>u.y)
+            }));
+            assert.deepEqual(enemyDeploy.illegal,{allowed:false,created:0});
+            assert.equal(enemyDeploy.legal.allowed,true);
+            assert.ok(enemyDeploy.legal.created>0&&enemyDeploy.enemyPositions.every(y=>y<240),
+              'Adversário invocou tropas no campo do jogador');
+            // Invocar no próprio território continua permitido.
+            await page.locator('#arena').click({position:{x:box.width*.76,y:box.height*.78}});
+            assert.equal(await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally').length),2,
+              'Invocação válida no próprio campo deixou de funcionar');
 
             // Caminhada real: quadros variam enquanto o personagem se desloca.
             await page.evaluate(()=>window.__cercoTest.reset());
@@ -655,8 +682,12 @@ jobs:
               const fieldBox=await page.locator('#arena').boundingBox();
               await page.locator('#arena').click({position:{x:fieldBox.width*.5,y:fieldBox.height*fraction}});
               const rearUnits=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
-              assert.equal(rearUnits.length,2);
-              assert.ok(rearUnits.every(u=>upper?u.y<0:u.y>560),'Invocação voltou ao limite antigo do campo');
+              if(upper){
+                assert.equal(rearUnits.length,0,'Jogador invocou atrás do castelo inimigo');
+              }else{
+                assert.equal(rearUnits.length,2,'Invocação atrás do castelo aliado deixou de funcionar');
+                assert.ok(rearUnits.every(u=>u.y>560),'A retaguarda aliada deixou de ser utilizável');
+              }
             }
             const occupied=await page.evaluate(()=>window.Cerco3D.info().presentation.framing);
             assert.ok(occupied.top>.89&&occupied.bottom<-.89,'Faixas atrás das bases continuam vazias');
