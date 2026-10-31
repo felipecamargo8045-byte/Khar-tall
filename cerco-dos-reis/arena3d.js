@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three.module.js';
-import {bevelBox,reliefMap,floorHeight,pickGround,fitArena,createAtmosphere,characterShadow,batchStatic,framingInfo} from './arena-atmosphere.js?v=2';
+import {makeCloak,animateCloth,batchRig,updateRig} from './character-cloth.js?v=1';
+import {bevelBox,reliefMap,floorHeight,pickGround,fitArena,createAtmosphere,characterShadow,batchStatic,framingInfo} from './arena-atmosphere.js?v=4';
 
 // Arena WebGL 3D local, geometria própria e sem serviços pagos.
 // Modelo visual independente do motor de combate; não substitui suas regras.
@@ -14,6 +15,9 @@ const teams={
  enemy:{cloth:0x9e3d50,glow:0xf9a0ad,flag:0xc1536c}
 };
 const mat=(color,metalness=.08,roughness=.83)=>new THREE.MeshStandardMaterial({color,metalness,roughness,flatShading:false});
+const outfitMaterials=new Set();let activeOutfit=null;
+function outfit(team,color=teams[team].cloth,metalness=.08){const material=mat(team==='ally'&&activeOutfit?activeOutfit:color,metalness);if(team==='ally'){material.userData.defaultColor=color;outfitMaterials.add(material)}return material}
+document.addEventListener('cerco:collection',event=>{activeOutfit=event.detail.skin?.color||null;for(const material of outfitMaterials)material.color.set(activeOutfit||material.userData.defaultColor)});
 const stone=mat(0x8194a8),darkStone=mat(0x344354),stoneLight=mat(0xb2c6d5);
 const iron=mat(0x8994a5,.8,.35),black=mat(0x131a27,.35),gold=mat(0xc6a569,.7,.34);
 const wood=mat(0xae8650),grass=mat(0x4a725b),dirt=mat(0x607b70),water=new THREE.MeshStandardMaterial({color:0x277a9d,metalness:.25,roughness:.3,transparent:true,opacity:.93});
@@ -122,16 +126,12 @@ function surfaceTexture(style){
  return tex;
 }
 function terrain(){
- // Plataforma em camadas: a borda, o leito do rio e as pontes têm volume real.
- put(scene,bevelBox(12.20,.24,15.62,mat(0x233648),.06),0,-.69,0);
- const base=bevelBox(12.05,.52,15.45,mat(0x334a5b),.07);put(scene,base,0,-.39,0);
- for(const x of [-5.80,5.80])put(scene,bevelBox(.16,.13,15.17,gold,.025),x,-.12,0);
- for(const z of [-7.50,7.50])put(scene,bevelBox(11.70,.13,.16,gold,.025),0,-.12,z);
- const grassMap=surfaceTexture('grass');grassMap.repeat.set(1.7,1.1);
+ // Terreno contínuo cobre a vista inteira, sem moldura de maquete.
+ const grassMap=surfaceTexture('grass');grassMap.repeat.set(9,4.9);
  const grassMaterial=new THREE.MeshStandardMaterial({map:grassMap,bumpMap:reliefMap(grassMap),
   bumpScale:.024,roughness:.95,envMapIntensity:.28});
- for(const z of [-4.0575,4.0575]){
-  const field=box(11.48,.14,6.765,grassMaterial);
+ for(const z of [-15.675,15.675]){
+  const field=box(60,.14,30,grassMaterial);
   put(scene,field,0,-.059,z);field.receiveShadow=true;
  }
  // As pistas param na margem; a água está abaixo das tábuas da ponte.
@@ -191,20 +191,6 @@ function terrain(){
    put(scene,rock,x,.20,z);
   }
  }
- // Parapeitos coloridos: limite real do campo (visual).
- for(const x of [-5.76,5.76]){
-   put(scene,box(.30,.39,15.1,mat(0x849cad)),x,.19,0);
-   put(scene,box(.38,.12,15.2,mat(0xe6cf9b)),x,.43,0);
-   for(let z=-6.7;z<6.9;z+=1.7){
-     put(scene,box(.48,.40,.47,mat(0xc1d1d7)),x,.60,z);
-     put(scene,cone(.26,.34,mat(0x5b778c),6),x,.96,z);
-   }
- }
- for(const z of [-7.36,7.36]){
-   const m=z<0?mat(0xaa6078):mat(0x498eb4);
-   put(scene,box(11.7,.30,.37,m),0,.18,z);
-   put(scene,box(11.7,.06,.45,gold),0,.36,z);
- }
  // Mosaicos laterais, arbustos, tochas e bandeiras, mantendo o centro limpo.
  for(let i=0;i<24;i++){
     const x=(i%2?1:-1)*(4.3+(i%4)*.30);
@@ -231,7 +217,7 @@ function crenel(parent,x,z,w,count,h){
 }
 function makeFortress(team,main){
  const colors=teams[team],group=new THREE.Group();
- const theme=mat(colors.cloth,.35),flag=mat(colors.flag,.14);
+ const theme=outfit(team,colors.cloth,.35),flag=outfit(team,colors.flag,.14);
  const wide=main?2.45:1.7;
  const level=main?2.15:1.55;
  const base=bevelBox(wide+.14,.3,1.59,darkStone,.045);put(group,base,0,.18,0);
@@ -380,37 +366,40 @@ function torches(){
  }
 }
 function armor(m,color,scale=1){
- const shell=box(.64*scale,.58*scale,.4*scale,m);
+ const shell=bevelBox(.64*scale,.58*scale,.4*scale,m,.065*scale);
  shell.castShadow=true;return shell;
 }
 function makeHuman(id,team){
  const colors=teams[team];
  const group=new THREE.Group();
- const cloth=mat(colors.cloth),accent=mat(colors.glow,.4),leather=mat(0x4e3b35),plate=mat(id==='colosso'?0x77736e:0x606f7b,.58,.45);
+ const cloth=outfit(team),accent=mat(colors.glow,.4),leather=mat(0x4e3b35),plate=mat(id==='colosso'?0x77736e:0x606f7b,.58,.45);
  const isGiant=id==='colosso',royal=['rei','guardiao','liliti'].includes(id);
  const size=isGiant?1.4:id==='liliti'?1.06:1;
  const hips=.8*size,torso=.85*size,head=1.61*size;
- const legs=[];
+ const legs=[],knees=[];
  for(const d of [-1,1]){
   const j=pivot(group,d*.18*size,hips,0);
-  const limb=put(j,cyl(.105*size,.12*size,.7*size,leather,8),0,-.34*size,0);
-  limb.castShadow=true;
-  put(j,box(.24*size,.13*size,.38*size,darkStone),0,-.72*size,.11*size);
+  put(j,cyl(.11*size,.13*size,.34*size,leather,9),0,-.17*size,0);
+  const knee=pivot(j,0,-.34*size,0);knees.push(knee);
+  put(knee,sphere(.115*size,plate),0,0,0);
+  put(knee,cyl(.085*size,.105*size,.33*size,plate,9),0,-.17*size,0);
+  put(knee,box(.22*size,.14*size,.34*size,darkStone),0,-.34*size,.09*size);
   legs.push(j);
  }
  const body=pivot(group,0,hips+.18*size,0);
  put(body,armor(plate,id,size*.95),0,.22*size,0);
  const tabard=box(.42*size,.69*size,.07*size,cloth);
  put(body,tabard,0,-.13*size,.25*size);
- if(royal||isGiant){
-   const cape=box(.74*size,.75*size,.08*size,cloth);
-   put(body,cape,0,-.07*size,-.3*size);
- }
+ const cloak=makeCloak((royal?.76:.60)*size,(royal?1.08:.82)*size,cloth,gold);
+ cloak.mesh.position.set(0,-.03*size,-.29*size);body.add(cloak.mesh);
+ if(team==='ally'){cloak.mesh.material[0].userData.defaultColor=colors.cloth;outfitMaterials.add(cloak.mesh.material[0])}
+ const cloaks=[cloak],hair=[];
  const headMesh=sphere(.29*size,skin);put(body,headMesh,0,.76*size,0);headMesh.castShadow=true;
  if(id==='liliti'){
   put(body,sphere(.315*size,redHair),0,.91*size,-.08*size);
   for(const d of [-1,1]){put(body,box(.1*size,.61*size,.13*size,redHair),d*.28*size,.52*size,-.08*size);}
-  for(const d of [-1,1])put(body,sphere(.05*size,green),d*.12*size,.78*size,.246*size);
+  const skirt=cyl(.25*size,.47*size,.93*size,cloth,14);put(body,skirt,0,-.40*size,0);
+  for(const side of [-1,1]){const strand=pivot(body,side*.24*size,.75*size,-.17*size);put(strand,cyl(.07*size,.10*size,.58*size,redHair,7),0,-.27*size,0);hair.push(strand)}
  }else if(id==='rei'){
   const crown=cyl(.32*size,.32*size,.22*size,gold,8);put(body,crown,0,1.07*size,0);
   for(let i=0;i<7;i++){const a=i*2*Math.PI/7;put(body,cone(.065*size,.2*size,gold),Math.sin(a)*.245*size,1.22*size,Math.cos(a)*.245*size);}
@@ -420,50 +409,57 @@ function makeHuman(id,team){
   const helmet=cone(.35*size,.38*size,plate,7);put(body,helmet,0,1.08*size,0);
   put(body,box(.13*size,.32*size,.09*size,plate),0,.79*size,.26*size);
  }
- const arms=[];
+ for(const side of [-1,1]){
+  put(body,sphere(.037*size,black),side*.11*size,.79*size,.26*size);
+  put(body,sphere(.021*size,id==='liliti'?green:stoneLight),side*.11*size,.79*size,.287*size);
+ }
+ put(body,sphere(.055*size,skin),0,.70*size,.275*size);
+ const arms=[],elbows=[],hands=[];
  for(const d of [-1,1]){
   const shoulder=pivot(body,d*.41*size,.49*size,0);
-  const arm=cyl(.12*size,.10*size,.67*size,id==='liliti'?cloth:plate,7);
-  put(shoulder,arm,0,-.32*size,0);arm.castShadow=true;
-  put(shoulder,sphere(.13*size,plate),0,-.62*size,0);
+  put(shoulder,sphere(.15*size,plate),0,0,0);
+  put(shoulder,cyl(.105*size,.12*size,.32*size,id==='liliti'?skin:plate,9),0,-.16*size,0);
+  const elbow=pivot(shoulder,0,-.32*size,0);elbows.push(elbow);
+  put(elbow,cyl(.08*size,.105*size,.29*size,id==='liliti'?skin:plate,9),0,-.145*size,0);
+  const hand=pivot(elbow,0,-.30*size,0);hands.push(hand);put(hand,sphere(.105*size,leather),0,0,0);
   arms.push(shoulder);
  }
  // Equipamento real em 3D, diferente por classe.
  if(['soldado','rei','guardiao','colosso'].includes(id)){
   const h=1.03*size;
-  const sword=pivot(arms[1],0,-.62*size,.13*size);
+  const sword=pivot(hands[1],0,0,.13*size);
   put(sword,cyl(.045*size,.05*size,.34*size,gold),0,-.1*size,0);
   put(sword,box(.11*size,.58*size,.09*size,iron),0,-.55*size,0);
   put(sword,box(.34*size,.05*size,.1*size,gold),0,-.30*size,0);
   if(id==='soldado'||id==='guardiao'){
    const shield=cyl(.34*size,.32*size,.11*size,cloth,8);
    shield.rotation.x=Math.PI/2;
-   put(arms[0],shield,0,-.40*size,.20*size);
-   put(arms[0],sphere(.13*size,gold),0,-.4*size,.265*size);
+   put(hands[0],shield,0,.15*size,.20*size);
+   put(hands[0],sphere(.13*size,gold),0,.15*size,.265*size);
   }
  }
  if(['arqueiro','batedor'].includes(id)){
-  const arc=pivot(arms[0],-.05*size,-.55*size,.12*size);
+  const arc=pivot(hands[0],-.05*size,.07*size,.12*size);
   horizontalPath(arc,[[-.22, .38,0],[-.36,0,0],[-.22,-.38,0]],.035*size,wood);
   horizontalPath(arc,[[-.22,.38,.01],[-.20,0,.01],[-.22,-.38,.01]],.008*size,gold);
   arc.rotation.z=Math.PI/2;
   put(body,box(.09*size,.9*size,.09*size,wood),.38*size,.1*size,-.32*size);
  }
  if(id==='liliti'){
-  const staff=pivot(arms[1],0,-.54*size,.12*size);
+  const staff=pivot(hands[1],0,.08*size,.12*size);
   put(staff,cyl(.035*size,.035*size,1.38*size,gold,7),0,-.35*size,0);
   put(staff,sphere(.15*size,green),0,.38*size,0);
  }
  const sash=box(.69*size,.09*size,.42*size,accent);
  put(body,sash,0,-.17*size,0);
- group.userData={legs,arms,body,baseHeight:head,size,hasWolf:false,id};
+ group.userData={legs,arms,knees,elbows,cloaks,hair,body,baseHeight:head,size,hasWolf:false,id};
  return group;
 }
 function makeWolf(team){
  const colors=teams[team],group=new THREE.Group();
  const hide=mat(team==='ally'?0x565f63:0x635454),fang=mat(0xd5c8ad);
  const body=pivot(group,0,.68,0);
- const torso=put(body,box(.73,.62,1.35,hide),0,0,0);torso.castShadow=true;
+ const wolfTorso=sphere(.5,hide);wolfTorso.scale.set(.78,.64,1.35);const torso=put(body,wolfTorso,0,0,0);torso.castShadow=true;
  put(body,sphere(.44,hide),0,.18,-.5);
  const neck=box(.57,.49,.58,hide);put(body,neck,0,.23,.65);
  const head=pivot(body,0,.28,.83);
@@ -485,37 +481,30 @@ function makeWolf(team){
  }
  const tail=pivot(body,0,.05,-.76);
  const sweep=cone(.16,.7,hide,6);sweep.rotation.x=Math.PI/2;put(tail,sweep,0,.12,-.3);
- put(body,box(.66,.13,.82,mat(colors.cloth)),0,.32,0);
+ put(body,box(.66,.13,.82,outfit(team)),0,.32,0);
  group.userData={legs,arms:[],body,head,tail,hasWolf:true,size:.95,id:'lobo'};
  return group;
 }
 function makeHealthBar(team,width=.84){
  const node=new THREE.Group();
- const bg=box(width,.105,.025,mat(0x16273c));
+ const uiMaterial=color=>new THREE.MeshBasicMaterial({color,depthTest:false,depthWrite:false,toneMapped:false});
+ const bg=box(width,.105,.025,uiMaterial(0x16273c));
  put(node,bg,0,0,0);
- const border=box(width+.07,.155,.016,gold);
+ const border=box(width+.07,.155,.016,uiMaterial(0xc6a569));
  put(node,border,0,0,-.023);
- const fillMat=mat(team==='ally'?0x80e0e8:0xed879a);
+ const fillMat=uiMaterial(team==='ally'?0x80e0e8:0xed879a);
  const fill=box(width-.06,.075,.036,fillMat);
  put(node,fill,0,0,.035);
+ border.renderOrder=20;bg.renderOrder=21;fill.renderOrder=22;
  node.userData.fill=fill;
  node.userData.width=width-.06;
+ node.renderOrder=20;
  return node;
 }
 
 // Acabamento ilustrado animado no espaço 3D: combina esculturas móveis,
 // sombras e silhuetas detalhadas dos personagens originais de Khar Thal.
 // Não usa artes ou modelos do jogo de referência.
-const characterMotion=new Map();
-const motionLoader=new THREE.TextureLoader();
-for(const id of ['lobo','arqueiro','soldado','colosso','guardiao','batedor','rei','liliti']){
-  motionLoader.load('./motion/motion_'+id+'.webp',tex=>{
-    tex.colorSpace=THREE.SRGBColorSpace;
-    tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.ClampToEdgeWrapping;
-    characterMotion.set(id,tex);
-  },undefined,()=>{ /* Exibe modelo 3D quando WebP não é suportado */ });
-}
-
 const shadowCanvas=document.createElement('canvas');
 shadowCanvas.width=64;shadowCanvas.height=64;
 const shadowCtx=shadowCanvas.getContext('2d');
@@ -532,50 +521,22 @@ function fakeShadow(width){
  mesh.renderOrder=2;
  return mesh;
 }
-function detailedAppearance(u){
- const tex=characterMotion.get(u.card.id);
- if(!tex?.image)return null;
- const frameWidth=tex.image.width/24;
- const aspect=frameWidth/tex.image.height;
- const height=u.card.id==='colosso'?1.50:u.card.id==='lobo'?.92:u.card.id==='rei'?1.30:u.card.id==='liliti'?1.28:u.card.id==='guardiao'?1.34:1.16;
- const width=Math.min(1.48,height*aspect);
- const sheet=tex.clone();
- sheet.needsUpdate=true;
- sheet.wrapS=THREE.RepeatWrapping;
- sheet.repeat.set(1/24,1);
- const material=new THREE.MeshBasicMaterial({
-   map:sheet,transparent:true,alphaTest:.055,depthWrite:false,
-   side:THREE.DoubleSide,opacity:.99,toneMapped:false
- });
- const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);
- mesh.renderOrder=8;
- mesh.frustumCulled=false;
- return {mesh,sheet,height};
-}
-function detailedFrame(u){
- const rate=u.card.id==='lobo'?1.35:u.card.id==='colosso'?.75:1;
- if((u.attackPulse||0)>.0001){
-   const progress=clamp(1-(u.attackPulse||0)/.58,0,.999);
-   return 16+Math.floor(progress*8);
- }
- if(u.state==='walk')return Math.floor((u.motionTime||0)*9*rate+u.id*.4)%10;
- return 10+Math.floor((u.motionTime||0)*2.4+u.id*.25)%6;
-}
 function createActor(u){
  const model=u.card.id==='lobo'?makeWolf(u.side):makeHuman(u.card.id,u.side);
  // Proporção de estratégia: tropas menores do que a estrutura que defendem.
  const unitScale=u.card.id==='colosso'?.56:u.card.id==='lobo'?.40:u.card.id==='rei'?.49:u.card.id==='liliti'?.47:.44;
- model.scale.setScalar(unitScale);
+ model.scale.setScalar(unitScale*.66);
  model.traverse(o=>{if(o.isMesh)o.castShadow=true});
- const bar=makeHealthBar(u.side,1.05);
- const appearance=detailedAppearance(u);
+ const rig=batchRig(model);
+ const bar=makeHealthBar(u.side,.68);
+ const appearance=null;
  const shadowProxy=characterShadow(u.card.id,appearance?.height||(u.card.id==='lobo'?.92:1.18));
- const shadow=fakeShadow(u.card.id==='colosso'?.95:u.card.id==='lobo'?.75:.72);
+ const shadow=fakeShadow(u.card.id==='colosso'?.68:u.card.id==='lobo'?.52:.48);
  scene.add(model);scene.add(bar);scene.add(shadow);
  scene.add(shadowProxy);
  atmosphere.invalidate();
  if(appearance)scene.add(appearance.mesh);
- return {model,bar,shadow,shadowProxy,appearance,side:u.side,lastFrame:0,position:new THREE.Vector3()};
+ return {model,rig,bar,shadow,shadowProxy,appearance,side:u.side,lastFrame:0,position:new THREE.Vector3()};
 }
 function syncActors(game){
  const live=new Set(game.units.filter(u=>u.hp>0).map(u=>u.id));
@@ -583,6 +544,7 @@ function syncActors(game){
   if(!live.has(id)){
     scene.remove(rec.model);scene.remove(rec.bar);scene.remove(rec.shadow);scene.remove(rec.shadowProxy);
     atmosphere.invalidate();
+    rec.model.traverse(mesh=>{for(const material of Array.isArray(mesh.material)?mesh.material:mesh.material?[mesh.material]:[])outfitMaterials.delete(material)});
     if(rec.appearance){scene.remove(rec.appearance.mesh);rec.appearance.mesh.material.dispose();rec.appearance.sheet.dispose();}
     actors.delete(id);
   }
@@ -598,10 +560,6 @@ function syncActors(game){
   rec.shadow.position.set(pos.x,ground+.013,pos.z);
   // O modelo físico continua na cena, enquanto a arte animada dá
   // acabamento de personagem real sobre a silhueta geométrica.
-  if(!rec.appearance && characterMotion.has(u.card.id)){
-     rec.appearance=detailedAppearance(u);
-     if(rec.appearance)scene.add(rec.appearance.mesh);
-  }
   if(rec.appearance){
      const art=rec.appearance;
      art.mesh.position.set(pos.x,ground+art.height*.5+.025,pos.z+.10);
@@ -618,10 +576,10 @@ function syncActors(game){
   const rate=u.card.id==='lobo'?10.5:u.card.id==='colosso'?4.1:u.card.id==='batedor'?8.9:7.1;
   const phase=clock*rate+u.id*.18;
   const step=walking?1:attacking?.48:.06;
-  obj.position.y=ground+(walking?.042*Math.sin(phase*2):.012*Math.sin(clock*2));
+  obj.position.y=ground+(walking?.018*Math.sin(phase*2):.005*Math.sin(clock*2));
   // Indicador flutuante, sempre legível, separado do corpo do personagem.
-  const visibleHeight=rec.appearance?.height || (u.card.id==='colosso'?1.5:u.card.id==='lobo'?.92:1.18);
-  rec.bar.position.set(pos.x,ground+visibleHeight+.18,pos.z);
+  const visibleHeight=u.card.id==='colosso'?1.08:u.card.id==='lobo'?.54:.77;
+  rec.bar.position.set(pos.x,ground+visibleHeight+.12,pos.z);
   rec.bar.quaternion.copy(camera.quaternion);
   const fill=rec.bar.userData.fill;
   if(fill){
@@ -654,8 +612,14 @@ function syncActors(game){
    anim.body.rotation.z=walking?Math.sin(phase)*.042:Math.sin(clock*1.5)*.009;
    anim.body.rotation.x=attacking?-.13:0;
   }
+  if(!anim.hasWolf)anim.body.rotation.y=0;
   applyUniqueAttackPose(u,rec,anim);
-  // O brilho no solo não é um token circular com retrato, apenas indicação de equipe.
+  animateCloth(anim.cloaks,clock,walking,attacking?Math.sin(clock*8)**2:0);
+  anim.knees?.forEach((k,i)=>{k.rotation.x=walking?Math.max(0,-Math.sin(phase+i*Math.PI))*.65:.08});
+  anim.elbows?.forEach((e,i)=>{e.rotation.x=attacking?-.5-.3*Math.sin(clock*12):-.12-(walking?Math.max(0,Math.sin(phase+i*Math.PI))*.18:0)});
+  anim.hair?.forEach((h,i)=>{h.rotation.x=Math.sin(clock*2.8+i)*.07;h.rotation.z=Math.sin(clock*3.1+i)*.035});
+  updateRig(rec.rig);
+  // Modelo e tecido recebem luz e sombra como a arquitetura.
  }
 }
 
@@ -682,7 +646,7 @@ function syncBolts(game){
    const from=fortress?.mesh.position.clone()||position(shot.fromX,shot.fromY);
    if(fortress&&shot.slot===2)from.x+=(shot.toX<W/2?-.4:.4);
    from.y=shot.slot===2?3.24:2.44;
-   const to=position(shot.toX,shot.toY);to.y=floorHeight(to.x,to.z)+.72;
+   const to=position(shot.toX,shot.toY);to.y=floorHeight(to.x,to.z)+.40;
    const t=shot.progress,arc=.76,trajectory=to.clone().sub(from);
    mesh.position.copy(from).lerp(to,t);
    mesh.position.y+=Math.sin(t*Math.PI)*arc;
@@ -830,7 +794,7 @@ function syncTroopVfx(game){
   const target=position(shot.toX,shot.toY);
   const source=position(shot.fromX,shot.fromY);
   const rise=Math.sin(shot.progress*Math.PI);
-  mesh.position.set(at.x,floorHeight(at.x,at.z)+.65+rise*(shot.kind==='enchant'?.43:.26),at.z);
+  mesh.position.set(at.x,floorHeight(at.x,at.z)+.40+rise*(shot.kind==='enchant'?.43:.26),at.z);
   if(shot.kind==='enchant'){
     mesh.rotation.set(shot.progress*5,shot.progress*7,shot.progress*4);
   }else if(shot.kind==='shield'){
@@ -850,12 +814,12 @@ function syncTroopVfx(game){
    if(!obj){obj=buildHitEffect(fx);troopVfx.set(fx.id,obj)}
    const p=position(fx.x,fx.y);
    const phase=1-fx.life/fx.maxLife;
-   obj.position.set(p.x,floorHeight(p.x,p.z)+(fx.kind==='slam'?.40:.70),p.z);
+   obj.position.set(p.x,floorHeight(p.x,p.z)+(fx.kind==='slam'?.40:.45),p.z);
    if(fx.kind!=='slam')obj.quaternion.copy(camera.quaternion);
    if(fx.kind==='slash')obj.rotation.z=phase*1.7-.8;
    if(fx.kind==='royal')obj.rotation.z=phase*1.2-.4;
    if(fx.kind==='enchant'||fx.kind==='mark')obj.rotation.z+=.045;
-   obj.scale.setScalar(fx.phase==='release'?.40+.20*phase:.52+phase*.85);
+   obj.scale.setScalar((fx.phase==='release'?.40+.20*phase:.52+phase*.85)*(fx.kind==='slam'?.85:.62));
    obj.traverse(mesh=>{if(mesh.isMesh&&mesh.material?.isMeshBasicMaterial&&mesh.material.transparent){
      mesh.material.opacity=Math.max(.05,(1-phase)*.90);
    }});
@@ -934,7 +898,7 @@ function syncForts(game){
   fort.mesh.visible=hp>0;
   if(fort.bar){
     fort.bar.visible=hp>0;
-    fort.bar.position.set(fort.mesh.position.x,fort.lane===-1?3.6:2.65,fort.mesh.position.z);
+    fort.bar.position.set(fort.mesh.position.x,(fort.lane===-1?4.98:3.46)*fort.mesh.scale.y,fort.mesh.position.z+.12);
     fort.bar.quaternion.copy(camera.quaternion);
     fort.bar.userData.fill.scale.x=Math.max(.01,ratio);
     fort.bar.userData.fill.position.x=-fort.bar.userData.width*(1-ratio)/2;
@@ -946,6 +910,7 @@ function size(){
  const w=host.clientWidth||gameCanvas.clientWidth||420;
  const h=host.clientHeight||gameCanvas.clientHeight||560;
  renderer.setSize(w,h,false);
+ const game=window.Cerco3DGame?.getState?.();if(game)syncForts(game);
  fitArena(camera,w,h,forts);
  atmosphere?.invalidate();
 }
@@ -978,8 +943,8 @@ function init(){
 function render(game){
  if(!ready||!game)return;
  const now=performance.now();
- // Uma cadência de 24 fps para 3D preserva CPU para o motor da batalha.
- if(now-lastTime<41 && lastTime!==0)return;
+ // Uma cadência de 30 fps para 3D preserva CPU para o motor da batalha.
+ if(now-lastTime<33 && lastTime!==0)return;
  lastTime=now;
  syncForts(game);syncActors(game);syncBolts(game);syncTroopVfx(game);
  atmosphere.update(now,actors.size>0);
@@ -1004,6 +969,7 @@ window.Cerco3D={
    batchedPieces,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,
    framing:framingInfo(camera,forts)}:null}),
  debugActors:()=>[...actors.entries()].map(([id,rec])=>({id,kind:rec.model.userData.id,illustrated:!!rec.appearance,legs:rec.model.userData.legs?.length||0,
+   cloaks:rec.model.userData.cloaks?.length||0,clothSample:Number((rec.model.userData.cloaks?.[0]?.geometry.attributes.position.array.at(-1)||0).toFixed(4)),
    rotations:rec.model.userData.legs?.map(l=>Number(l.rotation.x.toFixed(3)))||[]}))
 };
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});

@@ -47,9 +47,9 @@ function render(){
   const buy=document.createElement('a');
   buy.className='home-skin-buy';
   buy.href=info.url;
-  buy.target='_blank';buy.rel='noopener noreferrer';
+  buy.dataset.cercoBuy=skin.id;
   buy.textContent='COMPRAR R$ 2,50';
-  buy.setAttribute('aria-label','Abrir loja oficial do Khar Tall para comprar '+skin.name);
+  buy.setAttribute('aria-label','Comprar na loja do Cerco dos Reis: '+skin.name);
   tile.append(details,buy);skins.append(tile);
  }
  const history=$('#homeHistory');history.replaceChildren();
@@ -97,7 +97,7 @@ function closeDrawer(){
 }
 function syncSound(){
  const sound=window.CercoAudio?.getSettings?.();
- $('#lobbySound').textContent=sound?.on===false?'♪̸':'♫';
+ window.CercoAudio?.renderControl?.($('#lobbySound'));
  $('#lobbySound').setAttribute('aria-pressed',String(sound?.on!==false));
  const voice=window.CercoVoices?.enabled?.()!==false;
  $('#lobbyVoice').textContent=voice?'🗣':'⊘';

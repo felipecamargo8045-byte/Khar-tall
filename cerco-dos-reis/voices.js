@@ -80,17 +80,18 @@ function permitted(){
 }
 function stop(){
  if(playing){try{playing.stop(0)}catch{};try{playing.disconnect()}catch{};playing=null}
- voiceUntil=0;
+ voiceUntil=0;window.CercoAudio?.setDucking?.(false);
 }
-function speak(id,event='attack'){
+function speak(id,event='summon'){
+ if(event!=='summon')return false;
  const char=CAST[id];
  if(!char||id==='lobo'||!permitted())return false;
- const lines=event==='attack'?char.lines:event==='hurt'?char.hurt:event==='victory'?char.victory||char.lines:[];
+ const lines=char.lines;
  if(!lines?.length)return false;
- const timestamp=now(),key=id+':'+event;
+ const timestamp=now(),key=id+':attack';
  const last=lastByCharacter.get(key)??-Infinity;
- const minGap=event==='hurt'?17000:event==='victory'?200:12500;
- if(timestamp-last<minGap||timestamp-lastGlobal<(event==='victory'?900:3600)||timestamp<voiceUntil)return false;
+ const minGap=750;
+ if(timestamp-last<minGap||timestamp-lastGlobal<350||timestamp<voiceUntil)return false;
  const n=countByLine.get(key)||0;
  let selected=null,idx=-1;
  for(let i=0;i<lines.length;i++){
@@ -101,15 +102,15 @@ function speak(id,event='attack'){
  try{
   const node=context.createBufferSource(),gain=context.createGain(),base=mixerVolume();
   node.buffer=selected;
-  gain.gain.value=Math.max(.04,Math.min(.75,base*(event==='victory'?.98:.83)));
+  gain.gain.value=Math.max(.04,Math.min(.75,base*.83));
   node.connect(gain);gain.connect(context.destination);
-  node.onended=()=>{if(playing===node)playing=null;gain.disconnect()};
+  node.onended=()=>{if(playing===node){playing=null;voiceUntil=0;window.CercoAudio?.setDucking?.(false)}gain.disconnect()};
   node.start(0);
-  playing=node;voiceUntil=timestamp+selected.duration*1000+190;
+  window.CercoAudio?.setDucking?.(true);playing=node;voiceUntil=timestamp+selected.duration*1000+190;
  }catch{return false}
  countByLine.set(key,idx+1);
  lastByCharacter.set(key,timestamp);lastGlobal=timestamp;
- history.push({id,event,line:lines[idx],file:manifest?.characters?.[id]?.clips?.[event]?.[idx]||'',timestamp});
+ history.push({id,event,line:lines[idx],file:manifest?.characters?.[id]?.clips?.attack?.[idx]||'',timestamp});
  if(history.length>80)history.shift();
  return true;
 }
@@ -135,7 +136,7 @@ function init(){
 }
 window.CercoVoices={
  profiles:CAST,unlock,speak,stop,toggle,setEnabled,enabled:()=>enabled,
- status:()=>({recorded:true,supported:!!Ctx,enabled,loaded:samples.size,total:pending.size,
+ status:()=>({recorded:true,events:['summon'],supported:!!Ctx,enabled,loaded:samples.size,total:pending.size,
    error:loadError,characters:Object.keys(CAST),language:'pt-BR',fallbackSpeechSynthesis:false}),
  history:()=>history.map(x=>({...x})),
  dialogue:(id,event='attack')=>{

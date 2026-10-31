@@ -14,7 +14,7 @@ const MATERIALS=Object.freeze({
  essence:{name:'Essência de Liliti',icon:'☽',description:'Material raro dos pergaminhos'}
 });
 const PRICE_CENTS=250;
-const STORE_URL='https://khar-tall-online.onrender.com/loja';
+const STORE_URL='#shop';
 const SKINS=Object.freeze([
  {id:'skin_green_light',name:'Verde Claro',character:'Exército',color:'#9ce6af'},
  {id:'skin_blue_light',name:'Azul Claro',character:'Exército',color:'#9ed9ff'},
@@ -126,7 +126,7 @@ function purchaseInfo(id){
  if(!skin)return null;
  return {id:skin.id,name:skin.name,priceCents:PRICE_CENTS,
     url:STORE_URL,availableToAll:true,
-    note:'Compra única na loja oficial do Khar Tall, sem exigência de assinatura. O acesso no Cerco dos Reis ainda não está sincronizado com a loja original.'};
+    note:'Compra única na loja exclusiva do Cerco dos Reis, sem exigência de assinatura. A liberação é confirmada no servidor.'};
 }
 function fragmentProgress(id){
  return {count:memberVerified()?safeNumber(state.skinFragments[id]):0,

@@ -49,3 +49,17 @@ const animated=new THREE.Group(),arm=new THREE.Group();
 for(let i=0;i<4;i++)arm.add(new THREE.Mesh(new THREE.BoxGeometry(.1,.2,.3),material));
 animated.add(arm);assert.equal(batchStatic(animated,[arm]),0);assert.equal(arm.children.length,4);
 console.log('PASSOU: enquadramento, toques nas pontes, chanfros, instâncias e partes articuladas.');
+
+// A capa continua presa aos ombros e sua malha se move ao caminhar.
+const {makeCloak,animateCloth,batchRig,updateRig}=await import('../character-cloth.js');
+const cloth=makeCloak(.7,1,new THREE.MeshStandardMaterial(),new THREE.MeshStandardMaterial());
+const first=cloth.geometry.attributes.position.array.slice();
+animateCloth([cloth],1,true,0);const later=cloth.geometry.attributes.position.array;
+assert.equal(later[2],first[2],'O ombro da capa se soltou');
+assert.notEqual(later.at(-1),first.at(-1),'A capa não deformou');
+const actor=new THREE.Group(),joint=new THREE.Group();actor.add(joint);
+for(let i=0;i<3;i++){const part=new THREE.Mesh(new THREE.BoxGeometry(.1,.2,.1),material);part.position.x=i*.2;joint.add(part)}
+const rig=batchRig(actor);joint.rotation.x=.7;updateRig(rig);
+const record=rig.records[0],partMatrix=new THREE.Matrix4();record.mesh.getMatrixAt(1,partMatrix);
+assert.ok(partMatrix.elements.every((n,i)=>Math.abs(n-record.sources[1].matrixWorld.elements[i])<1e-6),'Articulação perdida ao instanciar');
+console.log('PASSOU: tecido articulado e agrupamento dinâmico de personagens 3D.');

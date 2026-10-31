@@ -58,3 +58,10 @@ O APK mantém a assinatura original. Para atualizar, instalar sobre a versão an
 - E-mail Brevo: opcional e inicialmente desligado. O plano gratuito informa 300 envios/dia; a aplicação limita a 250 tentativas por dia UTC, mantém os avisos na conta e permite ao administrador tentar pendências. Não compra créditos, não contrata plano e não habilita SMS/WhatsApp. O administrador deve confirmar uma conta gratuita sem recarga automática; uso em outros sistemas compartilha a cota do provedor.
 - Ainda é necessário conectar o token de frete, informar o CEP real de postagem e cadastrar peso/medidas/preparação reais antes de abrir produtos físicos. E-mail adicional exige chave e remetente verificado. Nenhum CEP ou dado de embalagem foi inventado em produção.
 - Android 3.8.0 é compilado localmente com a assinatura existente. APIs privadas continuam fora do cache offline; não há nova infraestrutura.
+
+
+## Cerco dos Reis — loja independente (31/10/2026)
+
+A loja do Cerco usa seu próprio catálogo, pedidos e coleção. O serviço `cerco-dos-reis-loja` utiliza o plano Free do Render, com parada por inatividade; não foi contratado plano pago. O banco utiliza o projeto Neon existente, com o esquema `cerco_shop` e um usuário restrito, sem leitura dos pedidos do Khar Tall. Os limites do projeto Neon não foram ampliados. A InfinitePay recebe compras avulsas; permanecem somente as tarifas de venda autorizadas pelo usuário. Não há mensalidade de pagamentos, geração de mídia paga ou serviços de IA durante as partidas.
+
+O código privado da coleção fica no navegador do comprador e pode ser guardado/restaurado pela interface; o banco armazena somente seu hash. Não usar esse código como senha de contas do Khar Tall. Retorno de checkout e webhook exigem confirmação em `payment_check` antes da entrega. Arquivos privados de configuração ficam nas variáveis do serviço, fora do Git.

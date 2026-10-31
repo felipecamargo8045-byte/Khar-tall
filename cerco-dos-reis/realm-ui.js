@@ -7,17 +7,17 @@ const KEY='cerco-dos-reis-forja-local-v1';
 // do Khar Tall. Fragmentos dos Pergaminhos de Liliti são exclusivos
 // de assinantes mensais, e não fazem parte da compra normal.
 const bannerStyles=window.CercoRewards?.skins||[];
-const STORE_URL='https://khar-tall-online.onrender.com/loja';
+const STORE_URL='#shop';
 function renderShop(){
  const grid=$('#shopGrid');grid.replaceChildren();
  for(const entry of bannerStyles){
   const link=document.createElement('a');
   link.href=STORE_URL;
-  link.target='_blank';link.rel='noopener noreferrer';
+  link.dataset.cercoBuy=entry.id;
   link.className='shop-item';
   link.dataset.skinId=entry.id;
   link.dataset.purchaseUrl=STORE_URL;
-  link.setAttribute('aria-label','Comprar skin '+entry.name+' na loja do Khar Tall por R$ 2,50');
+  link.setAttribute('aria-label','Comprar skin '+entry.name+' na loja do Cerco dos Reis por R$ 2,50');
   const swatch=document.createElement('span');
   swatch.className='swatch';swatch.style.setProperty('--swatch',entry.color);
   const name=document.createElement('strong');name.textContent=entry.name;

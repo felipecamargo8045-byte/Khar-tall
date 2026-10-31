@@ -8,14 +8,14 @@
 <title>Cerco dos Reis · Khar Thal</title>
 <link rel="icon" href="./origem-apk/assets/emblem.svg">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="stylesheet" href="./game-ui.css?v=17">
-<link rel="stylesheet" href="./interface.css?v=36">
+<link rel="stylesheet" href="./game-ui.css?v=18">
+<link rel="stylesheet" href="./interface.css?v=50">
 </head>
 <body>
 <div class="aurora" aria-hidden="true"></div>
 <header class="game-header">
   <div class="brand-mark"><img src="./origem-apk/assets/emblem.svg" alt=""><div><strong>CERCO DOS REIS</strong><small>KHAR THAL · ECOS DA CHAMA</small></div></div>
-  <div class="header-right"><div class="sound-controls" aria-label="Som do jogo"><button type="button" id="voiceToggle" class="sound-button voice-button" aria-label="Silenciar falas dos personagens" aria-pressed="true" title="Silenciar falas">🗣</button><button type="button" id="soundToggle" class="sound-button" aria-label="Silenciar sons do jogo" aria-pressed="true" title="Alternar sons">♫</button><label class="sr-only" for="soundVolume">Volume dos efeitos sonoros</label><input id="soundVolume" type="range" min="0" max="100" value="55" aria-label="Volume dos efeitos sonoros"></div><div class="mode-token"><span class="live-dot"></span> MODO TREINO</div><button type="button" id="installApp" class="install-btn" aria-label="Instalar aplicativo">⇩</button></div>
+  <div class="header-right"><div class="sound-controls" aria-label="Som do jogo"><button type="button" id="voiceToggle" class="sound-button voice-button" aria-label="Silenciar falas dos personagens" aria-pressed="true" title="Silenciar falas">🗣</button><button type="button" id="soundToggle" class="sound-button" aria-label="Silenciar sons do jogo" aria-pressed="true" title="Alternar sons"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#volume"></use></svg></button><label class="sr-only" for="soundVolume">Volume dos efeitos sonoros</label><input id="soundVolume" type="range" min="0" max="100" value="55" aria-label="Volume dos efeitos sonoros"></div><div class="mode-token"><span class="live-dot"></span> MODO TREINO</div><button type="button" id="installApp" class="install-btn" aria-label="Instalar aplicativo">⇩</button></div>
 </header>
 <nav id="navigation" class="game-nav" aria-label="Seções do jogo">
  <button class="active" data-view="home"><span class="nav-ico"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#home"></use></svg></span><span>Início</span></button>
@@ -42,7 +42,7 @@
     <div class="lobby-stat-currency" title="Vitórias em batalhas">
      <svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#trophy"></use></svg><strong id="homeWins">0</strong><small class="lobby-stat-caption">VITÓRIAS</small>
     </div>
-    <button id="lobbySound" type="button" class="lobby-hud-icon" aria-label="Alternar som do jogo">♫</button>
+    <button id="lobbySound" type="button" class="lobby-hud-icon" aria-label="Alternar som do jogo"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#volume"></use></svg></button>
     <button id="lobbyVoice" type="button" class="lobby-hud-icon" aria-label="Alternar vozes dos personagens">🗣</button>
    </div>
   </div>
@@ -115,7 +115,7 @@
    <section class="home-premium lobby-drawer-panel" id="lobbySkinsPanel" aria-labelledby="premiumTitle">
     <div class="home-panel-heading"><div><span class="overline">COLEÇÃO DE APARÊNCIAS</span><h2 id="premiumTitle">Skins dos Reinos</h2></div><span class="home-premium-tag">R$ 2,50 CADA</span></div>
     <div id="homePremiumSkins" class="home-skin-grid"></div>
-    <p class="home-premium-warning">Qualquer jogador pode comprar skins avulsas na loja oficial do Khar Tall. Só assinantes mensais poderão encontrar <strong>fragmentos de skins nos Pergaminhos de Liliti</strong> (10 fragmentos para desbloquear). A sincronização das compras e assinaturas com o Cerco ainda não está disponível.</p>
+    <p class="home-premium-warning">Qualquer jogador pode comprar skins avulsas na loja exclusiva do Cerco dos Reis. Só assinantes mensais poderão encontrar <strong>fragmentos de skins nos Pergaminhos de Liliti</strong> (10 fragmentos para desbloquear). Compras avulsas são confirmadas no servidor. Fragmentos por assinatura dependem de verificação da assinatura.</p>
    </section>
    <section class="home-history lobby-drawer-panel" id="lobbyHistoryPanel" aria-labelledby="historyTitle">
     <div class="home-panel-heading"><div><span class="overline">CRÔNICAS DO COMANDANTE</span><h2 id="historyTitle">Conquistas</h2></div></div>
@@ -140,7 +140,7 @@
     <div class="side ally-side"><div><small>AZUL</small><strong id="allyCastle">2.600 PV</strong></div><span class="side-emblem">♜</span></div>
     <button id="battlePause" class="battle-hud-button battle-pause" type="button" aria-label="Pausar batalha">Ⅱ</button>
     <button id="battleVoice" class="battle-hud-button battle-voice" type="button" aria-label="Silenciar falas dos personagens" aria-pressed="true" title="Silenciar falas">🗣</button>
-    <button id="battleSound" class="battle-hud-button battle-mute" type="button" aria-label="Silenciar efeitos sonoros">♫</button>
+    <button id="battleSound" class="battle-hud-button battle-mute" type="button" aria-label="Silenciar efeitos sonoros"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#volume"></use></svg></button>
    </div>
    <div class="canvas-box">
     <div id="arena3d" hidden aria-label="Campo tridimensional com personagens e castelos modelados"></div>
@@ -179,7 +179,7 @@
 </section>
 <section class="page" data-page="shop">
  <div class="view-heading"><div class="overline">FORJA DO REINO</div><h1>ARSENAL REAL</h1><p>Compre skins individualmente sem assinatura. Assinantes também podem ganhar fragmentos nos Pergaminhos de Liliti.</p></div>
- <div class="shop-feature"><div class="shop-feature-art"><img src="./origem-apk/assets/khar_tall_guardiao.png" alt="Guardião de Khar Thal"></div><div><div class="overline">SUA FORJA</div><h2>O poder está no detalhe.</h2><p>Skins estão disponíveis para compra avulsa por qualquer jogador. Os fragmentos de skins dentro dos Pergaminhos de Liliti são exclusivos dos assinantes mensais.</p><div class="forge-note">A compra abre a loja oficial do Khar Tall. As skins compradas lá ainda não são sincronizadas com este Cerco de treinamento.</div></div></div>
+ <div class="shop-feature"><div class="shop-feature-art"><img src="./origem-apk/assets/khar_tall_guardiao.png" alt="Guardião de Khar Thal"></div><div><div class="overline">SUA FORJA</div><h2>O poder está no detalhe.</h2><p>Skins estão disponíveis para compra avulsa por qualquer jogador. Os fragmentos de skins dentro dos Pergaminhos de Liliti são exclusivos dos assinantes mensais.</p><div class="forge-note">Loja exclusiva do Cerco dos Reis. Skins compradas aqui pertencem à sua coleção do Cerco e são liberadas após a confirmação do pagamento.</div></div></div>
  <div class="shop-title-row"><h3>SKINS À VENDA</h3><span id="shopStatus">COMPRA AVULSA · R$ 2,50</span></div>
  <div id="shopGrid" class="shop-grid"></div>
  <div class="shop-title-row"><h3>CARTAS EM DESTAQUE</h3><span>TOQUE PARA EXAMINAR</span></div>
@@ -202,18 +202,19 @@
   <div class="profile-identity panel"><div class="profile-banner"><img src="./origem-apk/assets/portrait_rei.webp" alt="Rei de Khar Thal"></div><div class="profile-content"><div class="overline">COMANDANTE</div><h2>VICTORYNO</h2><span class="vip-flag">♛ TODAS AS CARTAS LIBERADAS NO TREINO</span></div></div>
   <div class="profile-records"><div class="profile-kpis"><div class="profile-kpi"><small>VITÓRIAS NO TREINO</small><strong id="profileWins">0</strong><span>Contra IA</span></div><div class="profile-kpi"><small>ARSENAL</small><strong>11 / 11</strong><span>Cartas de treino</span></div><div class="profile-kpi"><small>CARTAS EVOLUÍDAS</small><strong id="profileEvolved">0</strong><span>Progresso local</span></div></div>
    <div class="profile-inventory panel"><div class="overline">INVENTÁRIO DO COMANDANTE</div><h3>Cartas em destaque</h3><div id="profileCards" class="profile-cards"></div></div>
-   <div class="profile-actions"><span class="profile-safety">♛ Conta, compras e VIP online não são acessados pelo treino.</span><button id="clearProgress" class="secondary-btn" type="button">Limpar progresso do treino</button></div>
+   <div class="profile-actions"><span class="profile-safety">♛ Compras do Cerco ficam na sua coleção. O progresso de treinamento continua salvo neste aparelho.</span><button id="clearProgress" class="secondary-btn" type="button">Limpar progresso do treino</button></div>
   </div>
  </div>
 </section>
 </main>
 <script src="./khar-audio-original.js?v=2" defer></script>
-<script src="./sfx.js?v=7" defer></script>
-<script src="./voices.js?v=4" defer></script>
-<script src="./rewards.js?v=2" defer></script>
-<script src="./home.js?v=4" defer></script>
-<script src="./app.js?v=25" defer></script>
-<script src="./realm-ui.js?v=5" defer></script>
-<script type="module" src="./arena3d.js?v=16"></script>
+<script src="./sfx.js?v=8" defer></script>
+<script src="./voices.js?v=5" defer></script>
+<script src="./rewards.js?v=3" defer></script>
+<script src="./home.js?v=5" defer></script>
+<script src="./app.js?v=26" defer></script>
+<script src="./realm-ui.js?v=6" defer></script>
+<script src="./store.js?v=1" defer></script>
+<script type="module" src="./arena3d.js?v=18"></script>
 </body>
 </html>

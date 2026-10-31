@@ -50,8 +50,9 @@ export function pickGround(ray,target){
 function projectedForts(camera,forts){
  const bounds=new THREE.Box2();
  for(const fort of forts){
-  fort.mesh.updateWorldMatrix(true,true);
-  fort.mesh.traverse(mesh=>{
+  for(const object of [fort.mesh,fort.bar].filter(Boolean)){
+  object.updateWorldMatrix(true,true);
+  object.traverse(mesh=>{
    if(!mesh.isMesh)return;
    if(mesh.isInstancedMesh){if(!mesh.boundingBox)mesh.computeBoundingBox()}
    else if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
@@ -61,6 +62,7 @@ function projectedForts(camera,forts){
     bounds.expandByPoint(new THREE.Vector2(p.x,p.y));
    }
   });
+  }
  }
  return bounds;
 }
@@ -72,7 +74,7 @@ export function fitArena(camera,width,height,forts=[]){
  camera.updateMatrixWorld(true);
  const bounds=projectedForts(camera,forts);
  const points=[];
- for(const x of [-5.5,5.5])for(const z of [-7.6,7.6])points.push([x,-.81,z]);
+ for(const x of [-5.4,5.4])for(const z of [-7.0,7.0])points.push([x,-.15,z]);
  if(!forts.length)for(const z of [-6.77,6.77])points.push([0,4.95,z]);
  for(const point of points){
   const p=new THREE.Vector3(...point).applyMatrix4(camera.matrixWorldInverse);
