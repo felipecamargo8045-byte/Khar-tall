@@ -431,3 +431,98 @@ body.battle-mode .battle .energybar.mana-blocks,
 @media(max-height:690px){
  body.battle-mode .battle .energybar.mana-blocks{height:15px!important;margin:3px 0 5px!important}
 }
+
+/* Página inicial de Cerco dos Reis — adaptada a celulares e PWA. */
+.home-page{max-width:1230px;margin:0 auto}
+.home-hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(200px,.75fr);overflow:hidden;position:relative;border:1px solid #8b6b82;border-radius:22px;background:radial-gradient(circle at 83% 26%,#78456787,transparent 45%),linear-gradient(125deg,#252034,#152336 70%);min-height:300px;margin:7px 0 17px;box-shadow:0 14px 44px #0005}
+.home-hero-copy{padding:clamp(24px,4.5vw,48px);position:relative;z-index:2}
+.home-hero-copy h1{font-size:clamp(34px,5vw,61px);max-width:530px;color:#f8dfb9;line-height:1.02;margin:14px 0}
+.home-hero-copy p{max-width:550px;font-size:clamp(14px,1.8vw,18px);line-height:1.6}
+.home-hero-copy p strong{color:#eac4fa}
+.home-training-note{display:block;max-width:530px;font-size:11px;color:#c9bdd3;margin:10px 0}
+.home-buttons{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}
+.home-buttons button{padding:13px 17px;font-size:12px;font-weight:850;cursor:pointer}
+.home-primary{box-shadow:0 6px 18px #0006}
+.home-hero-art{position:relative;min-height:180px;overflow:hidden}
+.home-hero-art:before{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,#1a2034 0%,transparent 55%)}
+.home-hero-art img{height:110%;width:100%;object-fit:cover;object-position:50% 24%;filter:drop-shadow(0 10px 15px #0005)}
+.home-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.home-stat{display:flex;align-items:center;gap:12px;border:1px solid #566078;padding:17px 14px;border-radius:14px;background:linear-gradient(150deg,#263148,#142034);min-width:0}
+.home-stat>span{font-size:clamp(26px,3.5vw,40px);color:#dfbc8e;text-shadow:0 0 14px #c18ae544}
+.home-stat>div{flex:1;min-width:0}
+.home-stat small{display:block;color:#b5bbd0;font-size:10px;font-weight:700;letter-spacing:.055em}
+.home-stat strong{display:block;color:#f2dba9;font:800 clamp(26px,3.5vw,38px)/1.2 system-ui}
+.home-xp-track{height:5px;border-radius:9px;background:#0d172b;margin:6px 0;overflow:hidden}
+.home-xp-track i{display:block;height:100%;width:0;background:linear-gradient(90deg,#a76fc8,#edc9fb);border-radius:9px}
+.home-main-grid{display:grid;grid-template-columns:minmax(0,1.14fr) minmax(0,.86fr);gap:15px;margin-bottom:16px}
+.home-scroll-panel,.home-inventory,.home-premium,.home-history{min-width:0;border-radius:17px;border:1px solid #5d5576;background:linear-gradient(160deg,#1e263b,#121b2c);padding:clamp(16px,2vw,24px)}
+.home-panel-heading{display:flex;align-items:center;gap:9px;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
+.home-panel-heading h2{font:600 clamp(23px,3vw,31px)/1.12 Georgia,serif;margin:6px 0;color:#f2daaf}
+.home-scroll-panel>p,.home-premium>p{color:#bdc6d6;font-size:13px;line-height:1.6}
+.home-scroll-chip,.home-premium-tag{font-weight:850;letter-spacing:.075em;font-size:10px;padding:7px 9px;border-radius:20px;border:1px solid #9973a5;color:#e4c3f2;white-space:nowrap}
+.home-scroll-stage{display:flex;align-items:center;gap:20px;padding:18px 14px;background:radial-gradient(ellipse at 17% 30%,#77528b66,transparent 53%),#171a31;border:1px solid #7f638a;border-radius:13px;margin:18px 0 12px}
+.scroll-art{position:relative;display:grid;place-items:center;flex:0 0 114px;height:143px;border:6px solid #c7a87f;border-top-color:#f9ddad;border-bottom-color:#f9ddad;border-radius:18px 18px 13px 13px;background:linear-gradient(120deg,#b79469,#f2d9a8 32%,#bd9368 95%);box-shadow:0 7px 19px #0009,0 0 26px #b765ed44;transform:rotate(-4deg)}
+.scroll-art:before,.scroll-art:after{content:'';position:absolute;left:-10px;right:-10px;height:12px;border-radius:9px;background:linear-gradient(#a8773e,#e5c58c,#7b4c2e);border:1px solid #f0d6a8}
+.scroll-art:before{top:-7px}.scroll-art:after{bottom:-7px}
+.scroll-art span{color:#50325a;font:700 70px/1 Georgia,serif;text-shadow:0 2px 2px #fff8}
+.scroll-art b{position:absolute;right:17px;top:22px;color:#7d488c;font-size:22px}
+.scroll-info{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0}
+.scroll-info>strong{color:#f0d6ad;font-size:clamp(15px,2vw,20px)}
+.scroll-info>small{font-size:12px;color:#c3bbcd;line-height:1.45}
+.scroll-info button{align-self:flex-start}
+.scroll-info button:disabled{opacity:.5;cursor:default;filter:grayscale(.65)}
+.home-reward-message{border-left:3px solid #a984c0;padding:9px 10px;color:#cbbfd2;font-size:12px;background:#281e3944;border-radius:4px}
+.home-reward-message.won{color:#ffe0a0;border-color:#efc475;font-weight:800}
+.home-rates{font-size:12px;color:#cbbfd6;margin-top:12px}
+.home-rates summary{cursor:pointer;color:#e6c9f2;font-weight:850;padding:8px}
+.home-drop-list{display:grid;gap:6px;margin:8px 0}
+.home-drop-list>div{display:flex;justify-content:space-between;border-bottom:1px solid #59607944;padding:7px}
+.home-rates p{font-size:11px;line-height:1.55;color:#b6adc4}
+.home-materials{display:grid;gap:9px}
+.home-material{display:flex;align-items:center;gap:10px;border:1px solid #414d66;background:#1b2940;border-radius:11px;padding:10px}
+.home-material-icon{display:grid;place-items:center;flex:0 0 35px;height:35px;font-size:21px;color:#e5c58e;background:#313049;border-radius:10px}
+.home-material-info{display:flex;flex-direction:column;min-width:0;flex:1}
+.home-material-info strong{color:#e5d5c6;font-size:12px}
+.home-material-info small{font-size:10px;color:#b4bccc}
+.home-material>b{font-size:21px;color:#f0d7a8}
+.home-forge-note{font-size:12px;color:#b5c0d4;line-height:1.5}
+.home-inventory .secondary-btn{cursor:pointer;padding:10px 14px}
+.home-skin-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:14px 0}
+.home-skin{min-width:0;border:1px solid var(--skin-accent,#886b9b);border-radius:11px;background:linear-gradient(155deg,#2d2541,#141e2f);padding:11px 8px;display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center;position:relative}
+.home-skin-symbol{font-size:37px;color:var(--skin-accent,#c9afec);text-shadow:0 0 15px var(--skin-accent)}
+.home-skin-content strong{font-size:11px;display:block;color:#e9d4ee}
+.home-skin-content small{font-size:9px;display:block;color:#aab7c8}
+.home-lock{position:absolute;top:6px;right:7px;font-size:12px}
+.home-premium-warning{display:block;color:#c9b1cd;font-size:11px;line-height:1.5}
+.home-history-list{display:grid;gap:9px;max-height:330px;overflow:auto}
+.home-history-empty{font-size:12px;color:#aeb8ca}
+.home-history-row{display:flex;gap:10px;align-items:center;padding:10px;background:#25314a;border:1px solid #424d64;border-radius:9px}
+.home-history-row>span{font-size:19px}.home-history-row>div{min-width:0}
+.home-history-row>div>span{display:block;color:#e7dace;font-size:12px}
+.home-history-row small{display:block;color:#9eaebf;font-size:10px}
+.evolution-forge{margin-top:14px;border:1px solid #896f9c;border-radius:12px;background:#251f36;padding:15px}
+.evolution-forge h3{margin:0 0 9px;color:#eed7ab}
+.evolution-forge p{font-size:12px}
+.evolution-forge button{margin-top:10px;cursor:pointer}
+.evolution-forge button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:950px){.home-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.home-main-grid{grid-template-columns:1fr}}
+@media(max-width:570px){
+ .home-hero{grid-template-columns:1fr;min-height:0}
+ .home-hero-copy{padding:20px 18px 170px}
+ .home-hero-copy h1{font-size:clamp(33px,10vw,45px)}
+ .home-hero-art{position:absolute;bottom:0;right:0;width:56%;height:190px;min-height:0;opacity:.62}
+ .home-hero-art:before{background:linear-gradient(0deg,transparent,#1b2331 90%)}
+ .home-buttons{position:relative;z-index:3;align-items:stretch}
+ .home-buttons button{font-size:11px;padding:11px}
+ .home-stats{gap:8px}
+ .home-stat{padding:12px 9px;gap:7px}
+ .home-stat>span{font-size:24px}
+ .home-stat small{font-size:9px}
+ .home-stat strong{font-size:27px}
+ .home-scroll-panel,.home-inventory,.home-premium,.home-history{padding:14px}
+ .home-scroll-stage{gap:13px;padding:12px}
+ .scroll-art{flex-basis:85px;height:115px}
+ .scroll-art span{font-size:53px}
+ .scroll-info button{font-size:11px;padding:10px 11px}
+ .home-skin-grid{gap:6px}
+}
