@@ -2,6 +2,7 @@ import * as THREE from './vendor/three.module.js';
 import {bevelBox} from './arena-atmosphere.js?v=6';
 import {makeCloak} from './character-cloth.js?v=2';
 import {loft,finishMaterial,dyedMaterial,sculptedHead,makeDress,animateDrapes} from './character-surfaces.js?v=1';
+import {createNativeCharacter} from './native-characters.js?v=1';
 
 // Silhuetas e equipamentos derivados das oito artes originais do próprio jogo.
 // As medidas pertencem ao corpo, não à câmera: o Colosso é alto e largo;
@@ -95,6 +96,7 @@ function handShape(parent,material,gold,heavy=false){
 }
 export function createCharacter(id,team,context){
  const {mat,outfit,outfitMaterials}=context,profile=characterProfiles[id]||characterProfiles.soldado;
+ const native=createNativeCharacter(id,team,context,profile);if(native)return native;
  const metal=finishMaterial(mat(id==='colosso'?0x343a40:id==='arqueiro'?0x615042:0x505b65,.70,.43),'metal');
  const gold=finishMaterial(mat(0xb89453,.73,.36),'metal'),edge=mat(0xaab4b7,.76,.33),leather=mat(0x352921,.04,.87);
  const skin=mat(0xb58d73,.01,.74),dark=mat(0x111820,.1,.62),redHair=mat(0x692d1e,.10,.61);

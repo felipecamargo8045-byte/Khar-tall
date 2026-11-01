@@ -1,0 +1,9 @@
+# Install torch==2.5.1+cpu from https://download.pytorch.org/whl/cpu first.
+omegaconf==2.3.0
+einops==0.7.0
+transformers==4.35.0
+huggingface-hub==0.17.3
+trimesh==4.12.2
+scikit-image==0.26.0
+rembg[cpu]==2.0.86
+imageio-ffmpeg==0.7.0
