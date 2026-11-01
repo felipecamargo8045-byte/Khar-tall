@@ -15,6 +15,7 @@ function renderShop(){
   link.type='button';
   link.dataset.skinPreview=entry.id;
   link.className='shop-item';
+  link.style.setProperty('--swatch',entry.color);
   link.dataset.skinId=entry.id;
   link.setAttribute('aria-label','Demonstrar skin '+entry.name+' nos oito personagens');
   const swatch=document.createElement('span');
