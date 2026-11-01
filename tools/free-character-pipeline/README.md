@@ -10,6 +10,8 @@ Nenhum crédito foi comprado, plano contratado ou API paga utilizada. Gratuidade
 
 A etapa mais recente usa anatomia limpa do Mesh2Motion e uma cabeça adulta MakeHuman, armadura ajustada ao corpo, capuz próprio e capa com nove ossos. Os arquivos, a cena editável e o vídeo estão em [refined/soldado-refinado-pacote.zip](refined/soldado-refinado-pacote.zip). O [relatório de validação](refined/asset-validation.json) separa a integridade dos arquivos da [avaliação artística e limitações](refined/quality-review.json). Abaixo permanece o histórico dos primeiros testes.
 
+A [conferência no navegador](refined/browser-review.json) identificou WebGL desativado no navegador em nuvem. A prévia agora oferece o vídeo real do modelo quando o 3D não inicia. O vídeo carregou e reproduziu integralmente; o 3D interativo e o desempenho no Android continuam sem validação visual nesse ambiente. `make_preview.py` e `preview.template.html` permitem reproduzir essa prévia com os arquivos locais, sem API paga.
+
 - A referência detalhada do Soldado foi recuperada dos arquivos já existentes. É uma imagem em pose neutra, não o modelo 3D. Armas devem ser feitas separadamente para não ocultar mãos e braços.
 - Na sessão original, a demonstração oficial do TRELLIS.2 gerou vistas 3D com mais detalhe. A exportação GLB parou por limite de ZeroGPU. Não foi obtido um GLB nativo desse teste. A referência original com armas também causou fusão de espada e escudo.
 - TripoSR executou localmente em CPU e exportou geometria real. O teste anterior tinha 23.284 vértices e 46.568 triângulos antes da divisão de UV. A forma ainda é irregular e perde detalhes da armadura.

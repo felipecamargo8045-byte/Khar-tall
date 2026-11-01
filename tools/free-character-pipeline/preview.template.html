@@ -1,0 +1,118 @@
+<div id="cerco-soldado-3d">
+  <h3>Soldado · modelo 3D</h3>
+  <div data-stage role="group" aria-label="Prévia do Soldado">
+    <video data-fallback controls playsinline muted preload="metadata" aria-label="Vídeo renderizado do Soldado caminhando e atacando">
+      <source src="data:video/mp4;base64,__VIDEO_DATA__" type="video/mp4">
+    </video>
+  </div>
+  <div class="viz-controls" data-tools hidden>
+    <label class="form-label">Movimento
+      <select class="form-select" data-motion disabled>
+        <option value="Idle">Espera</option><option value="Walk">Caminhada</option>
+        <option value="Attack">Ataque</option><option value="Hit">Dano</option><option value="Death">Queda</option>
+      </select>
+    </label>
+    <button type="button" class="btn btn-primary" data-play disabled>Reproduzir</button>
+    <label class="form-label">Roupa
+      <input class="form-control form-control-color" type="color" data-color value="#762b39" disabled aria-label="Cor de prévia da roupa">
+    </label>
+    <label class="form-label">Giro
+      <input class="form-range" type="range" data-turn min="-180" max="180" value="0" disabled aria-label="Girar o personagem">
+    </label>
+  </div>
+  <div class="text-small text-muted" data-status role="status" aria-live="polite">Prévia em vídeo · caminhada e ataque</div>
+  <script type="application/octet-stream" data-model>__MODEL_DATA__</script>
+</div>
+<style>
+#cerco-soldado-3d [data-stage]{width:100%;height:440px;overflow:hidden}
+#cerco-soldado-3d canvas{display:block;width:100%;height:100%;touch-action:pan-y}
+#cerco-soldado-3d [data-fallback]{display:block;max-width:100%;height:100%;margin-inline:auto}
+#cerco-soldado-3d [data-tools][hidden]{display:none}
+@media(max-width:420px){#cerco-soldado-3d [data-stage]{height:390px}}
+</style>
+<script type="module">
+import * as THREE from 'https://esm.sh/three@0.169.0';
+import {GLTFLoader} from 'https://esm.sh/three@0.169.0/examples/jsm/loaders/GLTFLoader.js';
+import {OrbitControls} from 'https://esm.sh/three@0.169.0/examples/jsm/controls/OrbitControls.js';
+import {RoomEnvironment} from 'https://esm.sh/three@0.169.0/examples/jsm/environments/RoomEnvironment.js';
+import {ungzip} from 'https://esm.sh/pako@2.1.0';
+const root=document.getElementById('cerco-soldado-3d');
+const stage=root.querySelector('[data-stage]'),motion=root.querySelector('[data-motion]');
+const play=root.querySelector('[data-play]'),color=root.querySelector('[data-color]');
+const turn=root.querySelector('[data-turn]'),status=root.querySelector('[data-status]');
+const fallback=root.querySelector('[data-fallback]'),tools=root.querySelector('[data-tools]');
+let renderer,scene,camera,controls,actor,mixer,action,clips,playing=false,finished=false,raf=0,last=0;
+const dyes=new Set();
+function render(){if(renderer&&camera)renderer.render(scene,camera)}
+function pause(){playing=false;cancelAnimationFrame(raf);raf=0;play.textContent=finished?'Repetir':'Reproduzir';render()}
+function tick(now){
+  if(!playing)return;
+  const dt=Math.min(.06,last?(now-last)/1000:0);last=now;mixer.update(dt);render();
+  if(playing)raf=requestAnimationFrame(tick);
+}
+function setMotion(name){
+  action?.stop();finished=false;action=mixer.clipAction(clips.find(c=>c.name===name));
+  action.reset();action.clampWhenFinished=true;
+  action.setLoop(name==='Idle'||name==='Walk'?THREE.LoopRepeat:THREE.LoopOnce,Infinity);
+  action.play();mixer.update(0);render();
+}
+try{
+  renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'low-power'});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
+  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  scene=new THREE.Scene();scene.background=new THREE.Color(0x102335);
+  camera=new THREE.PerspectiveCamera(32,1,.02,50);
+  const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(new RoomEnvironment(),.04).texture;pmrem.dispose();
+  scene.add(new THREE.HemisphereLight(0xd7e7ff,0x27321e,1.5));
+  const key=new THREE.DirectionalLight(0xffe3b7,3.2);key.position.set(-3,5,4);key.castShadow=true;
+  key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=-2;key.shadow.camera.right=2;
+  key.shadow.camera.top=3;key.shadow.camera.bottom=-2;key.shadow.normalBias=.025;scene.add(key);
+  const rim=new THREE.DirectionalLight(0xa8cfff,2.5);rim.position.set(2,3,-3);scene.add(rim);
+  const pedestal=new THREE.Mesh(new THREE.CylinderGeometry(.98,1.02,.07,80),new THREE.MeshStandardMaterial({color:0x182d42,metalness:.3,roughness:.55}));
+  pedestal.position.y=-.055;pedestal.receiveShadow=true;scene.add(pedestal);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.97,.006,6,96),new THREE.MeshStandardMaterial({color:0xc89c50,metalness:.75,roughness:.3}));
+  ring.rotation.x=-Math.PI/2;ring.position.y=-.018;scene.add(ring);
+  controls=new OrbitControls(camera,renderer.domElement);controls.enablePan=false;controls.minDistance=1.3;controls.maxDistance=6;
+  controls.minPolarAngle=.2;controls.maxPolarAngle=Math.PI*.49;controls.addEventListener('change',render);
+  const compressed=Uint8Array.from(atob(root.querySelector('[data-model]').textContent.trim()),c=>c.charCodeAt(0));
+  const bytes=ungzip(compressed);
+  const parsed=await new Promise((resolve,reject)=>new GLTFLoader().parse(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'',resolve,reject));
+  actor=parsed.scene;clips=parsed.animations;scene.add(actor);
+  actor.traverse(o=>{
+    if(!o.isMesh)return;o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false;
+    for(const mat of Array.isArray(o.material)?o.material:[o.material])if(mat?.userData?.skin_region==='cloth')dyes.add(mat);
+  });
+  mixer=new THREE.AnimationMixer(actor);setMotion('Idle');actor.updateMatrixWorld(true);
+  actor.traverse(o=>{if(o.isSkinnedMesh){o.skeleton.update();o.computeBoundingBox()}});
+  const box=new THREE.Box3().setFromObject(actor,true);actor.position.y-=box.min.y;
+  const size=box.getSize(new THREE.Vector3());controls.target.set(0,size.y*.53,0);
+  function resize(){
+    const width=Math.max(280,stage.clientWidth),height=stage.clientHeight;
+    renderer.setSize(width,height,false);camera.aspect=width/height;
+    const half=Math.tan(THREE.MathUtils.degToRad(camera.fov/2));
+    const distance=Math.max(size.y/(2*half),Math.max(size.x,1.55)/(2*half*camera.aspect))*1.12;
+    camera.position.set(distance*.27,controls.target.y+distance*.12,distance*.96);camera.updateProjectionMatrix();controls.update();render();
+  }
+  new ResizeObserver(resize).observe(stage);resize();
+  fallback.pause();stage.replaceChildren(renderer.domElement);tools.hidden=false;
+  play.disabled=false;motion.disabled=false;turn.disabled=false;color.disabled=!dyes.size;
+  const mainDye=[...dyes].find(m=>m.name.includes('Capa'))||[...dyes][0];
+  if(mainDye)color.value='#'+mainDye.color.getHexString();
+  status.textContent='Malha articulada · roupa e detalhes dourados separados';
+  play.addEventListener('click',()=>{
+    if(playing){pause();return}
+    if(finished){setMotion(motion.value);finished=false}
+    playing=true;last=0;play.textContent='Pausar';raf=requestAnimationFrame(tick);
+  });
+  motion.addEventListener('change',()=>{setMotion(motion.value);status.textContent=motion.selectedOptions[0].textContent+' · modelo articulado';if(!playing)play.textContent='Reproduzir'});
+  color.addEventListener('input',()=>{for(const mat of dyes)mat.color.set(color.value).multiplyScalar(mat.name.includes('sob a armadura')?.22:1);render()});
+  turn.addEventListener('input',()=>{actor.rotation.y=THREE.MathUtils.degToRad(Number(turn.value));render()});
+  mixer.addEventListener('finished',()=>{finished=true;pause();status.textContent=motion.selectedOptions[0].textContent+' · movimento concluído'});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});
+}catch(error){
+  console.warn('Prévia 3D indisponível:',error);renderer?.dispose();
+  tools.hidden=true;stage.replaceChildren(fallback);
+  status.textContent='Vídeo renderizado · 3D interativo indisponível neste navegador';
+}
+</script>
