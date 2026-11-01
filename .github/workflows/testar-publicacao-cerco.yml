@@ -36,6 +36,7 @@ jobs:
           node --check cerco-dos-reis/khar-audio-original.js
           node --check cerco-dos-reis/restore-original-audio.js
           node --check cerco-dos-reis/realm-ui.js
+          node --check cerco-dos-reis/skin-preview.js
           node --check cerco-dos-reis/sw.js
           node --check cerco-dos-reis/arena3d.js
           node --check cerco-dos-reis/character-models.js
@@ -58,12 +59,14 @@ jobs:
           assert 'https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/' not in html
           assert 'src="./app.js?v=30"' in html
           assert 'src="./rewards.js?v=3"' in html
-          assert 'src="./home.js?v=5"' in html
+          assert 'src="./home.js?v=6"' in html
           assert 'src="./voices.js?v=5"' in html
-          assert 'src="./realm-ui.js?v=7"' in html
+          assert 'src="./realm-ui.js?v=8"' in html
           assert 'href="./interface.css?v=50"' in html
           assert 'src="./arena3d.js?v=22"' in html
-          for name in ['game-ui.css','interface.css','assets/interface-icons.svg','app.js','rewards.js','home.js','arena3d.js','arena-atmosphere.js','arena-layout.js','character-models.js','vendor/three.module.js','realm-ui.js','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
+          assert 'src="./skin-preview.js?v=1"' in html
+          assert 'href="./skin-preview.css?v=1"' in html
+          for name in ['game-ui.css','interface.css','assets/interface-icons.svg','app.js','rewards.js','home.js','arena3d.js','arena-atmosphere.js','arena-layout.js','character-models.js','vendor/three.module.js','realm-ui.js','skin-preview.js','skin-preview.css','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
               assert Path('cerco-dos-reis',name).is_file(),name
           print('Seis ambientes, recompensas, arquivos, navegacao e scripts: OK')
           PY
@@ -274,11 +277,27 @@ jobs:
             await page.evaluate(()=>window.CercoStore.sync());
             assert.equal(await page.locator('#shopGrid .shop-item .swatch').count(),8,'A atualização da coleção apagou as skins');
             assert.equal(await page.locator('#shopGrid .shop-item strong').count(),8,'Nomes das skins foram apagados');
-            assert.match(await page.locator('#shopStatus').innerText(),/TODOS PODEM COMPRAR/i);
-            const buyUrl=await page.locator('#shopGrid .shop-item').nth(2).getAttribute('href');
-            assert.equal(buyUrl,'#shop','Link da loja oficial não disponível para qualquer jogador');
-            assert.match(await page.locator('#shopGrid .shop-item').nth(2).innerText(),/COMPRAR.*R\$ 2,50/i);
-            assert.ok(await page.locator('#shopGrid .shop-item').nth(2).getAttribute('data-cerco-buy'),'Compra não pertence à loja própria');
+            assert.match(await page.locator('#shopStatus').innerText(),/VEJA NOS PERSONAGENS/i);
+            assert.equal(await page.locator('#shopGrid .shop-item[data-cerco-buy]').count(),0,
+              'A escolha de cor não pode cobrar sem mostrar os personagens');
+            await page.locator('#shopGrid [data-skin-preview="skin_purple_light"]').click();
+            await page.waitForFunction(()=>window.CercoSkinPreview?.status()?.skin==='skin_purple_light');
+            assert.equal(await page.locator('#skinPreviewBuy').getAttribute('data-cerco-buy'),'skin_purple_light');
+            assert.match(await page.locator('#skinPreviewBuy').innerText(),/(COMPRAR|EQUIPAR|EQUIPADA)/);
+            assert.equal(await page.locator('#skinCharacterGrid [data-skin-character]').count(),8,
+              'Faltou demonstração de personagens');
+            await page.locator('#skinCharacterGrid [data-skin-character="liliti"]').click();
+            assert.equal(await page.evaluate(()=>window.CercoSkinPreview.status().character),'liliti');
+            await page.locator('#skinCharacterGrid [data-skin-character="colosso"]').click();
+            assert.equal(await page.evaluate(()=>window.CercoSkinPreview.status().character),'colosso');
+            const skinDemo=await page.evaluate(()=>window.CercoSkinPreview.status());
+            assert.ok(skinDemo.characters.includes('lobo')&&skinDemo.characters.includes('soldado'));
+            assert.equal(skinDemo.buyId,'skin_purple_light');
+            if(skinDemo.available){
+              assert.equal(skinDemo.thumbnails,8,'As oito prévias 3D não foram geradas');
+              assert.ok(await page.locator('#skinPreview3D canvas').count(),'Prévia WebGL não apareceu');
+            }
+            await page.screenshot({path:'/tmp/cerco-skins-preview-mobile.png',fullPage:true});
             assert.equal(await page.locator('#featuredCards button').count(),8);
             await page.locator('#featuredCards button').first().click();
             assert.equal(await page.locator('.page.active').getAttribute('data-page'),'cards');

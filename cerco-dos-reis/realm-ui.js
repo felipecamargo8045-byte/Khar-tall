@@ -11,22 +11,22 @@ const STORE_URL='#shop';
 function renderShop(){
  const grid=$('#shopGrid');grid.replaceChildren();
  for(const entry of bannerStyles){
-  const link=document.createElement('a');
-  link.href=STORE_URL;
-  link.dataset.cercoBuy=entry.id;
+  const link=document.createElement('button');
+  link.type='button';
+  link.dataset.skinPreview=entry.id;
   link.className='shop-item';
+  link.style.setProperty('--swatch',entry.color);
   link.dataset.skinId=entry.id;
-  link.dataset.purchaseUrl=STORE_URL;
-  link.setAttribute('aria-label','Comprar skin '+entry.name+' na loja do Cerco dos Reis por R$ 2,50');
+  link.setAttribute('aria-label','Demonstrar skin '+entry.name+' nos oito personagens');
   const swatch=document.createElement('span');
   swatch.className='swatch';swatch.style.setProperty('--swatch',entry.color);
   const name=document.createElement('strong');name.textContent=entry.name;
-  const price=document.createElement('small');price.textContent='COMPRAR • R$ 2,50';
+  const price=document.createElement('small');price.className='skin-sample-action';price.textContent='VER NOS PERSONAGENS';
   const fragments=document.createElement('small');fragments.textContent='Fragmentos nos pergaminhos: só assinantes';
   link.append(swatch,name,price,fragments);
   grid.append(link);
  }
- $('#shopStatus').textContent='TODOS PODEM COMPRAR SKINS • R$ 2,50 CADA';
+ $('#shopStatus').textContent='ESCOLHA A COR → VEJA NOS PERSONAGENS → COMPRE';
 }
 const featured=[
  ['Liliti','portrait_lilith_ruiva.webp','liliti'],

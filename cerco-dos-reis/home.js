@@ -47,9 +47,9 @@ function render(){
   const buy=document.createElement('a');
   buy.className='home-skin-buy';
   buy.href=info.url;
-  buy.dataset.cercoBuy=skin.id;
-  buy.textContent='COMPRAR R$ 2,50';
-  buy.setAttribute('aria-label','Comprar na loja do Cerco dos Reis: '+skin.name);
+  buy.dataset.skinPreview=skin.id;
+  buy.textContent='VER NO PERSONAGEM';
+  buy.setAttribute('aria-label','Ver como a skin '+skin.name+' fica nos personagens antes de comprar');
   tile.append(details,buy);skins.append(tile);
  }
  const history=$('#homeHistory');history.replaceChildren();

@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="./game-ui.css?v=18">
 <link rel="stylesheet" href="./interface.css?v=50">
 <link rel="stylesheet" href="./card-art.css?v=6">
+<link rel="stylesheet" href="./skin-preview.css?v=1">
 </head>
 <body>
 <div class="aurora" aria-hidden="true"></div>
@@ -183,6 +184,11 @@
  <div class="shop-feature"><div class="shop-feature-art"><img src="./origem-apk/assets/khar_tall_guardiao.png" alt="Guardião de Khar Thal"></div><div><div class="overline">SUA FORJA</div><h2>O poder está no detalhe.</h2><p>Skins estão disponíveis para compra avulsa por qualquer jogador. Os fragmentos de skins dentro dos Pergaminhos de Liliti são exclusivos dos assinantes mensais.</p><div class="forge-note">Loja exclusiva do Cerco dos Reis. Skins compradas aqui pertencem à sua coleção do Cerco e são liberadas após a confirmação do pagamento.</div></div></div>
  <div class="shop-title-row"><h3>SKINS À VENDA</h3><span id="shopStatus">COMPRA AVULSA · R$ 2,50</span></div>
  <div id="shopGrid" class="shop-grid"></div>
+ <section class="skin-preview-panel" id="skinPreviewPanel" aria-labelledby="skinPreviewName">
+  <div class="skin-preview-heading"><div><span class="overline">PROVADOR DE SKINS · MODELAGEM DA ARENA</span><h3 id="skinPreviewName">Verde Claro</h3><p>Escolha uma cor e veja o resultado nos oito personagens antes de comprar.</p></div><div class="skin-preview-selected"><strong>SKIN DO EXÉRCITO</strong><small>Roupa, nome e equipe após equipar</small></div></div>
+  <div class="skin-preview-layout"><div class="skin-preview-focus"><div class="skin-preview-stage"><div id="skinPreview3D" class="skin-preview-3d" aria-label="Modelo tridimensional do personagem com a skin selecionada"></div><img id="skinPreviewFallback" class="skin-preview-fallback" src="./origem-apk/assets/portrait_aprendiz_soldado.webp" alt="Arte original do Soldado" hidden></div><div class="skin-preview-name"><b id="skinPreviewCharacter">Soldado</b><small id="skinPreviewStatus">Carregando prévias dos modelos 3D…</small></div></div><div id="skinCharacterGrid" class="skin-character-grid" role="group" aria-label="Ver skin em cada personagem"></div></div>
+  <div class="skin-preview-purchase"><div><strong class="skin-preview-price" id="skinPreviewPrice">R$ 2,50 · compra única</strong><p>Você pode testar gratuitamente a aparência. A compra só começa ao tocar no botão.</p></div><button id="skinPreviewBuy" class="skin-preview-buy" type="button" data-cerco-buy="skin_green_light">COMPRAR SKIN · R$ 2,50</button></div>
+ </section>
  <div class="shop-title-row"><h3>CARTAS EM DESTAQUE</h3><span>TOQUE PARA EXAMINAR</span></div>
  <div id="featuredCards" class="featured-grid"></div>
 </section>
@@ -212,13 +218,14 @@
 <script src="./sfx.js?v=8" defer></script>
 <script src="./voices.js?v=5" defer></script>
 <script src="./rewards.js?v=3" defer></script>
-<script src="./home.js?v=5" defer></script>
+<script src="./home.js?v=6" defer></script>
 <script src="./arena-layout.js?v=2" defer></script>
 <script src="./card-art.js?v=7" defer></script>
 <script src="./liliti-healing.js?v=1" defer></script>
 <script src="./app.js?v=30" defer></script>
-<script src="./realm-ui.js?v=7" defer></script>
+<script src="./realm-ui.js?v=8" defer></script>
 <script src="./store.js?v=3" defer></script>
 <script type="module" src="./arena3d.js?v=22"></script>
+<script type="module" src="./skin-preview.js?v=1"></script>
 </body>
 </html>
