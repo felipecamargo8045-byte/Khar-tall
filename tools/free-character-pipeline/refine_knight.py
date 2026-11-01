@@ -19,6 +19,7 @@ p=argparse.ArgumentParser()
 for name in ['base','previous','clips','out']:p.add_argument('--'+name,type=Path,required=True)
 p.add_argument('--head-base',type=Path)
 p.add_argument('--head-morph',type=Path)
+p.add_argument('--character',choices=['soldado','arqueiro','guardiao','colosso','batedor','rei','liliti'],default='soldado')
 args=p.parse_args(sys.argv[sys.argv.index('--')+1:]);args.out.mkdir(parents=True,exist_ok=True)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=str(args.base))
@@ -274,7 +275,11 @@ for i,v in enumerate(np.array(points)):
     for (_,name),w in zip(nearest,weights):groups[name].add([i],float(w),'REPLACE')
 
 # Native skeleton and actions: no T/A-pose orientation approximation.
-clips=[('Idle','idle-sword'),('Walk','walk'),('Attack','sword-regular-a'),('Hit','hit-chest'),('Death','death-a')]
+motion={'soldado':('idle-sword','walk','sword-regular-a'),'arqueiro':('bow-pull-hold','walk-stealth','bow-release'),
+ 'guardiao':('polearm-idle','walk','spear-thrust'),'colosso':('fighting-idle','walk-large','attack-ground-pound'),
+ 'batedor':('spell-simple-idle','walk-stealth','spell-simple-shoot'),'rei':('idle-sword','walk','sword-regular-b'),
+ 'liliti':('spell-simple-idle','walk-female','spell-simple-shoot')}[args.character]
+clips=[('Idle',motion[0]),('Walk',motion[1]),('Attack',motion[2]),('Hit','hit-chest'),('Death','death-a')]
 rig.animation_data_create();bpy.context.scene.render.fps=30;actions={}
 for label,file in clips:
     before=set(bpy.data.objects);bpy.ops.import_scene.gltf(filepath=str(args.clips/(file+'.glb')));temporary=set(bpy.data.objects)-before
@@ -317,29 +322,33 @@ rig.animation_data.action=None
 
 # Join rigid fitted pieces while preserving per-bone vertex groups. Keep the
 # hood UV in the same channel so its PBR maps survive the join.
+if args.character!='soldado':
+    sys.path.insert(0,str(Path(__file__).parent))
+    from roster_variants import apply_variant
+    apply_variant(globals())
 for obj in meshes:
     if obj.data.uv_layers and body.data.uv_layers:obj.data.uv_layers.active.name=body.data.uv_layers.active.name
 bpy.ops.object.select_all(action='DESELECT')
 for obj in meshes:obj.select_set(True)
-bpy.context.view_layer.objects.active=body;bpy.ops.object.join();body.name='SoldadoRefinado'
+bpy.context.view_layer.objects.active=body;bpy.ops.object.join();body.name=args.character+'Refinado'
 bpy.ops.object.select_all(action='DESELECT');body.select_set(True);rig.select_set(True);bpy.context.view_layer.objects.active=rig
-rig['card_id']='soldado';rig['revision']=2
-bpy.ops.export_scene.gltf(filepath=str(args.out/'soldado-refinado.glb'),export_format='GLB',use_selection=True,export_animations=True,export_animation_mode='NLA_TRACKS',export_extras=True)
+rig['card_id']=args.character;rig['revision']=3
+bpy.ops.export_scene.gltf(filepath=str(args.out/(args.character+'-refinado.glb')),export_format='GLB',use_selection=True,export_animations=True,export_animation_mode='NLA_TRACKS',export_extras=True)
 rig.animation_data.action=actions['Idle']
 if actions['Idle'].slots:rig.animation_data.action_slot=actions['Idle'].slots[0]
 bpy.context.scene.frame_set(1);bpy.data.orphans_purge(do_local_ids=True,do_linked_ids=False,do_recursive=True)
-bpy.ops.file.pack_all();bpy.ops.wm.save_as_mainfile(filepath=str(args.out/'soldado-refinado.blend'),compress=True)
+bpy.ops.file.pack_all();bpy.ops.wm.save_as_mainfile(filepath=str(args.out/(args.character+'-refinado.blend')),compress=True)
 rig.animation_data.action=None
 for pose in rig.pose.bones:pose.matrix_basis.identity()
 bpy.context.view_layer.objects.active=body
 decimate=body.modifiers.new('Detalhe reduzido para batalha','DECIMATE');decimate.ratio=.28;decimate.use_collapse_triangulate=True
 body.modifiers.move(len(body.modifiers)-1,0)
 bpy.ops.object.modifier_apply(modifier=decimate.name)
-bpy.ops.export_scene.gltf(filepath=str(args.out/'soldado-refinado-campo.glb'),export_format='GLB',use_selection=True,export_animations=True,export_animation_mode='NLA_TRACKS',export_extras=True)
-info={'body_source':'Mesh2Motion base.glb, CC0','native_skinning':True,'body_vertices_source':7399,
+bpy.ops.export_scene.gltf(filepath=str(args.out/(args.character+'-refinado-campo.glb')),export_format='GLB',use_selection=True,export_animations=True,export_animation_mode='NLA_TRACKS',export_extras=True)
+info={'body_source':'Mesh2Motion '+args.base.name+', CC0','native_skinning':True,'body_vertices_source':len(vertices),
       'armor':'anatomically fitted modeled plate surfaces, gold trims and heraldic etching',
       'hood':'tailored continuous cloth geometry with gold seams',
       'head_source':'MakeHuman base body group only, CC0' if args.head_base else 'Mesh2Motion mannequin',
       'cape':'continuous modeled cloth with nine additional bones','clips':list(actions),
-      'paid_api_calls':0,'quality_status':'requires rendered visual review before game integration'}
+      'character':args.character,'motion_sources':list(motion),'paid_api_calls':0,'quality_status':'requires rendered visual review before game integration'}
 (args.out/'provenance.json').write_text(json.dumps(info,ensure_ascii=False,indent=2));print(json.dumps(info),flush=True)
