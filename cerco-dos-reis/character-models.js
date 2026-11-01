@@ -56,7 +56,8 @@ function crown(parent,y,gold){
 function magic(parent,color,gold){
  const g=joint(parent,0,-.04,.12);
  const glow=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.72,depthWrite:false,toneMapped:false});
- put(g,ball(.082,glow),0,0,.07);
+ const core=new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.6,metalness:.18,roughness:.20,transparent:true,opacity:.88});
+ put(g,ball(.074,core),0,0,.07);
  for(let i=0;i<3;i++){
   const ring=put(g,new THREE.Mesh(new THREE.TorusGeometry(.13+i*.025,.009,4,22),i===2?gold:glow),0,0,.06);
   ring.rotation.set(i*.7,i*.9,0);
@@ -134,13 +135,13 @@ export function createCharacter(id,team,context){
   put(pendant,new THREE.Mesh(new THREE.OctahedronGeometry(.020,0),gold),0,-.055,.04);
  }else{
   put(body,loft([[-.12,.23*w,.14*w],[.04,.22*w,.15*w],[.28,.30*w,.18*w],[.45,.34*w,.175*w],[.55,.26*w,.14*w],[.60,.075,.073]].map(r=>[r[0]*h,...r.slice(1)]),leather,24));
-  put(body,loft([[.09,.235*w,.16*w,0,.012],[.27,.31*w,.19*w],[.44,.34*w,.18*w],[.51,.27*w,.145*w],[.57,.12*w,.095*w]].map(r=>[r[0]*h,...r.slice(1)]),metal,32));
+  put(body,loft([[.09,.235*w,.16*w,0,.012],[.27,.31*w,.19*w],[.44,.34*w,.18*w],[.51,.28*w,.15*w],[.55,.27*w,.15*w],[.60,.082*w,.080*w]].map(r=>[r[0]*h,...r.slice(1)]),metal,32));
   for(const side of [-1,1])curve(body,[[side*.24*w,.10*h,.07],[side*.28*w,.31*h,.10],[side*.28*w,.46*h,.08]],.008,gold);
   for(let row=0;row<3;row++)put(body,loft([[.10*h-row*.095*h,.24*w,.16*w],[.025*h-row*.095*h,.26*w,.17*w]],metal,20));
   const tabard=makeCloak(.32*w,.64*h,clothLight,gold,true);tabard.mesh.position.set(0,-.26*h,.215*w);body.add(tabard.mesh);cloaks.push(tabard);
   for(const side of [-1,1]){const skirt=put(body,loft([[-.12*h,.105*w,.036],[-.43*h,.125*w,.04]],metal,12),side*.235*w,0,.09*w);skirt.rotation.z=-side*.16;}
   put(body,loft([[-.017,.25*w,.17*w],[-.075,.255*w,.174*w]],gold,24));
-  const collar=put(body,new THREE.Mesh(new THREE.TorusGeometry(.117*w,.009,6,30),gold),0,.57*h,0);collar.rotation.x=Math.PI/2;collar.scale.y=.82;
+  const collar=put(body,new THREE.Mesh(new THREE.TorusGeometry(.084*w,.009,6,30),gold),0,.60*h,0);collar.rotation.x=Math.PI/2;collar.scale.y=.94;
   curve(body,[[0,.45*h,.185*w],[0,.31*h,.204*w],[0,.12*h,.175*w]],.005,gold);
   for(const side of [-1,1])curve(body,[[side*.04*w,.40*h,.189*w],[side*.115*w,.32*h,.187*w],[side*.068*w,.23*h,.196*w],[0,.20*h,.197*w]],.005,gold);
   put(body,new THREE.Mesh(new THREE.OctahedronGeometry(.026*w,0),gold),0,.35*h,.205*w);
@@ -165,11 +166,11 @@ export function createCharacter(id,team,context){
   for(const side of [-1,1]){const horn=put(head,spike(.028,id==='colosso'?.20:.16,gold),side*.13,.19,-.05);horn.rotation.z=-side*.4;}
   put(head,spike(.030,.21,gold),0,.24,-.025);
  }else if(id==='rei'){
-  const scalp=new THREE.Mesh(new THREE.SphereGeometry(.143,24,16,0,Math.PI*2,0,Math.PI*.58),leather);put(head,scalp,0,.031,-.016);
+  const scalp=new THREE.Mesh(new THREE.SphereGeometry(.143,24,16,0,Math.PI*2,0,Math.PI*.45),leather);put(head,scalp,0,.031,-.016);
   crown(head,.17,gold);
   put(head,ball(.10,leather,.9,.85,.30),0,-.087,.081);
   const fur=mat(0x8a8173,.01,.96);
-  for(let n=0;n<18;n++){const a=n/17*Math.PI;const tuft=put(body,spike(.052,.18,fur),Math.cos(a)*.39*w,.58*h,Math.sin(a)*.19-.08);tuft.rotation.z=Math.cos(a)*.6;tuft.rotation.x=-.4;}
+  for(let n=0;n<18;n++){const a=n/17*Math.PI;const tuft=put(body,ball(.063,fur,1.1,.88,.74),Math.cos(a)*.39*w,.57*h,Math.sin(a)*.19-.08);tuft.rotation.z=Math.cos(a)*.6;}
  }else{
   const scalp=new THREE.Mesh(new THREE.SphereGeometry(.145,28,18,0,Math.PI*2,0,Math.PI*.62),redHair);scalp.scale.set(1,1.12,.94);put(head,scalp,0,.045,-.026);
   const highlight=mat(0x93472c,.1,.58),shadow=mat(0x48231c,.06,.73);
