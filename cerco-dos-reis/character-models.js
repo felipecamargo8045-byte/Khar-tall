@@ -1,6 +1,7 @@
 import * as THREE from './vendor/three.module.js';
 import {bevelBox} from './arena-atmosphere.js?v=6';
-import {makeCloak} from './character-cloth.js?v=1';
+import {makeCloak} from './character-cloth.js?v=2';
+import {loft,finishMaterial,dyedMaterial,sculptedHead,makeDress,animateDrapes} from './character-surfaces.js?v=1';
 
 // Silhuetas e equipamentos derivados das oito artes originais do próprio jogo.
 // As medidas pertencem ao corpo, não à câmera: o Colosso é alto e largo;
@@ -49,8 +50,8 @@ function sword(parent,length,iron,gold,leather){
  return g;
 }
 function crown(parent,y,gold){
- put(parent,tube(.205,.215,.13,gold,16),0,y,0);
- for(let i=0;i<7;i++){const a=i*Math.PI*2/7;put(parent,spike(.048,.17,gold),Math.sin(a)*.19,y+.13,Math.cos(a)*.19)}
+ put(parent,tube(.145,.150,.085,gold,24),0,y,0);
+ for(let i=0;i<7;i++){const a=i*Math.PI*2/7;put(parent,spike(.027,.13,gold),Math.sin(a)*.14,y+.10,Math.cos(a)*.14)}
 }
 function magic(parent,color,gold){
  const g=joint(parent,0,-.04,.12);
@@ -63,178 +64,195 @@ function magic(parent,color,gold){
  return g;
 }
 
+function face(parent,skin,dark,hair,eyeColor,mat){
+ put(parent,sculptedHead(skin));
+ const eyes=[];
+ for(const side of [-1,1]){
+  put(parent,ball(.028,skin,.47,1.3,.66),side*.127,-.018,-.018);
+  const eye=joint(parent,side*.050,.030,.109);eyes.push(eye);
+  put(eye,ball(.028,mat(0xa99c86,.01,.65),1,.34,.20));
+  put(eye,ball(.011,eyeColor,1,.85,.30),0,0,.006);
+  put(eye,ball(.0045,dark,.75,1,.5),0,0,.010);
+  put(eye,ball(.0025,mat(0xe0d8c4,.02,.3)),side*.003,.003,.012);
+  curve(parent,[[side*.024,.061,.109],[side*.05,.068,.112],[side*.079,.058,.10]],.0035,hair);
+  curve(parent,[[side*.024,.033,.112],[side*.05,.040,.119],[side*.076,.031,.109]],.0024,dark);
+ }
+ put(parent,loft([[.052,.008,.006,0,.109],[.014,.011,.010,0,.123],[-.017,.016,.014,0,.131],[-.033,.014,.008,0,.127]],skin,12));
+ const lips=mat(0x895d50,.02,.82);
+ curve(parent,[[-.024,-.068,.112],[-.010,-.072,.121],[0,-.069,.124],[.010,-.072,.121],[.024,-.068,.112]],.003,lips);
+ curve(parent,[[-.021,-.075,.114],[0,-.080,.122],[.021,-.075,.114]],.003,skin);
+ return eyes;
+}
+function handShape(parent,material,gold,heavy=false){
+ put(parent,loft([[.05,heavy?.11:.051,heavy?.09:.034],[-.01,heavy?.125:.058,heavy?.105:.039],[-.105,heavy?.10:.044,heavy?.085:.030]],material,16));
+ for(let n=0;n<4;n++){
+  const finger=put(parent,tube(heavy?.024:.011,heavy?.025:.012,heavy?.105:.067,material,10),(n-1.5)*(heavy?.052:.024),-.10,.018);
+  finger.rotation.x=-.22;
+  if(heavy)put(parent,ball(.027,gold,1,.48,.55),(n-1.5)*.052,-.057,.104);
+ }
+ const thumb=put(parent,tube(heavy?.029:.015,heavy?.032:.017,heavy?.12:.07,material,10),heavy?-.12:-.06,-.027,.024);thumb.rotation.z=-.52;
+}
 export function createCharacter(id,team,context){
- const {mat,outfit,outfitMaterials}=context;
- const profile=characterProfiles[id]||characterProfiles.soldado;
- const metal=mat(id==='colosso'?0x282c30:id==='arqueiro'?0x524338:0x343b42,.72,.47);
- const gold=mat(0xad8349,.73,.4),edge=mat(0xb9aca0,.7,.38),leather=mat(0x38291f,.12,.9);
- const skin=mat(0xbb8d72,.03,.85),dark=mat(0x10151c,.22,.65),redHair=mat(0x783423,.08,.8);
- const cloth=outfit(team,id==='batedor'?0x1d2a3c:id==='liliti'?0x722b37:undefined);
+ const {mat,outfit,outfitMaterials}=context,profile=characterProfiles[id]||characterProfiles.soldado;
+ const metal=finishMaterial(mat(id==='colosso'?0x343a40:id==='arqueiro'?0x615042:0x505b65,.70,.43),'metal');
+ const gold=finishMaterial(mat(0xb89453,.73,.36),'metal'),edge=mat(0xaab4b7,.76,.33),leather=mat(0x352921,.04,.87);
+ const skin=mat(0xb58d73,.01,.74),dark=mat(0x111820,.1,.62),redHair=mat(0x692d1e,.10,.61);
+ const cloth=finishMaterial(outfit(team,id==='batedor'?0x1d2a3c:id==='liliti'?0x722b37:undefined),'cloth');
  const group=new THREE.Group();group.name=id;
  if(id==='lobo')return makeWolf(group,profile,{metal,gold,edge,leather,dark,mat,cloth});
- const h=profile.height,w=profile.width;
- const legs=[],knees=[],arms=[],elbows=[],hair=[],hands=[],cloaks=[],magicHands=[];
+ const clothShade=dyedMaterial(cloth,.56,outfitMaterials),clothLight=dyedMaterial(cloth,.88,outfitMaterials);
+ const h=profile.height,w=profile.width,female=id==='liliti';
+ const legs=[],knees=[],arms=[],elbows=[],hair=[],hands=[],cloaks=[],magicHands=[],drapes=[];
  const hip=.91*h,body=joint(group,0,hip+.06*h,0);
- const round=(width,height,depth,m,b=.035)=>bevelBox(width,height,depth,m,b);
  for(const side of [-1,1]){
-  const leg=joint(group,side*.16*w,hip,0);legs.push(leg);
-  put(leg,tube(.105*w,.13*w,.40*h,leather),0,-.20*h,0);
-  if(id!=='liliti')put(leg,round(.19*w,.31*h,.16*w,metal),0,-.18*h,.07*w);
+  const leg=joint(group,side*.145*w,hip,0);legs.push(leg);
+  put(leg,loft([[0,.105*w,.112*w],[-.12*h,.118*w,.123*w],[-.27*h,.096*w,.098*w],[-.40*h,.078*w,.08*w]],female?skin:leather,20));
+  if(!female)put(leg,loft([[-.06*h,.122*w,.132*w,0,.014],[-.29*h,.10*w,.111*w,0,.019],[-.37*h,.084*w,.092*w,0,.015]],metal,20));
   const knee=joint(leg,0,-.40*h,0);knees.push(knee);
-  if(id!=='liliti'){
-   put(knee,ball(.12,metal,w,.8,1),0,0,.035);
-   put(knee,round(.17*w,.35*h,.19*w,metal),0,-.20*h,.035);
-   put(knee,box(.19*w,.026,.215*w,gold),0,-.12*h,.055);
-  }else put(knee,tube(.063,.085,.37*h,skin),0,-.19*h,0);
-  put(knee,round(.21*w,.13*h,.34*w,leather),0,-.44*h,.07*w);
+  put(knee,loft([[.035,.075*w,.078*w],[-.10*h,.093*w,.098*w],[-.24*h,.080*w,.087*w],[-.38*h,.052*w,.063*w]],female?skin:metal,20));
+  if(!female){put(knee,ball(.095,metal,w,.79,.83),0,0,.035);curve(knee,[[-.07*w,-.09*h,.07],[0,-.07*h,.103],[.07*w,-.09*h,.07]],.009,gold)}
+  put(knee,loft([[-.26*h,.061*w,.07*w],[-.41*h,.072*w,.087*w],[-.47*h,.083*w,.12*w,0,.045]],leather,20));
+  put(knee,ball(.105,leather,.86*w,.49,1.60*w),0,-.445*h,.076*w);
+  if(female){const trim=put(knee,new THREE.Mesh(new THREE.TorusGeometry(.065,.008,5,24),gold),0,-.29*h,0);trim.rotation.x=Math.PI/2;}
  }
- // Cintura estreita e peito com volume; cabeça reduzida para proporção adulta.
- put(body,ball(.35,id==='liliti'?cloth:leather,w,.95*h,.62),0,.21*h,0);
- const chest=put(body,round(.58*w,.49*h,.31*w,metal,.055),0,.29*h,.005);
- if(id==='liliti'){
-  chest.scale.set(.86,.78,.83);chest.material=gold;
-  put(body,ball(.23,skin,.86,1.38,.62),0,.39*h,.015);
-  for(const side of [-1,1])put(body,ball(.19,cloth,.91,.65,.75),side*.12,.48*h,.13);
-  put(body,tube(.19,.30,.34,cloth,16),0,-.06,0);
+ if(female){
+  put(body,loft([[-.12,.21*w,.12*w],[.04,.18*w,.112*w],[.23,.25*w,.145*w],[.43,.29*w,.16*w],[.54,.32*w,.13*w],[.61,.078,.074]].map(r=>[r[0]*h,...r.slice(1)]),skin,32));
+  put(body,loft([[-.10,.235*w,.145*w],[.04,.19*w,.125*w],[.23,.25*w,.165*w],[.39,.30*w,.176*w],[.45,.274*w,.158*w]].map(r=>[r[0]*h,...r.slice(1)]),clothShade,32));
   for(const side of [-1,1]){
-   const panel=makeCloak(.33,1.08,cloth,gold);panel.mesh.position.set(side*.22,-.53,-.025);
-   panel.mesh.rotation.y=side*.35;body.add(panel.mesh);cloaks.push(panel);
+   curve(body,[[side*.19*w,-.10*h,.085],[side*.15*w,.06*h,.103],[side*.18*w,.24*h,.127],[side*.23*w,.40*h,.115]],.006,gold);
+   curve(body,[[side*.24*w,.42*h,.07],[side*.26*w,.53*h,.05],[side*.18*w,.59*h,.01]],.009,gold);
   }
+  for(let n=0;n<5;n++){
+   const y=.07+n*.055;curve(body,[[-.045,y,.151],[.045,y+.032,.151]],.0028,gold);
+   curve(body,[[.045,y,.153],[-.045,y+.032,.153]],.0028,gold);
+  }
+  for(const drape of makeDress(clothLight,gold,h)){drape.mesh.scale.x=w;body.add(drape.mesh);drapes.push(drape);
+   if(drape.mesh.material.isMeshStandardMaterial&&drape.mesh.material.metalness<.5){drape.mesh.material.userData={...clothLight.userData};outfitMaterials?.add(drape.mesh.material)}}
+  const girdle=loft([[-.06*h,.244*w,.155*w],[-.10*h,.248*w,.160*w]],gold,32);body.add(girdle);
+  put(body,new THREE.Mesh(new THREE.OctahedronGeometry(.027,0),mat(0x772934,.45,.22)),0,-.12*h,.162*w);
+  const pendant=joint(body,0,.58*h,.085);curve(pendant,[[-.055,.014,-.01],[0,-.047,.04],[.055,.014,-.01]],.004,gold);
+  put(pendant,new THREE.Mesh(new THREE.OctahedronGeometry(.020,0),gold),0,-.055,.04);
  }else{
-  for(const side of [-1,1]){
-   const rim=put(body,box(.025,.43*h,.037,gold),side*.25*w,.30*h,.18*w);rim.rotation.z=-side*.15;
-  }
-  for(let row=0;row<3;row++)put(body,round(.46*w,.115*h,.34*w,metal,.015),0,.04*h-row*.10*h,0);
-  put(body,box(.34*w,.59*h,.025,cloth),0,-.27*h,.18*w);
-  for(const side of [-1,1]){
-   const skirt=put(body,round(.17*w,.36*h,.06,metal,.02),side*.23*w,-.23*h,.13*w);skirt.rotation.z=-side*.17;
-  }
+  put(body,loft([[-.12,.23*w,.14*w],[.04,.22*w,.15*w],[.28,.30*w,.18*w],[.45,.34*w,.175*w],[.55,.26*w,.14*w],[.60,.075,.073]].map(r=>[r[0]*h,...r.slice(1)]),leather,24));
+  put(body,loft([[.09,.235*w,.16*w,0,.012],[.27,.31*w,.19*w],[.44,.34*w,.18*w],[.51,.27*w,.145*w]].map(r=>[r[0]*h,...r.slice(1)]),metal,24));
+  for(const side of [-1,1])curve(body,[[side*.24*w,.10*h,.07],[side*.28*w,.31*h,.10],[side*.28*w,.46*h,.08]],.008,gold);
+  for(let row=0;row<3;row++)put(body,loft([[.10*h-row*.095*h,.24*w,.16*w],[.025*h-row*.095*h,.26*w,.17*w]],metal,20));
+  const tabard=makeCloak(.32*w,.64*h,clothLight,gold);tabard.mesh.position.set(0,-.26*h,.185*w);body.add(tabard.mesh);cloaks.push(tabard);
+  for(const side of [-1,1]){const skirt=put(body,loft([[-.12*h,.105*w,.036],[-.43*h,.125*w,.04]],metal,12),side*.235*w,0,.09*w);skirt.rotation.z=-side*.16;}
+  put(body,loft([[-.017,.25*w,.17*w],[-.075,.255*w,.174*w]],gold,24));
+  if(id==='colosso')for(let n=0;n<3;n++)curve(body,[[0,.43*h,.20],[-.13*w,.33*h-n*.06,.18],[0,.25*h-n*.05,.19],[.13*w,.33*h-n*.06,.18],[0,.43*h,.20]],.008,gold);
  }
- put(body,tube(.28*w,.29*w,.075,gold,14),0,-.03,0);
- const cape=makeCloak((id==='rei'?1.13:id==='guardiao'?.97:.81)*w,(id==='rei'?1.40:1.23)*h,cloth,gold);
- cape.mesh.position.set(0,-.12*h,-.24*w);body.add(cape.mesh);cloaks.push(cape);
- for(const cloak of cloaks)if(team==='ally'){
-  cloak.mesh.material[0].userData.defaultColor=cloth.userData.defaultColor;
-  outfitMaterials.add(cloak.mesh.material[0]);
- }
- const neck=put(body,tube(.075,.10,.13,skin),0,.64*h,0);
- const head=joint(body,0,.83*h,0);put(head,ball(.20,skin,.84,1.17,.87));
- put(head,ball(.042,skin,.7,1,1.1),0,-.015,.174);
- for(const side of [-1,1]){
-  put(head,ball(.022,dark,1,.55,.45),side*.067,.025,.164);
-  if(id==='liliti')put(head,ball(.013,mat(0x48854b),1,.8,.5),side*.067,.026,.173);
- }
+ const cape=makeCloak((id==='rei'?1.04:id==='guardiao'?.91:female?.78:.76)*w,(id==='rei'?1.40:female?1.31:1.23)*h,clothShade,gold);
+ cape.mesh.position.set(0,-.10*h,-.21*w);body.add(cape.mesh);cloaks.push(cape);
+ for(const cloak of cloaks)if(team==='ally'){cloak.mesh.material[0].userData={...cloak.mesh.material[0].userData,...(cloak===cape?clothShade.userData:clothLight.userData)};outfitMaterials?.add(cloak.mesh.material[0])}
+ put(body,tube(.060,.080,.13,skin,20),0,.63*h,0);
+ const head=joint(body,0,.85*h,0),eyeColor=mat(female?0x3d764b:0x554938,.12,.4);
+ const eyes=face(head,skin,dark,female?redHair:leather,eyeColor,mat);
  if(['soldado','arqueiro','batedor'].includes(id)){
-  // Capuz aberto, sem chapéu cônico: rosto sombreado na abertura frontal.
-  const hood=put(head,ball(.235,cloth,.99,1.17,.97),0,.055,-.055);
-  put(head,ball(.188,dark,.87,1.13,.34),0,-.003,.135);
-  put(head,ball(.16,skin,.79,1.06,.39),0,-.024,.18);
-  for(const side of [-1,1])put(head,round(.09,.34,.14,cloth,.028),side*.175,-.10,.08);
-  put(head,box(.22,.10,.055,leather),0,-.155,.22);
+  const hood=loft([[-.19,.15,.13,0,-.035],[-.08,.178,.16,0,-.035],[.08,.17,.16,0,-.035],[.19,.10,.10,0,-.025],[.23,.018,.022,0,-.02]],clothShade,30,.67,Math.PI*2-1.34);head.add(hood);
+  for(const side of [-1,1])curve(head,[[side*.014,.22,.0],[side*.11,.15,.085],[side*.12,.045,.102],[side*.105,-.13,.09],[side*.09,-.19,.07]],.006,clothLight);
+  put(head,loft([[-.11,.11,.04,0,.09],[-.16,.11,.04,0,.09]],leather,18));
  }else if(['colosso','guardiao'].includes(id)){
-  put(head,ball(.235,metal,1,1.16,.97),0,.01,-.025);
-  put(head,round(.27,.28,.09,gold,.025),0,-.02,.18);
-  put(head,box(.24,.036,.025,dark),0,.055,.239);
-  put(head,box(.032,.23,.045,metal),0,-.035,.255);
-  for(const side of [-1,1]){
-   put(head,round(.12,.24,.12,metal,.025),side*.19,-.08,.05);
-   const crest=put(head,spike(.056,id==='colosso'?.28:.22,gold),side*.18,.26,-.02);crest.rotation.z=-side*.35;
-  }
-  put(head,spike(.052,.28,gold),0,.31,-.01);
+  const helmet=put(head,ball(.17,metal,.98,1.16,.94),0,.012,-.021);
+  put(head,loft([[.13,.11,.035,0,.116],[.04,.12,.046,0,.117],[-.14,.075,.045,0,.10]],gold,16));
+  put(head,box(.20,.023,.025,dark),0,.036,.158);
+  curve(head,[[0,.10,.166],[0,-.12,.155]],.009,metal);
+  for(const side of [-1,1]){const horn=put(head,spike(.028,id==='colosso'?.20:.16,gold),side*.13,.19,-.05);horn.rotation.z=-side*.4;}
+  put(head,spike(.030,.21,gold),0,.24,-.025);
+ }else if(id==='rei'){
+  const scalp=new THREE.Mesh(new THREE.SphereGeometry(.143,24,16,0,Math.PI*2,0,Math.PI*.58),leather);put(head,scalp,0,.031,-.016);
+  crown(head,.17,gold);
+  put(head,ball(.10,leather,.9,.85,.30),0,-.087,.081);
+  const fur=mat(0x8a8173,.01,.96);
+  for(let n=0;n<18;n++){const a=n/17*Math.PI;const tuft=put(body,spike(.052,.18,fur),Math.cos(a)*.39*w,.58*h,Math.sin(a)*.19-.08);tuft.rotation.z=Math.cos(a)*.6;tuft.rotation.x=-.4;}
  }else{
-  put(head,ball(.216,id==='rei'?leather:redHair,1,1,.88),0,.08,-.045);
-  if(id==='rei'){
-   crown(head,.22,gold);
-   put(head,ball(.16,leather,1,.78,.44),0,-.13,.1);
-   // Gola de pele, presente na arte do Rei.
-   const fur=mat(0x8d8371,.02,.95);
-   for(let i=0;i<12;i++){const a=i/11*Math.PI;put(body,ball(.12,fur,1,1,1.3),Math.cos(a)*.43,.59*h,Math.sin(a)*.22-.11)}
-  }else{
-   for(const side of [-1,1])for(let n=0;n<4;n++){
-    const strand=joint(head,side*(.14+n*.024),.08,-.09-n*.018);
-    curve(strand,[[0,0,0],[side*.06,-.27,.01],[side*.04,-.57,-.06],[side*.10,-.82,-.08]],.049,redHair);hair.push(strand);
-   }
-   const circlet=put(head,new THREE.Mesh(new THREE.TorusGeometry(.19,.014,5,26),gold),0,.14,.015);circlet.rotation.x=Math.PI/2;
+  const scalp=new THREE.Mesh(new THREE.SphereGeometry(.145,28,18,0,Math.PI*2,0,Math.PI*.62),redHair);scalp.scale.set(1,1.12,.94);put(head,scalp,0,.045,-.026);
+  const highlight=mat(0x93472c,.1,.58),shadow=mat(0x48231c,.06,.73);
+  for(let n=0;n<16;n++){
+   const a=.48+n*(Math.PI*2-.96)/15,side=Math.sin(a),back=-Math.cos(a),strand=joint(head,side*.10,.11,back*.085-.035);
+   const points=[[0,0,0],[side*.045,-.14,back*.04],[side*(.065+.014*Math.sin(n)),-.30,back*.06-.018],
+    [side*.086,-.48,back*.07-.02],[side*(.08+.018*Math.sin(n*2)),-.65,back*.065-.02]];
+   curve(strand,points,.020+(n%3)*.002,n%4===0?highlight:n%5===0?shadow:redHair);hair.push(strand);
+   if(n%3===0)curve(strand,points.map(([x,y,z])=>[x+.008,y,z+.009]),.0035,highlight);
   }
+  for(const side of [-1,1])curve(head,[[side*.025,.18,.06],[side*.10,.125,.111],[side*.145,.02,.06],[side*.18,-.16,.015]],.019,redHair);
+  curve(head,[[-.132,.095,.032],[-.085,.088,.108],[0,.083,.136],[.085,.088,.108],[.132,.095,.032]],.0045,gold);
+  put(head,new THREE.Mesh(new THREE.OctahedronGeometry(.011,0),gold),0,.077,.14);
  }
  for(const side of [-1,1]){
-  const shoulder=joint(body,side*.37*w,.50*h,0);arms.push(shoulder);
-  if(id!=='liliti'){
-   const pauldron=put(shoulder,ball(id==='colosso'?.23:.17,metal,1.23,1,.95),0,.025,0);
-   put(shoulder,round((id==='colosso'?.42:.30),.065,.28,gold,.015),side*.012,.02,.015);
-   if(['colosso','guardiao'].includes(id))for(let n=0;n<3;n++){
-    const prong=put(shoulder,spike(.044,id==='colosso'?.22:.13,gold),side*(.035+n*.067),.18-n*.01,-.04);prong.rotation.z=-side*.34;
-   }
+  const shoulder=joint(body,side*(female?.31:.37)*w,.49*h,0);arms.push(shoulder);
+  if(!female){
+   const r=id==='colosso'?.23:.17;
+   put(shoulder,loft([[-.12,r*.66,r*.77],[0,r*1.15,r],[.13,r*.85,r*.78],[.17,.045,.04]],metal,24));
+   curve(shoulder,[[-r*.8,-.055,.06],[0,-.085,r*.90],[r*.8,-.055,.06]],.009,gold);
+   if(['colosso','guardiao'].includes(id))for(let n=0;n<3;n++){const prong=put(shoulder,spike(.025,id==='colosso'?.18:.10,gold),side*(.025+n*.062),.16-n*.015,-.025);prong.rotation.z=-side*.4;}
   }
-  put(shoulder,tube(.075*w,.095*w,.32*h,id==='liliti'?skin:metal),0,-.17*h,0);
-  const elbow=joint(shoulder,0,-.33*h,0);elbows.push(elbow);
-  put(elbow,tube(.07*w,.09*w,.29*h,id==='liliti'?skin:metal),0,-.15*h,0);
-  put(elbow,box(.17*w,.045,.17*w,gold),0,-.23*h,0);
-  const hand=joint(elbow,0,-.32*h,0);hands.push(hand);
-  put(hand,id==='colosso'?round(.27,.26,.27,metal,.045):ball(.078, id==='liliti'?skin:leather,1,1.1,.9));
-  if(id==='colosso')for(let n=0;n<3;n++)put(hand,box(.034,.11,.03,gold),-.075+n*.075,-.035,.145);
+  put(shoulder,loft([[.035,.070*w,.078*w],[-.12*h,.077*w,.084*w],[-.30*h,.052*w,.058*w]],female?skin:metal,20));
+  const elbow=joint(shoulder,0,-.31*h,0);elbows.push(elbow);
+  put(elbow,ball(.055,female?skin:metal,1,.9,1));
+  put(elbow,loft([[.015,.055*w,.057*w],[-.11*h,.064*w,.068*w],[-.27*h,.038*w,.043*w]],female?skin:metal,20));
+  put(elbow,loft([[-.21*h,.046*w,.052*w],[-.27*h,.044*w,.05*w]],gold,20));
+  const hand=joint(elbow,0,-.29*h,0);hands.push(hand);handShape(hand,female?skin:id==='colosso'?metal:leather,gold,id==='colosso');
  }
  if(['soldado','guardiao','rei'].includes(id))sword(hands[1],id==='guardiao'?.93:.80,edge,gold,leather);
- if(id==='soldado'||id==='guardiao'){
-  const shield=kite(hands[0],id==='guardiao'?.65:.48,id==='guardiao'?1.10:.75,metal,gold,cloth);
-  shield.position.set(-.05,.14,.15);shield.rotation.y=-.12;
- }
+ if(id==='soldado'||id==='guardiao'){const shield=kite(hands[0],id==='guardiao'?.65:.48,id==='guardiao'?1.10:.75,metal,gold,clothShade);shield.position.set(-.05,.14,.15);shield.rotation.y=-.12;}
  if(id==='arqueiro'){
   const bow=joint(hands[0],-.02,.04,.14);
-  curve(bow,[[0,.58,0],[-.22,.36,.08],[-.29,0,.11],[-.22,-.36,.08],[0,-.58,0]],.028,leather);
-  curve(bow,[[0,.58,0],[-.045,0,.01],[0,-.58,0]],.006,edge);
-  put(bow,tube(.032,.032,.18,gold),-.29,0,.11);
-  const quiver=joint(body,.27,.24,-.28);quiver.rotation.z=-.24;
-  put(quiver,tube(.11,.10,.56,leather),0,0,0);put(quiver,tube(.117,.117,.045,gold),0,.26,0);
-  for(let n=0;n<5;n++){
-   const x=(n%3-1)*.055,z=Math.floor(n/3)*.06;
-   put(quiver,tube(.008,.008,.71,leather,6),x,.30,z);
-   put(quiver,box(.05,.12,.012,cloth),x,.62,z);
-  }
+  curve(bow,[[0,.58,0],[-.22,.36,.08],[-.29,0,.11],[-.22,-.36,.08],[0,-.58,0]],.022,leather);
+  curve(bow,[[0,.58,0],[-.045,0,.01],[0,-.58,0]],.004,edge);put(bow,tube(.027,.027,.18,gold),-.29,0,.11);
+  const quiver=joint(body,.24,.23,-.25);quiver.rotation.z=-.24;
+  put(quiver,tube(.085,.08,.53,leather,16));put(quiver,tube(.09,.09,.035,gold,20),0,.25,0);
+  for(let n=0;n<5;n++){const x=(n%3-1)*.039,z=Math.floor(n/3)*.045;put(quiver,tube(.006,.006,.67,leather,6),x,.29,z);put(quiver,box(.033,.09,.008,cloth),x,.60,z);}
  }
- if(id==='batedor'||id==='liliti'){
-  magicHands.push(magic(hands[0],0xb72b3d,gold));
-  magicHands.push(magic(hands[1],id==='liliti'?0xe3b654:0xb72b3d,gold));
- }
- group.userData={id,profile,legs,knees,arms,elbows,hands,cloaks,hair,magicHands,body,hasWolf:false,size:h};
- return group;
+ if(id==='batedor'||id==='liliti'){magicHands.push(magic(hands[0],0xb72b3d,gold));magicHands.push(magic(hands[1],female?0xe3b654:0xb72b3d,gold));}
+ group.userData={id,profile,legs,knees,arms,elbows,hands,cloaks,hair,magicHands,drapes,body,head,eyes,hasWolf:false,size:h};return group;
+}
+
+export function animateCharacterSurfaces(model,clock,walking=false,attack=0){
+ const data=model.userData;animateDrapes(data.drapes,clock,walking,attack);
+ const blink=Math.sin(clock*.83+1)> .997?.12:1;
+ data.eyes?.forEach(eye=>{eye.scale.y=blink});
 }
 
 function makeWolf(group,profile,m){
- const {metal,gold,leather,dark,mat,cloth}=m,hide=mat(0x393c3b,.05,.92),fang=mat(0xc9bea8);
- const body=joint(group,0,.72,0);
- put(body,ball(.47,hide,.82,.84,1.70),0,0,-.08);
- put(body,ball(.45,hide,.96,1.03,1.05),0,.08,.46);
- const head=joint(body,0,.25,.86);
- put(head,ball(.29,hide,.85,1,1.16));
- put(head,ball(.21,hide,.68,.62,1.4),0,-.06,.30);
- put(head,ball(.10,dark,1,.7,.8),0,-.045,.57);
+ const {metal,gold,leather,dark,mat,cloth}=m,hide=mat(0x333b3e,.04,.94),furShade=mat(0x202b30,.02,.97),fang=mat(0xc9bea8,.02,.8);
+ const body=joint(group,0,.71,0);
+ const torso=loft([[-.82,.12,.18],[-.58,.25,.27],[-.18,.29,.28],[.28,.34,.35],[.58,.30,.34],[.75,.18,.21]],hide,28);
+ torso.rotation.x=Math.PI/2;body.add(torso);
+ put(body,ball(.31,hide,1,1.22,.95),0,.19,.56);
+ const head=joint(body,0,.34,.83);
+ put(head,ball(.245,hide,.83,1,.99));
+ const muzzle=put(head,loft([[-.06,.13,.085],[.08,.12,.078],[.30,.073,.058]],hide,20),0,-.055,.12);muzzle.rotation.x=Math.PI/2;
+ put(head,ball(.075,dark,1,.65,.65),0,-.038,.44);
+ put(head,ball(.11,furShade,.9,.30,1.8),0,-.14,.26);
+ put(head,ball(.10,hide,.82,.23,1.8),0,-.18,.25);
  for(const side of [-1,1]){
-  const ear=put(head,spike(.11,.30,hide),side*.17,.28,-.07);ear.rotation.z=-side*.20;
-  put(head,ball(.028,mat(0xc29c57,.1,.8)),side*.205,.055,.18);
-  put(head,spike(.025,.10,fang),side*.11,-.14,.38);
-  // Placas nas escápulas e franjas de pelo, sem corpo quadrado de brinquedo.
-  const shoulder=put(body,ball(.27,metal,.8,1.1,1.1),side*.30,.09,.42);
-  put(body,ball(.22,gold,.9,.16,1.2),side*.30,.30,.42);
-  for(let n=0;n<5;n++){
-   const tuft=put(body,spike(.08,.23,hide),side*(.25+n%2*.05),.21-n*.06,-.48+n*.24);tuft.rotation.x=-.8;tuft.rotation.z=-side*.7;
+  const ear=put(head,spike(.087,.28,hide),side*.145,.245,-.065);ear.scale.z=.51;ear.rotation.z=-side*.20;
+  const inside=put(head,spike(.043,.18,furShade),side*.145,.255,-.047);inside.scale.z=.35;inside.rotation.z=-side*.20;
+  const eye=put(head,ball(.021,mat(0xc39a4f,.1,.45),1,.57,.47),side*.181,.047,.10);eye.rotation.y=side*.35;
+  put(head,ball(.009,dark,.55,1,.45),side*.19,.046,.108);
+  for(let n=0;n<2;n++){const tooth=put(head,spike(.014,.055,fang),side*.075,-.14,.22+n*.095);tooth.rotation.z=Math.PI;}
+  for(let n=0;n<6;n++){
+   const tuft=put(body,spike(.055,.20,n%2?hide:furShade),side*(.28+(n%2)*.035),.13-(n%3)*.045,-.62+n*.23);
+   tuft.rotation.x=-.9;tuft.rotation.z=-side*.8;
   }
+  put(body,loft([[-.12,.13,.14],[.09,.19,.18],[.22,.12,.11]],metal,20),side*.26,.05,.42);
+  curve(body,[[side*.30,.24,.28],[side*.37,.20,.43],[side*.32,.16,.59]],.010,gold);
  }
  const legs=[];
- for(const z of [-.54,.50])for(const side of [-1,1]){
-  const leg=joint(group,side*.27,.61,z);legs.push(leg);
-  put(leg,tube(.08,.115,.46,hide),0,-.22,0);
-  put(leg,tube(.084,.09,.17,metal),0,-.39,.025);
-  put(leg,tube(.09,.09,.035,gold),0,-.44,.025);
-  put(leg,ball(.13,hide,.8,.64,1.45),0,-.51,.08);
-  for(let n=0;n<3;n++)put(leg,spike(.018,.08,fang),-.055+n*.055,-.55,.19);
+ for(const z of [-.53,.52])for(const side of [-1,1]){
+  const leg=joint(group,side*.23,.57,z);legs.push(leg);
+  put(leg,loft([[0,.11,.13],[-.18,.09,.11],[-.31,.054,.065,0,.025],[-.45,.045,.052,0,.065]],hide,20));
+  put(leg,loft([[-.28,.061,.071,0,.025],[-.36,.055,.068,0,.05]],metal,20));
+  put(leg,loft([[-.34,.059,.072,0,.049],[-.36,.059,.07,0,.05]],gold,20));
+  put(leg,ball(.11,hide,.77,.56,1.24),0,-.48,.11);
+  for(let n=0;n<3;n++){const claw=put(leg,spike(.011,.06,fang),-.045+n*.045,-.49,.22);claw.rotation.x=Math.PI/2;}
  }
  for(let n=0;n<5;n++){
-  const armor=put(body,bevelBox(.48,.085,.28,metal,.025),0,.35,-.54+n*.24);armor.rotation.x=-.08;
-  put(body,spike(.06,.20,gold),0,.49,-.54+n*.24);
+  const plate=put(body,loft([[-.11,.23,.065],[.07,.22,.055]],metal,20),0,.31,-.54+n*.22);plate.rotation.x=Math.PI/2;
+  put(body,spike(.033,.15,gold),0,.44,-.54+n*.22);
  }
- const collar=put(body,tube(.42,.42,.09,cloth,16),0,.05,.59);collar.rotation.x=Math.PI/2;
- const tail=joint(body,0,.02,-.90);
- curve(tail,[[0,0,0],[.02,-.10,-.25],[.07,-.19,-.50],[.15,-.13,-.72]],.105,hide);
+ const collar=put(body,tube(.28,.28,.07,cloth,24),0,.15,.64);collar.rotation.x=Math.PI/2;
+ const tail=joint(body,0,-.02,-.81);curve(tail,[[0,0,0],[.02,-.10,-.25],[.07,-.17,-.48],[.15,-.12,-.68]],.075,hide);
  group.userData={id:'lobo',profile,legs,arms:[],head,body,tail,hasWolf:true,size:1};return group;
 }

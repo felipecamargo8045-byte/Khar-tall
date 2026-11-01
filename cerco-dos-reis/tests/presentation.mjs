@@ -87,3 +87,21 @@ for(let slot=0;slot<3;slot++)assert.equal(layout.positions.ally[slot].y+layout.p
  'As defesas não estão simétricas');
 assert.ok(layout.positions.enemy[0].y-layout.positions.enemy[2].y>=176,'Castelo e torre próximos demais');
 console.log('PASSOU: identidade, proporções humanas, estatura do Colosso e bases simétricas.');
+
+// As novas superfícies devem estar voltadas para fora em ambos os sentidos.
+const {loft,animateDrapes}=await import('../character-surfaces.js');
+for(const rings of [[[0,1,1],[1,1,1]],[[1,1,1],[0,1,1]]]){
+ const surface=loft(rings,material),normal=surface.geometry.attributes.normal;
+ assert.ok(normal.getZ(2)>.5,'Malha com face voltada para dentro');
+}
+const liliti=createCharacter('liliti','ally',context);
+assert.ok(liliti.userData.drapes.length>=2,'Vestido sem volume');
+assert.ok(liliti.userData.hair.length>=12,'Cabelo sem mechas');
+assert.equal(liliti.userData.eyes.length,2);
+const drape=liliti.userData.drapes[0],pinned=drape.mesh.geometry.attributes.position.array.slice(0,3);
+animateDrapes(liliti.userData.drapes,1,false,0);
+const moved=drape.mesh.geometry.attributes.position.array;
+pinned.forEach((v,i)=>assert.ok(Math.abs(v-moved[i])<1e-6,'Cintura do vestido se soltou'));
+assert.notEqual(moved.at(-1),drape.base.at(-1),'Saia não tem movimento');
+assert.ok(drape.base.some((v,i)=>i%3===1&&v<-.85),'Vestido ficou curto');
+console.log('PASSOU: normais externas, vestido longo preso à cintura, mechas e olhos modelados.');

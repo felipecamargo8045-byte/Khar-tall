@@ -1,7 +1,7 @@
 import * as THREE from './vendor/three.module.js';
 import './arena-layout.js?v=2';
-import {createCharacter,characterProfiles} from './character-models.js?v=2';
-import {animateCloth,batchRig,updateRig} from './character-cloth.js?v=1';
+import {createCharacter,characterProfiles,animateCharacterSurfaces} from './character-models.js?v=3';
+import {animateCloth,batchRig,updateRig} from './character-cloth.js?v=2';
 import {bevelBox,reliefMap,floorHeight,pickGround,fitArena,createAtmosphere,characterShadow,batchStatic,framingInfo} from './arena-atmosphere.js?v=6';
 
 // Arena WebGL 3D local, geometria própria e sem serviços pagos.
@@ -20,7 +20,7 @@ const teams={
 const mat=(color,metalness=.08,roughness=.83)=>new THREE.MeshStandardMaterial({color,metalness,roughness,flatShading:false});
 const outfitMaterials=new Set();let activeOutfit=window.CercoStore?.snapshot?.().skin?.color||null;
 function outfit(team,color=teams[team].cloth,metalness=.08){const material=mat(team==='ally'&&activeOutfit?activeOutfit:color,metalness);if(team==='ally'){material.userData.defaultColor=color;outfitMaterials.add(material)}return material}
-document.addEventListener('cerco:collection',event=>{activeOutfit=event.detail.skin?.color||null;for(const material of outfitMaterials)material.color.set(activeOutfit||material.userData.defaultColor)});
+document.addEventListener('cerco:collection',event=>{activeOutfit=event.detail.skin?.color||null;for(const material of outfitMaterials)material.color.set(activeOutfit||material.userData.defaultColor).multiplyScalar(material.userData.dyeFactor??1)});
 const stone=mat(0x717974),darkStone=mat(0x303c40),stoneLight=mat(0xa7a58e);
 const iron=mat(0x8994a5,.8,.35),black=mat(0x131a27,.35),gold=mat(0xc6a569,.7,.34);
 const wood=mat(0x73543a),grass=mat(0x4a725b),dirt=mat(0x607b70),water=new THREE.MeshStandardMaterial({color:0x277a9d,metalness:.25,roughness:.3,transparent:true,opacity:.93});
@@ -457,6 +457,7 @@ function syncActors(game){
   anim.elbows?.forEach((e,i)=>{e.rotation.x=attacking?-.5-.3*Math.sin(clock*12):-.12-(walking?Math.max(0,Math.sin(phase+i*Math.PI))*.18:0)});
   anim.hair?.forEach((h,i)=>{h.rotation.x=Math.sin(clock*2.8+i)*.07;h.rotation.z=Math.sin(clock*3.1+i)*.035});
   anim.magicHands?.forEach((hand,i)=>{hand.rotation.y=clock*(i?1:-1);hand.scale.setScalar(1+(attacking?.25:.06)*Math.sin(clock*5))});
+  animateCharacterSurfaces(obj,clock,walking,attacking?Math.sin(clock*8)**2:0);
   updateRig(rec.rig);
   // Modelo e tecido recebem luz e sombra como a arquitetura.
  }

@@ -1,7 +1,7 @@
 name: Testar as seis telas do Cerco dos Reis
 on:
   push:
-    branches: [cerco-dos-reis-migracao-2026-10, cerco-liliti-cartas-20261031]
+    branches: [cerco-dos-reis-migracao-2026-10, cerco-liliti-cartas-20261031, cerco-modelos-profissionais-20261101]
     paths:
       - 'cerco-dos-reis/**'
       - 'cerco-commerce/**'
@@ -37,6 +37,8 @@ jobs:
           node --check cerco-dos-reis/restore-original-audio.js
           node --check cerco-dos-reis/realm-ui.js
           node --check cerco-dos-reis/skin-preview.js
+          node --check cerco-dos-reis/character-surfaces.js
+          node --check cerco-dos-reis/character-studio.js
           node --check cerco-dos-reis/sw.js
           node --check cerco-dos-reis/arena3d.js
           node --check cerco-dos-reis/character-models.js
@@ -63,9 +65,9 @@ jobs:
           assert 'src="./voices.js?v=5"' in html
           assert 'src="./realm-ui.js?v=8"' in html
           assert 'href="./interface.css?v=50"' in html
-          assert 'src="./arena3d.js?v=22"' in html
-          assert 'src="./skin-preview.js?v=1"' in html
-          assert 'href="./skin-preview.css?v=1"' in html
+          assert 'src="./arena3d.js?v=23"' in html
+          assert 'src="./skin-preview.js?v=2"' in html
+          assert 'href="./skin-preview.css?v=2"' in html
           for name in ['game-ui.css','interface.css','assets/interface-icons.svg','app.js','rewards.js','home.js','arena3d.js','arena-atmosphere.js','arena-layout.js','character-models.js','vendor/three.module.js','realm-ui.js','skin-preview.js','skin-preview.css','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
               assert Path('cerco-dos-reis',name).is_file(),name
           print('Seis ambientes, recompensas, arquivos, navegacao e scripts: OK')
@@ -290,9 +292,25 @@ jobs:
             assert.equal(await page.evaluate(()=>window.CercoSkinPreview.status().character),'liliti');
             await page.locator('#skinCharacterGrid [data-skin-character="colosso"]').click();
             assert.equal(await page.evaluate(()=>window.CercoSkinPreview.status().character),'colosso');
+            await page.locator('#skinPreviewRotate').click();
+            assert.equal(await page.evaluate(()=>window.CercoSkinPreview.status().rotating),true);
+            await page.locator('#skinPreviewRotate').click();
+            await page.locator('#skinPreviewCompare').click();
+            assert.equal(await page.evaluate(()=>window.CercoSkinPreview.status().comparing),true);
+            assert.equal(await page.locator('#skinPreviewFallback').isVisible(),true);
+            await page.locator('#skinPreviewCompare').click();
+            await page.locator('#shopGrid [data-skin-preview="skin_green_light"]').click();
+            await page.locator('#skinCharacterGrid [data-skin-character="liliti"]').click();
+            const dress=await page.evaluate(()=>window.CercoSkinPreview.status().model);
+            assert.ok(dress.drapes>=2&&dress.hair>=12,'Liliti sem vestido e cabelo modelados');
+            await page.locator('#skinPreviewPanel').screenshot({path:'/tmp/cerco-provador-liliti.png'});
+            for(const id of ['lobo','arqueiro','soldado','colosso','guardiao','batedor','rei','liliti']){
+              await page.locator('#skinCharacterGrid [data-skin-character="'+id+'"]').click();
+              await page.locator('.skin-preview-focus').screenshot({path:'/tmp/cerco-modelo-'+id+'.png'});
+            }
             const skinDemo=await page.evaluate(()=>window.CercoSkinPreview.status());
             assert.ok(skinDemo.characters.includes('lobo')&&skinDemo.characters.includes('soldado'));
-            assert.equal(skinDemo.buyId,'skin_purple_light');
+            assert.equal(skinDemo.buyId,'skin_green_light');
             if(skinDemo.available){
               assert.equal(skinDemo.thumbnails,8,'As oito prévias 3D não foram geradas');
               assert.ok(await page.locator('#skinPreview3D canvas').count(),'Prévia WebGL não apareceu');
@@ -823,6 +841,8 @@ jobs:
             /tmp/cerco-personagens-3d.png
             /tmp/cerco-identidade-3d.png
             /tmp/cerco-cartas-liliti.png
+            /tmp/cerco-provador-liliti.png
+            /tmp/cerco-modelo-*.png
             /tmp/cerco-batalha-3d.webm
             /tmp/cerco-loja-mobile.png
           if-no-files-found: ignore
