@@ -2,11 +2,13 @@
 
 Cerco dos Reis — pesquisa iniciada em 31/10/2026 e retomada em 01/11/2026.
 
-O objetivo é obter personagens com a identidade das cartas, anatomia coerente, armadura detalhada, ataques articulados e capa em movimento. **Os pilotos desta pesquisa ainda não atingiram o acabamento solicitado.** Estes scripts ficam fora do runtime; não substituem os personagens publicados, não mudam preços, loja, áudio, regras, arena ou paleta azul-marinho/dourado.
+O objetivo é obter personagens com a identidade das cartas, anatomia coerente, armadura detalhada, ataques articulados e capa em movimento. **Os pilotos desta pesquisa ainda não atingiram o acabamento final solicitado.** A [nova revisão do Soldado](REFINO_2026-11-01.md) reconstrói a anatomia e prepara a integração dos arquivos locais ao provador e à batalha, na branch de trabalho. A versão publicada não foi alterada nesta etapa. Os scripts de produção ficam fora do runtime; preços, loja, áudio e regras permanecem preservados.
 
 Nenhum crédito foi comprado, plano contratado ou API paga utilizada. Gratuidade do software, disponibilidade de GPU e qualidade da arte são condições diferentes. Uma ferramenta ser aberta não torna gratuito alugar a GPU necessária para ela.
 
 ## O que foi testado
+
+A etapa mais recente usa anatomia limpa do Mesh2Motion e uma cabeça adulta MakeHuman, armadura ajustada ao corpo, capuz próprio e capa com nove ossos. Os arquivos, a cena editável e o vídeo estão em [refined/soldado-refinado-pacote.zip](refined/soldado-refinado-pacote.zip). O [relatório de validação](refined/asset-validation.json) separa a integridade dos arquivos da [avaliação artística e limitações](refined/quality-review.json). Abaixo permanece o histórico dos primeiros testes.
 
 - A referência detalhada do Soldado foi recuperada dos arquivos já existentes. É uma imagem em pose neutra, não o modelo 3D. Armas devem ser feitas separadamente para não ocultar mãos e braços.
 - Na sessão original, a demonstração oficial do TRELLIS.2 gerou vistas 3D com mais detalhe. A exportação GLB parou por limite de ZeroGPU. Não foi obtido um GLB nativo desse teste. A referência original com armas também causou fusão de espada e escudo.

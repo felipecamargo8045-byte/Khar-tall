@@ -1,0 +1,28 @@
+{
+  "status": "working revision; not final artwork approval",
+  "character": "Soldado",
+  "cost_new_charges_brl": 0,
+  "local_checks": [
+    "GLB structural/accessor validation, finite values, normalized weights, joint bounds",
+    "Three.js 0.169 GLTFLoader parses both variants",
+    "Two independent cloned skeletons; animating one leaves the other unchanged",
+    "Walk/Attack/Hit/Idle transitions; five embedded clips",
+    "Skin recolor preserves metal, gold, skin and enemy materials",
+    "Animated pose bounds for all five clips",
+    "Material registrations removed on troop deletion",
+    "Existing presentation tests and Liliti healing tests pass",
+    "Blender rendered front, walk and attack; video 480x624/24 fps",
+    "Blender rendered rear view; hood and continuous cape reviewed"
+  ],
+  "integration": "Soldier GLB selected by factory after local-asset preload; full model in shop, LOD in arena; compatible model on load failure",
+  "publication": "prepared in work branch; production not updated",
+  "browser_qa": "blocked by automatic approval review: cloud browser access to local preview interpreted as unapproved external transfer",
+  "limits": [
+    "Other seven characters retain their existing models",
+    "No Mobile Legends quality equivalence claimed",
+    "Cape uses authored bone animation, not cloth collision simulation",
+    "Attack cape silhouette still requires artistic refinement",
+    "Actual Android GPU performance and complete browser flow not verified",
+    "Death clip exists in asset; current game removes defeated troops immediately"
+  ]
+}

@@ -1,6 +1,7 @@
 import * as THREE from './vendor/three.module.js';
 import './arena-layout.js?v=2';
-import {createCharacter,characterProfiles,animateCharacterSurfaces} from './character-models.js?v=3';
+import {createCharacter,characterProfiles,animateCharacterSurfaces} from './character-models.js?v=4';
+import {prepareCharacterModels,animateNativeCharacter,disposeNativeCharacter} from './native-characters.js?v=1';
 import {animateCloth,batchRig,updateRig} from './character-cloth.js?v=2';
 import {bevelBox,reliefMap,floorHeight,pickGround,fitArena,createAtmosphere,characterShadow,batchStatic,framingInfo} from './arena-atmosphere.js?v=6';
 
@@ -382,6 +383,7 @@ function syncActors(game){
   if(!live.has(id)){
     scene.remove(rec.model);scene.remove(rec.bar);scene.remove(rec.shadow);scene.remove(rec.shadowProxy);
     atmosphere.invalidate();
+    disposeNativeCharacter(rec.model,outfitMaterials);
     rec.model.traverse(mesh=>{for(const material of Array.isArray(mesh.material)?mesh.material:mesh.material?[mesh.material]:[])outfitMaterials.delete(material)});
     if(rec.appearance){scene.remove(rec.appearance.mesh);rec.appearance.mesh.material.dispose();rec.appearance.sheet.dispose();}
     actors.delete(id);
@@ -431,6 +433,11 @@ function syncActors(game){
   const delta=Math.atan2(Math.sin(yaw-obj.rotation.y),Math.cos(yaw-obj.rotation.y));
   obj.rotation.y+=clamp(delta,-.15,.15);
   rec.shadowProxy.position.copy(obj.position);rec.shadowProxy.rotation.y=obj.rotation.y;
+  if(anim.nativeAnimation){
+   obj.position.y=ground;
+   animateNativeCharacter(obj,{clock,walking,attackPulse:u.attackPulse||0,stagger,hp:u.hp});
+   continue;
+  }
   if(anim.hasWolf){
    anim.legs.forEach((leg,i)=>{leg.rotation.x=Math.sin(phase+(i===0||i===3?0:Math.PI))*.56*step});
    anim.body.rotation.x=walking?.035*Math.sin(phase*2):0;
@@ -768,7 +775,8 @@ function size(){
  fitArena(camera,w,h,forts);
  atmosphere?.invalidate();
 }
-function init(){
+async function init(){
+ await prepareCharacterModels('field');
  try{
   renderer=createRenderer();
   renderer.domElement.setAttribute('aria-hidden','true');
@@ -823,7 +831,7 @@ window.Cerco3D={
    batchedPieces,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,
    forts:forts.map(f=>({team:f.team,slot:f.lane===-1?2:f.lane,x:f.mesh.position.x*SCALE+W/2,y:f.mesh.position.z*SCALE+H/2})),
    framing:framingInfo(camera,forts)}:null}),
- debugActors:()=>[...actors.entries()].map(([id,rec])=>({id,kind:rec.model.userData.id,illustrated:!!rec.appearance,legs:rec.model.userData.legs?.length||0,
+ debugActors:()=>[...actors.entries()].map(([id,rec])=>({id,kind:rec.model.userData.id,native:!!rec.model.userData.nativeAnimation,animation:rec.model.userData.nativeAnimation?.current,illustrated:!!rec.appearance,legs:rec.model.userData.legs?.length||0,
    height:Number(rec.visualHeight.toFixed(3)),width:Number(rec.visualWidth.toFixed(3)),identity:rec.model.userData.profile.identity,
    cloaks:rec.model.userData.cloaks?.length||0,clothSample:Number((rec.model.userData.cloaks?.[0]?.geometry.attributes.position.array.at(-1)||0).toFixed(4)),
    rotations:rec.model.userData.legs?.map(l=>Number(l.rotation.x.toFixed(3)))||[]}))
