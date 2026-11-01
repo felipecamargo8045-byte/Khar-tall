@@ -51,8 +51,8 @@ function getActor(id){
 function frameActor(id,width,height,yaw=rotation){
  actors.forEach(model=>{model.visible=false});actor=getActor(id);actor.visible=true;actor.rotation.y=yaw;actor.updateMatrixWorld(true);
  const bounds=new THREE.Box3().setFromObject(actor),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
- const aspect=width/height,fov=THREE.MathUtils.degToRad(camera.fov);
- const distance=Math.max(size.y/(2*Math.tan(fov/2)),size.x/(2*Math.tan(fov/2)*aspect),size.z*.8)*1.22;
+ const aspect=width/height,fov=THREE.MathUtils.degToRad(camera.fov),horizontal=2*Math.atan(Math.tan(fov/2)*aspect);
+ const radius=size.length()/2,distance=radius/Math.sin(Math.min(fov,horizontal)/2)*1.05;
  camera.aspect=aspect;camera.position.set(center.x+distance*.34,center.y+distance*.13,center.z+distance*.98);
  camera.lookAt(center.x,center.y+.015,center.z);camera.updateProjectionMatrix();
  studio.plinth.scale.setScalar(id==='lobo'?1.04:id==='colosso'?1.05:.94);
@@ -105,6 +105,7 @@ function selectCharacter(id){
 }
 function updateComparison(){
  $('skinPreviewFallback').hidden=available&&!comparing;host.hidden=!available||comparing;
+ $('skinPreviewRotate').disabled=!available;$('skinPreviewCompare').disabled=!available;
  $('skinPreviewCompare').textContent=comparing?'Voltar ao modelo':'Comparar com a arte';
  $('skinPreviewCompare').setAttribute('aria-pressed',String(comparing));
  $('skinPreviewStatus').textContent=available?(comparing?'Arte original do personagem':'Arraste para girar · tecido e detalhes em 3D'):'A prévia 3D não está disponível neste aparelho. Exibindo a arte original.';

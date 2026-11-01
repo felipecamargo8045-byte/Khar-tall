@@ -77,7 +77,7 @@ function face(parent,skin,dark,hair,eyeColor,mat){
   curve(parent,[[side*.024,.061,.109],[side*.05,.068,.112],[side*.079,.058,.10]],.0035,hair);
   curve(parent,[[side*.024,.033,.112],[side*.05,.040,.119],[side*.076,.031,.109]],.0024,dark);
  }
- put(parent,loft([[.052,.008,.006,0,.109],[.014,.011,.010,0,.123],[-.017,.016,.014,0,.131],[-.033,.014,.008,0,.127]],skin,12));
+ put(parent,loft([[.052,.007,.005,0,.107],[.014,.010,.008,0,.118],[-.017,.014,.010,0,.126],[-.033,.012,.006,0,.121]],skin,16));
  const lips=mat(0x895d50,.02,.82);
  curve(parent,[[-.024,-.068,.112],[-.010,-.072,.121],[0,-.069,.124],[.010,-.072,.121],[.024,-.068,.112]],.003,lips);
  curve(parent,[[-.021,-.075,.114],[0,-.080,.122],[.021,-.075,.114]],.003,skin);
@@ -134,19 +134,24 @@ export function createCharacter(id,team,context){
   put(pendant,new THREE.Mesh(new THREE.OctahedronGeometry(.020,0),gold),0,-.055,.04);
  }else{
   put(body,loft([[-.12,.23*w,.14*w],[.04,.22*w,.15*w],[.28,.30*w,.18*w],[.45,.34*w,.175*w],[.55,.26*w,.14*w],[.60,.075,.073]].map(r=>[r[0]*h,...r.slice(1)]),leather,24));
-  put(body,loft([[.09,.235*w,.16*w,0,.012],[.27,.31*w,.19*w],[.44,.34*w,.18*w],[.51,.27*w,.145*w]].map(r=>[r[0]*h,...r.slice(1)]),metal,24));
+  put(body,loft([[.09,.235*w,.16*w,0,.012],[.27,.31*w,.19*w],[.44,.34*w,.18*w],[.51,.27*w,.145*w],[.57,.12*w,.095*w]].map(r=>[r[0]*h,...r.slice(1)]),metal,32));
   for(const side of [-1,1])curve(body,[[side*.24*w,.10*h,.07],[side*.28*w,.31*h,.10],[side*.28*w,.46*h,.08]],.008,gold);
   for(let row=0;row<3;row++)put(body,loft([[.10*h-row*.095*h,.24*w,.16*w],[.025*h-row*.095*h,.26*w,.17*w]],metal,20));
-  const tabard=makeCloak(.32*w,.64*h,clothLight,gold);tabard.mesh.position.set(0,-.26*h,.185*w);body.add(tabard.mesh);cloaks.push(tabard);
+  const tabard=makeCloak(.32*w,.64*h,clothLight,gold,true);tabard.mesh.position.set(0,-.26*h,.215*w);body.add(tabard.mesh);cloaks.push(tabard);
   for(const side of [-1,1]){const skirt=put(body,loft([[-.12*h,.105*w,.036],[-.43*h,.125*w,.04]],metal,12),side*.235*w,0,.09*w);skirt.rotation.z=-side*.16;}
   put(body,loft([[-.017,.25*w,.17*w],[-.075,.255*w,.174*w]],gold,24));
+  const collar=put(body,new THREE.Mesh(new THREE.TorusGeometry(.117*w,.009,6,30),gold),0,.57*h,0);collar.rotation.x=Math.PI/2;collar.scale.y=.82;
+  curve(body,[[0,.45*h,.185*w],[0,.31*h,.204*w],[0,.12*h,.175*w]],.005,gold);
+  for(const side of [-1,1])curve(body,[[side*.04*w,.40*h,.189*w],[side*.115*w,.32*h,.187*w],[side*.068*w,.23*h,.196*w],[0,.20*h,.197*w]],.005,gold);
+  put(body,new THREE.Mesh(new THREE.OctahedronGeometry(.026*w,0),gold),0,.35*h,.205*w);
   if(id==='colosso')for(let n=0;n<3;n++)curve(body,[[0,.43*h,.20],[-.13*w,.33*h-n*.06,.18],[0,.25*h-n*.05,.19],[.13*w,.33*h-n*.06,.18],[0,.43*h,.20]],.008,gold);
  }
  const cape=makeCloak((id==='rei'?1.04:id==='guardiao'?.91:female?.78:.76)*w,(id==='rei'?1.40:female?1.31:1.23)*h,clothShade,gold);
  cape.mesh.position.set(0,-.10*h,-.21*w);body.add(cape.mesh);cloaks.push(cape);
  for(const cloak of cloaks)if(team==='ally'){cloak.mesh.material[0].userData={...cloak.mesh.material[0].userData,...(cloak===cape?clothShade.userData:clothLight.userData)};outfitMaterials?.add(cloak.mesh.material[0])}
- put(body,tube(.060,.080,.13,skin,20),0,.63*h,0);
- const head=joint(body,0,.85*h,0),eyeColor=mat(female?0x3d764b:0x554938,.12,.4);
+ put(body,tube(.060*w,.080*w,.20*h,['colosso','guardiao'].includes(id)?metal:skin,24),0,.63*h,0);
+ const head=joint(body,0,.81*h,0),eyeColor=mat(female?0x3d764b:0x554938,.12,.4);
+ if(id==='colosso')head.scale.setScalar(1.22);
  const eyes=face(head,skin,dark,female?redHair:leather,eyeColor,mat);
  if(['soldado','arqueiro','batedor'].includes(id)){
   const hood=loft([[-.19,.15,.13,0,-.035],[-.08,.178,.16,0,-.035],[.08,.17,.16,0,-.035],[.19,.10,.10,0,-.025],[.23,.018,.022,0,-.02]],clothShade,30,.67,Math.PI*2-1.34);head.add(hood);
@@ -169,9 +174,9 @@ export function createCharacter(id,team,context){
   const scalp=new THREE.Mesh(new THREE.SphereGeometry(.145,28,18,0,Math.PI*2,0,Math.PI*.62),redHair);scalp.scale.set(1,1.12,.94);put(head,scalp,0,.045,-.026);
   const highlight=mat(0x93472c,.1,.58),shadow=mat(0x48231c,.06,.73);
   for(let n=0;n<16;n++){
-   const a=.48+n*(Math.PI*2-.96)/15,side=Math.sin(a),back=-Math.cos(a),strand=joint(head,side*.10,.11,back*.085-.035);
-   const points=[[0,0,0],[side*.045,-.14,back*.04],[side*(.065+.014*Math.sin(n)),-.30,back*.06-.018],
-    [side*.086,-.48,back*.07-.02],[side*(.08+.018*Math.sin(n*2)),-.65,back*.065-.02]];
+   const a=.72+n*(Math.PI*2-1.44)/15,side=Math.sin(a),back=Math.cos(a),strand=joint(head,side*.118,.11,back*.118-.014);
+   const points=[[0,0,0],[side*.035,-.14,back*.025],[side*(.055+.010*Math.sin(n)),-.30,back*.045-.010],
+    [side*.065,-.48,back*.055-.015],[side*(.06+.014*Math.sin(n*2)),-.65,back*.055-.015]];
    curve(strand,points,.020+(n%3)*.002,n%4===0?highlight:n%5===0?shadow:redHair);hair.push(strand);
    if(n%3===0)curve(strand,points.map(([x,y,z])=>[x+.008,y,z+.009]),.0035,highlight);
   }
@@ -181,6 +186,7 @@ export function createCharacter(id,team,context){
  }
  for(const side of [-1,1]){
   const shoulder=joint(body,side*(female?.31:.37)*w,.49*h,0);arms.push(shoulder);
+  if(female)put(shoulder,ball(.077,skin,w,1,.94*w),0,.005,0);
   if(!female){
    const r=id==='colosso'?.23:.17;
    put(shoulder,loft([[-.12,r*.66,r*.77],[0,r*1.15,r],[.13,r*.85,r*.78],[.17,.045,.04]],metal,24));

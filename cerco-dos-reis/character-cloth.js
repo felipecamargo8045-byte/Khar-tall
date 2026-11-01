@@ -1,15 +1,20 @@
 import * as THREE from './vendor/three.module.js';
 // Tecido 3D preso aos ombros. Ondas percorrem a malha, sem trocar imagens.
-export function makeCloak(width,height,cloth,gold){
+export function makeCloak(width,height,cloth,gold,front=false){
  const geometry=new THREE.PlaneGeometry(width,height,10,16);
  const pos=geometry.attributes.position;
- for(let i=0;i<pos.count;i++){const x=pos.getX(i),y=pos.getY(i),loose=(height/2-y)/height;pos.setXYZ(i,x*(.78+.26*loose),y,((-.04-.10*Math.cos(x/width*Math.PI))*(loose*.7))||0);}
+ for(let i=0;i<pos.count;i++){
+  const x=pos.getX(i),y=pos.getY(i),loose=(height/2-y)/height;
+  const fold=Math.cos(x/width*Math.PI*5)*.013*loose;
+  pos.setXYZ(i,x*(.78+.26*loose),y-Math.pow(Math.abs(x)/(width/2),3)*.045*loose,
+   ((front?1:-1)*(.04+.10*Math.cos(x/width*Math.PI))*loose*.7+fold)||0);
+ }
  geometry.computeVertexNormals();const base=pos.array.slice();
  const fabric=cloth.clone();fabric.side=THREE.DoubleSide;
  const hem=gold.clone();hem.side=THREE.DoubleSide;
  geometry.clearGroups();geometry.addGroup(0,10*15*6,0);geometry.addGroup(10*15*6,10*6,1);
  const mesh=new THREE.Mesh(geometry,[fabric,hem]);mesh.castShadow=mesh.receiveShadow=true;
- return {mesh,geometry,base,width,height};
+ return {mesh,geometry,base,width,height,front};
 }
 export function animateCloth(cloaks,clock,walking,attack){
  for(const cloak of cloaks||[]){
@@ -18,7 +23,7 @@ export function animateCloth(cloaks,clock,walking,attack){
    const n=i*3,x=base[n],y=base[n+1],loose=(cloak.height/2-y)/cloak.height;
    const wind=Math.sin(clock*4.3+loose*6+x*4)*.065+Math.sin(clock*2.4+x*6)*.025;
    position.setXYZ(i,x+Math.sin(clock*3+loose*4)*.025*loose,y,
-    base[n+2]-.06*loose+wind*loose*(walking?1.35:.55)-attack*.12*loose);
+    base[n+2]+(cloak.front?1:-1)*(.06*loose-wind*loose*(walking?1.35:.55)+attack*.12*loose));
   }
   position.needsUpdate=true;cloak.geometry.computeVertexNormals();
  }
