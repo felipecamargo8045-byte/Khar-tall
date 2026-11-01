@@ -12,10 +12,13 @@ Nenhum crédito foi comprado, plano contratado ou API paga utilizada. Gratuidade
 - Na sessão original, a demonstração oficial do TRELLIS.2 gerou vistas 3D com mais detalhe. A exportação GLB parou por limite de ZeroGPU. Não foi obtido um GLB nativo desse teste. A referência original com armas também causou fusão de espada e escudo.
 - TripoSR executou localmente em CPU e exportou geometria real. O teste anterior tinha 23.284 vértices e 46.568 triângulos antes da divisão de UV. A forma ainda é irregular e perde detalhes da armadura.
 - Blender produziu UV e mapas de cor, normal e rugosidade/metal em 2048 px. A projeção frontal é combinada com as cores laterais inferidas sobre uma malha completa. O normal é um relevo discreto derivado da pintura; não equivale a uma escultura detalhada.
-- Foram preparadas cinco animações humanas CC0 do Mesh2Motion: espera, caminhada, ataque, dano e queda. O rig experimental tem 30 ossos, incluindo nove para a capa. Pesos e colisões precisam de revisão; a capa não tem simulação física.
+- Foram preparadas cinco animações humanas CC0 do Mesh2Motion: espera, caminhada, ataque, dano e queda. O rig experimental tem 30 ossos, incluindo nove para uma capa separada de 775 vértices. Espada e escudo de compasso foram modelados como peças próprias e ligados às mãos. A reconstrução original da capa foi retirada da região traseira e as aberturas receberam tampas internas escuras.
+- A conferência renderizada **reprovou o piloto como arte final**: ainda há irregularidades da armadura, problemas de silhueta, deformações e transições que exigem revisão. A presença dos cinco clipes no GLB é uma validação de arquivo, não uma aprovação de qualidade. O pacote inclui essa avaliação explicitamente.
 - Na retomada, a revisão automática bloqueou uma tentativa por telemetria inesperada de uma dependência ONNX Runtime. O driver passou a configurar `ORT_DISABLE_TELEMETRY=1` antes de qualquer importação, seguindo a documentação oficial, junto com os modos offline do Hugging Face/Transformers. A geração usa os pesos e a referência locais.
 
 Uma medição antiga de 12,7 s reutilizava códigos latentes e não representava uma geração completa. O driver atual registra `reused_scene_codes: false` e mede a execução inteira. Consulte os arquivos de procedência junto do piloto para os números reais da nova execução.
+
+Na retomada, a execução CPU completa levou 51,9 s e gerou novamente 23.284 vértices e 46.568 triângulos antes da edição. O GLB animado final do teste tem 4.476.208 bytes, três imagens embutidas, 30 ossos e cinco clipes. O arquivo não foi integrado ao jogo.
 
 ## Comparação das alternativas pesquisadas
 
@@ -80,3 +83,13 @@ blender --background --factory-startup --python-exit-code 1 --python tools/free-
 ```
 
 O GLB incorpora as texturas; o `.blend` guarda as imagens empacotadas. Arquivos temporários e sessões de serviços não devem ser publicados como arte aprovada. Nenhuma chave, token ou senha é necessária para executar o piloto local depois dos downloads públicos.
+
+## Arquivos preservados
+
+`pilot/soldado-piloto-experimental.zip` reúne o GLB base, o GLB animado, a cena editável do Blender, as prévias renderizadas, as procedências e a avaliação de qualidade. É um material de trabalho para continuar a modelagem. Os oito personagens do jogo continuam pendentes de uma versão final com fidelidade e movimento aprovados.
+
+## Etapa externa pendente para a rota com mais detalhe
+
+O usuário confirmou que ainda não possui conta no Hugging Face e deseja continuar pelo Work. Não foi criada conta em seu nome. A [documentação oficial do ZeroGPU](https://huggingface.co/docs/hub/spaces-zerogpu#usage-tiers), consultada na retomada, informa 2 minutos diários para acesso anônimo e 5 minutos para contas gratuitas, com renovação 24 horas após o primeiro uso. A cota autenticada pode permitir concluir a geração e exportação que pararam na cota anônima; não é uma garantia de disponibilidade ou acabamento final.
+
+O acesso gratuito está em [huggingface.co/join](https://huggingface.co/join), seguido da demonstração oficial [Microsoft TRELLIS.2](https://huggingface.co/spaces/microsoft/TRELLIS.2). Não é necessário contratar PRO, adicionar crédito, hospedar uma GPU própria ou ativar faturamento para usar a demonstração dentro da cota gratuita. Senhas e tokens não devem ser enviados no chat. O piloto local permanece disponível independentemente dessa etapa.

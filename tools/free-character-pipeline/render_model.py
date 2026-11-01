@@ -45,5 +45,9 @@ scene.view_settings.view_transform='AgX';scene.render.image_settings.file_format
 path=Path(args.out);path.parent.mkdir(parents=True,exist_ok=True)
 for index in range(args.frames):
     scene.frame_set(args.frame+index*args.step);scene.render.filepath=str(path if args.frames==1 else path.with_name(path.stem+f'-{index:03d}'+path.suffix))
+    if index==0:
+        bpy.context.view_layer.update()
+        points=[o.evaluated_get(bpy.context.evaluated_depsgraph_get()).matrix_world@v.co for o in meshes for v in o.evaluated_get(bpy.context.evaluated_depsgraph_get()).data.vertices]
+        print('MODEL_WORLD_Z',min(v.z for v in points),max(v.z for v in points),flush=True)
     bpy.ops.render.render(write_still=True)
 print('RENDERED',args.out,flush=True)
