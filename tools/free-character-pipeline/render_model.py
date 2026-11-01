@@ -18,7 +18,10 @@ if args.clip:
     action=bpy.data.actions[args.clip];rig.animation_data.action=action
     if action.slots:rig.animation_data.action_slot=action.slots[0]
 scene=bpy.context.scene;scene.frame_set(args.frame)
-meshes=[o for o in scene.objects if o.type=='MESH']
+# Blender's glTF importer adds a hidden Icosphere as a bone display shape.
+# It is not character geometry; including it raises and shrinks the model.
+meshes=[o for o in scene.objects if o.type=='MESH' and not o.hide_render
+        and not any(c.hide_render for c in o.users_collection)]
 # Use rest vertices: an animated bounding box would move the floor per pose.
 corners=[o.matrix_world@v.co for o in meshes for v in o.data.vertices]
 low=Vector([min(c[i] for c in corners) for i in range(3)]);high=Vector([max(c[i] for c in corners) for i in range(3)])
@@ -31,7 +34,18 @@ def material(name,color,metal=0,rough=.6):
     return m
 bpy.ops.mesh.primitive_cylinder_add(vertices=96,radius=1.10,depth=.07,location=(0,0,-.04));bpy.context.object.data.materials.append(material('Navy plinth',(.025,.045,.075),.15,.55))
 bpy.ops.mesh.primitive_torus_add(major_segments=96,minor_segments=8,major_radius=1.08,minor_radius=.008,location=(0,0,0));bpy.context.object.data.materials.append(material('Antique gold',(.45,.29,.10),.65,.32))
-bpy.ops.mesh.primitive_plane_add(size=2000,location=(0,0,-.09));bpy.context.object.data.materials.append(material('Studio floor',(.018,.029,.047),0,.8))
+bpy.ops.mesh.primitive_plane_add(size=2000,location=(0,0,-.09));bpy.context.object.data.materials.append(material('Studio floor',(.009,.017,.032),0,.9))
+# Curved studio backdrop avoids a hard horizon line behind the character.
+points=[];faces=[]
+for i in range(25):
+    a=i/24*math.pi/2;y=3+5*math.sin(a);z=-.09+5*(1-math.cos(a))
+    points.extend([(-40,y,z),(40,y,z)])
+points.extend([(-40,8,30),(40,8,30)])
+for i in range(25):faces.append((2*i,2*i+1,2*i+3,2*i+2))
+data=bpy.data.meshes.new('Curved navy backdrop');data.from_pydata(points,[],faces);data.update()
+backdrop=bpy.data.objects.new('Curved navy backdrop',data);bpy.context.collection.objects.link(backdrop)
+data.materials.append(material('Backdrop navy',(.009,.017,.032),0,.95))
+for poly in data.polygons:poly.use_smooth=True
 world=bpy.data.worlds.new('Navy studio');world.use_nodes=True;world.node_tree.nodes['Background'].inputs[0].default_value=(.065,.09,.14,1);world.node_tree.nodes['Background'].inputs[1].default_value=.55;scene.world=world
 def area(name,position,power,color,size):
     data=bpy.data.lights.new(name,'AREA');data.energy=power;data.color=color;data.shape='DISK';data.size=size
