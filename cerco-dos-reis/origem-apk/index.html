@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101b2b">
+  <meta name="description" content="Comande as cartas de Khar Thal em uma batalha de castelos em tempo real. Um jogo do universo de Ecos da Chama, criado por Victoryno.">
+  <title>Khar Thal · Cerco dos Reis</title>
+  <link rel="icon" href="assets/emblem.svg?v=pedra-3" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css?v=pedra-3"><link rel="stylesheet" href="embedded.css"><link rel="stylesheet" href="game-chrome.css?v=lilith-legend-1">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+  <header class="header">
+    <a class="app-return" href="/?tab=home">← Voltar ao reino</a><span class="app-arena-label">⚔ ARENA</span>
+    <a class="brand" href="./" aria-label="Khar Thal, início"><img src="assets/emblem.svg?v=pedra-3" width="40" height="44" alt=""><span>KHAR THAL<small>CERCO DOS REIS</small></span></a>
+    <nav aria-label="Menu principal"><button class="nav-button active" id="arenaNav">Arena</button><button class="nav-button" id="cardsNav">Cartas <span>10</span></button><button class="nav-button" id="helpNav">Como jogar</button></nav>
+    <div class="header-actions"><span class="version">EDIÇÃO DE ARENA</span><button class="icon-button" id="soundButton" aria-label="Desativar som" title="Desativar som"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Zm4 3a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button><button class="icon-button" id="pauseButton" aria-label="Pausar batalha" title="Pausar batalha" disabled><svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg></button></div>
+  </header>
+  <main>
+    <div class="page-heading"><div><p class="eyebrow"><span></span> DO UNIVERSO DE ECOS DA CHAMA</p><h1>Cada carta, uma conquista.</h1></div><div class="practice-badge"><span class="status-dot"></span> VOCÊ CONTRA A IA <small>Estratégia em tempo real</small></div></div>
+    <div class="game-layout">
+      <aside class="left-column">
+        <section class="commander-panel panel"><div class="section-label"><span>SEU COMANDO</span><span class="tiny-diamond">◆</span></div><div class="commander-image"><img src="assets/portrait_rei.webp" alt="Rei de Khar Tall, com coroa e manto"><div class="commander-caption"><span>O trono não se entrega.</span><h2>Ele se conquista.</h2></div></div><div class="commander-bottom"><span class="player-seal">V</span><div><strong>Victoryno</strong><small>Comandante da chama</small></div><span class="player-team">AZUL</span></div></section>
+        <section class="panel objectives"><p class="section-label">A CONQUISTA</p><div class="objective"><span class="objective-icon">♜</span><div><strong>Derrube o castelo real</strong><p>Abra caminho pelas torres e conquiste o reino inimigo.</p></div></div><div class="objective"><span class="objective-icon">✦</span><div><strong>Domine seu baralho</strong><p>Combine tropas, proteja seus arqueiros e escolha a hora de atacar.</p></div></div><div class="session-record"><span>VITÓRIAS NESTE DISPOSITIVO</span><strong id="winCount">0</strong></div></section>
+        <div class="universe-note"><span>✧</span><p>Uma nova forma de jogar Khar Tall.<br><strong>A chama está viva.</strong></p></div>
+      </aside>
+
+      <section class="battle-column" aria-label="Arena de batalha"><div id="battleAccount" class="battle-account" role="status">Conectando seu comandante…</div>
+        <div class="match-bar"><div class="opponent"><span class="shield red">♜</span><div><strong>Exército rubro</strong><small id="difficultyLabel">COMANDANTE · NORMAL</small></div></div><div class="clock"><span id="phaseLabel">BATALHA</span><strong id="timer">03:00</strong></div><div class="score"><span class="red-text" id="enemyScore">0</span><span class="score-symbol">♜</span><span class="teal-text" id="playerScore">0</span></div></div>
+        <div class="arena-wrap" id="arenaWrap">
+          <canvas id="arena" width="600" height="730" tabindex="0" aria-label="Arena. Selecione uma carta e toque na metade inferior para invocar. No teclado, use 1 a 4 para cartas e as setas esquerda ou direita para invocar na rota correspondente."></canvas>
+          <div class="arena-vignette" aria-hidden="true"></div>
+          <div class="arena-corner top-left" aria-hidden="true"></div><div class="arena-corner top-right" aria-hidden="true"></div><div class="arena-corner bottom-left" aria-hidden="true"></div><div class="arena-corner bottom-right" aria-hidden="true"></div>
+          <div class="ready-overlay" id="readyOverlay"><div class="ready-emblem">♜</div><p class="eyebrow">DOIS EXÉRCITOS. UM TRONO.</p><h2>O cerco começa<br>com você.</h2><p>Invoque suas cartas.<br>Conduza seu exército à vitória.</p><button class="gold-button" id="startButton"><span>⚔</span> Iniciar batalha <span>→</span></button><small>3 minutos · Duas rotas · Um vencedor</small><button id="practiceButton" class="text-button practice-button">Treinar sem registrar</button><small class="abandon-note">Sair de um cerco online registra abandono, sem recompensa.</small></div>
+          <div class="arena-message" id="arenaMessage" role="status"></div>
+          <div class="countdown hidden" id="countdown" aria-live="polite"></div>
+          <div class="paused-overlay hidden" id="pausedOverlay"><span>Ⅱ</span><h2>Batalha pausada</h2><p>Seu reino pode esperar um instante.</p><button class="gold-button" id="resumeButton">Continuar batalha →</button></div>
+          <div class="result-overlay hidden" id="resultOverlay" aria-live="polite"><span class="result-crown" id="resultIcon">♛</span><p class="eyebrow">O CERCO TERMINOU</p><h2 id="resultTitle">Vitória</h2><p id="resultDescription"></p><div class="result-stats" id="resultStats"></div><div class="battle-reward" id="battleReward" role="status"></div><button id="retryReward" class="gold-button hidden">Enviar resultado novamente</button><button class="gold-button" id="againButton">Jogar novamente →</button><button class="text-button" id="returnButton">Voltar à preparação</button></div>
+        </div>
+        <div class="player-bar"><span class="status-dot"></span><strong>Seu exército</strong><span>DEFENDA SEU CASTELO</span><b id="castleHP">2.600 <small>PV</small></b></div>
+        <div class="hand-panel"><div class="hand-heading"><span>SUA MÃO <small id="handHint">Escolha uma carta para invocar</small></span><button id="deckButton" class="text-button">Ver baralho <span>↗</span></button></div><div class="hand-row"><div id="hand" class="hand" aria-label="Cartas na mão"></div><div class="next-card"><span>A SEGUIR</span><div id="nextCard"></div><small id="nextName"></small></div></div><div class="energy-row"><span class="energy-glyph">◆</span><strong id="energyValue">6<span>/10</span></strong><div class="energy-track" id="energyTrack" aria-label="Energia de invocação"><div id="energyFill"></div><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><span class="energy-label" id="energyLabel">ENERGIA</span></div></div>
+        <p class="arena-hint" id="arenaHint"><span>✧</span> Selecione uma carta e toque no seu lado da arena. <kbd>1</kbd>–<kbd>4</kbd></p>
+      </section>
+
+      <aside class="right-column">
+        <section class="panel battle-settings"><p class="section-label">PREPARE SEU CERCO <span>01</span></p><label for="difficulty">Adversário</label><div class="select-wrap"><select id="difficulty"><option value="easy">Recruta · Fácil</option><option value="normal" selected>Comandante · Normal</option><option value="hard">Conquistador · Difícil</option></select><span>⌄</span></div><div class="setting-rule"><span>Tempo de batalha</span><strong>3:00</strong></div><div class="setting-rule"><span>Último minuto</span><strong class="teal-text">Energia ×2</strong></div></section>
+        <section class="panel selected-panel"><p class="section-label">CONHEÇA SUA CARTA <span>02</span></p><div class="selected-portrait" id="selectedPortrait"><img src="assets/portrait_lobo.webp" alt="Lobo"><span class="cost-badge" id="selectedCost">3</span><span id="selectedRarity">TROPA · VELOCIDADE</span></div><div class="selected-copy"><h2 id="selectedName">Lobo</h2><p id="selectedDescription">Uma dupla veloz que avança em matilha e surpreende o inimigo.</p><div class="card-attributes" id="selectedAttributes"></div><div class="ability-box"><span>✧</span><p><strong id="selectedAbility">Bote do Lobo</strong><span id="selectedAbilityDescription">O primeiro golpe da matilha causa dano extra.</span></p></div><div class="lane-controls hidden" id="laneControls"><span>INVOCAR NA ROTA</span><div><button id="leftLane">← Esquerda</button><button id="rightLane">Direita →</button></div></div></div></section>
+        <section class="battle-log panel"><p class="section-label">ECOS DA BATALHA <span class="log-indicator"></span></p><div id="battleLog" aria-live="polite"><p class="log-empty">Toda conquista começa<br>com uma decisão.</p></div></section>
+      </aside>
+    </div>
+    <footer><span>KHAR THAL <i>✧</i> CERCO DOS REIS</span><p>Criado por <strong>Victoryno</strong> <span>·</span> Universo de Ecos da Chama</p><button class="text-button" id="footerHelp">Guia de batalha ↗</button></footer>
+  </main>
+  <dialog id="modal" aria-labelledby="modalTitle"><div class="modal-header"><div><p class="eyebrow" id="modalEyebrow">SEU EXÉRCITO, SUA ESTRATÉGIA</p><h2 id="modalTitle">As cartas do reino</h2></div><button class="icon-button" id="closeModal" aria-label="Fechar">✕</button></div><div id="modalContent"></div></dialog>
+  <div id="toast" class="toast" role="status"></div>
+  <script type="module" src="app.mjs?v=vip-android-1"></script>
+</body>
+</html>

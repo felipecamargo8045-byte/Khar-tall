@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="420" viewBox="0 0 320 420" role="img" aria-label="Chama Viva: turbilhão de fogo rubro emergindo de terra vulcânica">
+<defs>
+ <radialGradient id="night" cx=".54" cy=".43" r=".81"><stop stop-color="#68372a"/><stop offset=".5" stop-color="#241c2a"/><stop offset="1" stop-color="#0b1322"/></radialGradient>
+ <radialGradient id="ember"><stop stop-color="#ffe8a8"/><stop offset=".35" stop-color="#ec7f33"/><stop offset="1" stop-color="#8d281c" stop-opacity="0"/></radialGradient>
+ <linearGradient id="fire" x1=".2" y1=".85" x2=".76" y2=".03"><stop stop-color="#85251f"/><stop offset=".26" stop-color="#e45426"/><stop offset=".55" stop-color="#ffae4b"/><stop offset=".8" stop-color="#ffe8ac"/><stop offset="1" stop-color="#fff6d3"/></linearGradient>
+ <linearGradient id="inside" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#f76b30"/><stop offset=".58" stop-color="#ffd47a"/><stop offset="1" stop-color="#fffbd2"/></linearGradient>
+ <linearGradient id="stone"><stop stop-color="#191825"/><stop offset=".45" stop-color="#42302d"/><stop offset="1" stop-color="#101724"/></linearGradient>
+ <filter id="bloom" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="12"/></filter>
+</defs>
+<rect width="320" height="420" fill="url(#night)"/>
+<g fill="none" stroke="#be6d45" opacity=".22"><circle cx="160" cy="207" r="118"/><circle cx="160" cy="207" r="106"/><path d="M160 69v30M160 315v30M22 207h30m216 0h30M60 107l24 23M236 285l24 23M260 108l-24 24M84 283l-24 24"/><path d="M160 82 184 171 267 207 184 242 160 329 135 242 54 207 135 171Z"/></g>
+<ellipse cx="165" cy="286" rx="101" ry="107" fill="#e85b28" opacity=".33" filter="url(#bloom)"/>
+<path d="M0 357 53 341 99 350 148 329 202 343 264 334 320 350V420H0Z" fill="url(#stone)"/>
+<g stroke="#bb532c" fill="none" stroke-width="3" opacity=".62"><path d="m0 382 83-20 31 31 47-18 31 31 60-27 68 15M103 349 131 367 153 348M240 346 224 366 258 375"/></g>
+<g fill="#ff9440" opacity=".8"><circle cx="72" cy="138" r="2.7"/><circle cx="243" cy="120" r="2.5"/><circle cx="276" cy="243" r="3"/><circle cx="59" cy="272" r="2"/><circle cx="214" cy="78" r="2.2"/><circle cx="126" cy="72" r="1.5"/><circle cx="227" cy="297" r="3"/></g>
+<path fill="url(#fire)" stroke="#f19a4e" stroke-width="1.5" d="M158 52Q169 107 211 131Q232 151 217 187Q252 180 260 154Q293 229 257 282Q225 335 154 331Q81 328 66 272Q53 224 90 172Q91 217 116 221Q105 177 126 139Q137 118 158 52Z"/>
+<path fill="#ffe49a" opacity=".8" d="M164 91Q148 147 176 179Q207 215 190 253Q207 240 215 219Q229 262 207 290Q178 325 141 304Q105 284 119 244Q132 219 131 200Q154 217 157 237Q161 209 153 187Q141 152 164 91Z"/>
+<path fill="url(#inside)" d="M156 174Q163 215 181 237Q201 263 176 293Q153 315 134 292Q118 274 139 250Q144 225 156 174Z"/>
+<path d="M166 120Q195 152 196 174M107 231Q101 259 119 286M232 246Q240 228 230 205" stroke="#ffe5aa" stroke-width="3" fill="none" stroke-linecap="round" opacity=".82"/>
+<g fill="url(#ember)"><circle cx="75" cy="88" r="12"/><circle cx="250" cy="75" r="9"/><circle cx="44" cy="232" r="9"/><circle cx="273" cy="313" r="14"/></g>
+<ellipse cx="161" cy="338" rx="106" ry="23" fill="#ea672f" opacity=".26" filter="url(#bloom)"/>
+<path d="M95 358Q160 339 225 358" stroke="#db7849" stroke-width="2" fill="none" opacity=".55"/>
+</svg>

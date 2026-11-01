@@ -1,0 +1,75 @@
+/* Provador de skins: reutiliza os modelos 3D da arena, sem tocar no combate. */
+.skin-preview-panel{
+ --preview-color:#9ce6af;
+ border:1px solid #897555aa;
+ background:radial-gradient(ellipse at 12% 0,#45546c4d,transparent 54%),linear-gradient(150deg,#25334a,#101b2c 77%);
+ box-shadow:inset 0 1px #ffffff16,0 12px 28px #0006;
+ border-radius:13px;padding:18px;margin:15px 0 24px;min-width:0;
+}
+.skin-preview-heading{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:end;margin-bottom:14px}
+.skin-preview-heading .overline{font-size:9px;letter-spacing:.13em;color:#dfc58f;font-weight:800}
+.skin-preview-heading h3{margin:5px 0;font:500 clamp(24px,3.5vw,33px) Georgia,serif;color:#e6d2ae}
+.skin-preview-heading p{margin:4px 0;color:#bbc9db;font-size:12px;line-height:1.5}
+.skin-preview-selected{border:1px solid color-mix(in srgb,var(--preview-color) 42%,#8998aa);border-radius:7px;padding:10px 14px;background:#111e2c;align-self:center}
+.skin-preview-selected strong{display:block;font-size:14px;letter-spacing:.06em}
+.skin-preview-selected small{display:block;font-size:10px;color:#d2deed}
+.skin-preview-layout{display:grid;grid-template-columns:minmax(205px,.85fr) minmax(0,1.35fr);gap:16px;align-items:stretch}
+.skin-preview-focus{
+ min-width:0;display:flex;flex-direction:column;align-items:center;
+ border:1px solid #7890a344;background:radial-gradient(ellipse at 52% 58%,#4d66855e,transparent 70%),linear-gradient(#16283d,#0d1829);
+ border-radius:11px;padding:9px;overflow:hidden;
+}
+.skin-preview-stage{width:100%;aspect-ratio:350/390;min-height:218px;position:relative;overflow:hidden;border-radius:8px;
+ background:radial-gradient(ellipse at 50% 85%,#52647c55,transparent 54%),linear-gradient(160deg,#293a4e,#17253a 64%,#141e30)}
+.skin-preview-stage:after{content:'';position:absolute;bottom:6%;left:18%;width:64%;height:10%;border-radius:50%;background:#080e19aa;filter:blur(16px);pointer-events:none}
+.skin-preview-3d{width:100%;height:100%;position:relative;z-index:1}
+.skin-preview-fallback{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
+.skin-preview-name{text-align:center;display:grid;gap:4px;padding:10px 4px 5px}
+.skin-preview-name b{font:500 24px Georgia,serif;color:#eed8b6}
+.skin-preview-name small{font-size:10px;color:#b6c5d7;line-height:1.5}
+.skin-character-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;align-content:start}
+.skin-character-option{min-width:0;min-height:0;border:1px solid #53667d;border-radius:9px;padding:5px 5px 8px;color:#d8e3ef;background:linear-gradient(#26374e,#152336);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px}
+.skin-character-option.selected{border-color:var(--preview-color);box-shadow:inset 0 0 0 1px var(--preview-color),0 0 11px #0004;background:linear-gradient(#3a4861,#1c2b42)}
+.skin-character-option img{width:100%;aspect-ratio:172/190;object-fit:contain;display:block;border-radius:5px;background:radial-gradient(ellipse at center,#51667c55,transparent 78%),#152032}
+.skin-character-option span{font-size:10px;font-weight:800;text-align:center;min-height:18px;line-height:1.5}
+.skin-preview-purchase{
+ display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+ border-top:1px solid #bdab8250;padding-top:15px;margin-top:16px
+}
+.skin-preview-purchase p{margin:4px 0;color:#c3d0df;font-size:11px;line-height:1.5}
+.skin-preview-price{display:block;font:700 17px system-ui;color:#efd2a0;margin-top:3px}
+.skin-preview-buy{cursor:pointer;padding:13px 23px;border:1px solid #e8cc8a;border-radius:8px;background:linear-gradient(155deg,#dfc68f,#ad8347);color:#182132;font-size:13px;font-weight:900;min-height:44px;min-width:185px}
+.skin-preview-buy:disabled{opacity:.68;cursor:default}
+.shop-grid button.shop-item{appearance:none;text-align:center}
+.shop-item.selected{border-color:var(--swatch);box-shadow:0 0 0 1px var(--swatch),inset 0 0 8px #fff2}
+.shop-item .skin-sample-action{letter-spacing:.06em;color:#e9cb8c;font-size:9px}
+.shop-item:hover,.skin-character-option:hover{filter:brightness(1.11)}
+.shop-item:focus-visible,.skin-character-option:focus-visible,.skin-preview-buy:focus-visible{outline:3px solid #ffe3a1;outline-offset:3px}
+@media(max-width:720px){
+ .skin-preview-panel{margin:12px 0 22px;padding:13px 10px}
+ .skin-preview-layout{grid-template-columns:minmax(0,1fr);gap:12px}
+ .skin-preview-focus{max-width:350px;width:100%;justify-self:center}
+ .skin-preview-stage{max-height:310px;min-height:210px}
+ .skin-character-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .skin-character-option img{max-height:123px}
+ .skin-preview-buy{width:100%}
+}
+@media(prefers-reduced-motion:reduce){.skin-preview-panel *{scroll-behavior:auto}}
+
+/* Palco compacto com sombras reais, sem a sombra pintada da versão anterior. */
+.skin-preview-stage:after{display:none}
+.skin-preview-focus{background:linear-gradient(155deg,#24364c,#101e31 70%);border-color:#9a835144;box-shadow:inset 0 1px #ffffff0a,0 10px 25px #0003}
+.skin-preview-heading{align-items:center}
+.skin-preview-selected{padding:8px 11px;background:#102235a8}
+.skin-preview-selected strong{font-size:10px;letter-spacing:.10em;color:#e4cf9f}
+.skin-preview-selected small{font-size:10px;margin-top:3px;color:#acbed1}
+.skin-preview-stage{background:radial-gradient(ellipse at 50% 36%,#334861,#17273b 62%,#101c2c);max-height:470px}
+.skin-preview-controls{display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%;margin-top:7px}
+.skin-preview-controls button{min-height:36px;border:1px solid #b99a5759;border-radius:6px;background:linear-gradient(#263c53,#1b2e44);color:#eddbb4;font:600 10px system-ui;cursor:pointer;padding:7px 5px}
+.skin-preview-controls button[aria-pressed="true"]{background:#b9985140;border-color:#d2b26d}
+.skin-preview-controls button:focus-visible{outline:2px solid #f0d28b;outline-offset:2px}
+.skin-character-option{border-radius:8px;background:linear-gradient(145deg,#263b52,#14253b);box-shadow:inset 0 1px #ffffff0c,0 3px 7px #0003}
+.skin-character-option.selected{box-shadow:inset 0 0 0 1px var(--preview-color),0 0 13px color-mix(in srgb,var(--preview-color) 15%,transparent)}
+.skin-preview-panel{scroll-margin-top:14px}
+.page[data-page="shop"]{padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+@media(max-width:720px){.skin-preview-heading{gap:8px}.skin-preview-selected{padding:6px 9px}.skin-preview-stage{max-height:350px;min-height:270px}.skin-preview-focus{max-width:370px}.skin-preview-name{padding-top:9px}.skin-preview-name b{font-size:23px}.skin-character-option span{font-size:10px}.skin-preview-heading p{line-height:1.6}}

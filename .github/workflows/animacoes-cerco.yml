@@ -1,0 +1,30 @@
+name: Compilar animações locais dos personagens
+on:
+  push:
+    branches: [cerco-dos-reis-migracao-2026-10]
+    paths:
+      - 'cerco-dos-reis/build_motion_sheets.py'
+      - '.github/workflows/animacoes-cerco.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  animation:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cerco-dos-reis-migracao-2026-10
+      - name: Instalar bibliotecas gratuitas
+        run: python -m pip install --quiet pillow numpy opencv-python-headless
+      - name: Gerar 24 quadros por personagem
+        run: python cerco-dos-reis/build_motion_sheets.py
+      - name: Salvar e publicar arquivos no GitHub
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cerco-dos-reis/motion/
+          if ! git diff --cached --quiet; then
+            git commit -m "assets(cerco): animações 2D de caminhada repouso e ataque"
+            git push origin HEAD:cerco-dos-reis-migracao-2026-10
+          fi

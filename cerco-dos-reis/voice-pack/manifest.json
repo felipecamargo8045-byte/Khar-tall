@@ -1,0 +1,193 @@
+{
+  "version": 2,
+  "provider": "Kokoro-82M / pt-BR (Apache-2.0) + FFmpeg 72 kbps voz limpa",
+  "engine": "pre-generated-static-audio",
+  "characters": {
+    "arqueiro": {
+      "style": "arqueiro jovem, vigilante das pontes, arco certeiro",
+      "voice": "pm_alex",
+      "clips": {
+        "attack": [
+          "arqueiro-attack-0.ogg",
+          "arqueiro-attack-1.ogg",
+          "arqueiro-attack-2.ogg"
+        ],
+        "hurt": [
+          "arqueiro-hurt-0.ogg"
+        ],
+        "victory": []
+      },
+      "dialogue": {
+        "attack": [
+          "As pontes não podem cair!",
+          "Pelo reino, flechas ao alto!",
+          "O trono ainda resiste!"
+        ],
+        "hurt": [
+          "A muralha precisa de cobertura!"
+        ],
+        "victory": []
+      }
+    },
+    "soldado": {
+      "style": "soldado fiel, guerreiro do reino dividido",
+      "voice": "pm_alex",
+      "clips": {
+        "attack": [
+          "soldado-attack-0.ogg",
+          "soldado-attack-1.ogg",
+          "soldado-attack-2.ogg"
+        ],
+        "hurt": [
+          "soldado-hurt-0.ogg"
+        ],
+        "victory": []
+      },
+      "dialogue": {
+        "attack": [
+          "Uma espada pelo nosso povo.",
+          "Não deixem o rei sozinho!",
+          "Ninguém atravessa esta ponte!"
+        ],
+        "hurt": [
+          "Ainda defendo o juramento!"
+        ],
+        "victory": []
+      }
+    },
+    "colosso": {
+      "style": "colosso gigantesco, especialista em romper muralhas",
+      "voice": "pm_santa",
+      "clips": {
+        "attack": [
+          "colosso-attack-0.ogg",
+          "colosso-attack-1.ogg",
+          "colosso-attack-2.ogg"
+        ],
+        "hurt": [
+          "colosso-hurt-0.ogg"
+        ],
+        "victory": []
+      },
+      "dialogue": {
+        "attack": [
+          "Minhas passadas abrem o cerco.",
+          "Pela brecha na muralha!",
+          "O castelo vai ruir!"
+        ],
+        "hurt": [
+          "Pedra não se ajoelha!"
+        ],
+        "victory": []
+      }
+    },
+    "guardiao": {
+      "style": "guardião ancestral e juramentado ao trono",
+      "voice": "pm_santa",
+      "clips": {
+        "attack": [
+          "guardiao-attack-0.ogg",
+          "guardiao-attack-1.ogg",
+          "guardiao-attack-2.ogg"
+        ],
+        "hurt": [
+          "guardiao-hurt-0.ogg"
+        ],
+        "victory": []
+      },
+      "dialogue": {
+        "attack": [
+          "Meu juramento vive além da guerra.",
+          "Para alcançar o rei, atravesse minha guarda!",
+          "Nem dois reinos romperão esta defesa."
+        ],
+        "hurt": [
+          "Ainda guardo o trono!"
+        ],
+        "victory": []
+      }
+    },
+    "batedor": {
+      "style": "batedor veloz, marca o inimigo antes do segundo golpe",
+      "voice": "pm_alex",
+      "clips": {
+        "attack": [
+          "batedor-attack-0.ogg",
+          "batedor-attack-1.ogg",
+          "batedor-attack-2.ogg"
+        ],
+        "hurt": [
+          "batedor-hurt-0.ogg"
+        ],
+        "victory": []
+      },
+      "dialogue": {
+        "attack": [
+          "Minha marca precede a sentença!",
+          "Primeira marca. Segundo golpe!",
+          "A próxima descarga será a última!"
+        ],
+        "hurt": [
+          "Minha marca ainda queima!"
+        ],
+        "victory": []
+      }
+    },
+    "rei": {
+      "style": "rei de uma guerra entre irmãos, imponente e atormentado",
+      "voice": "pm_santa",
+      "clips": {
+        "attack": [
+          "rei-attack-0.ogg",
+          "rei-attack-1.ogg",
+          "rei-attack-2.ogg"
+        ],
+        "hurt": [
+          "rei-hurt-0.ogg"
+        ],
+        "victory": [
+          "rei-victory-0.ogg"
+        ]
+      },
+      "dialogue": {
+        "attack": [
+          "Dois irmãos. Um reino dividido.",
+          "O povo não pagará por esta guerra!",
+          "Não entregarei meu trono ao sangue!"
+        ],
+        "hurt": [
+          "A coroa não vale outra vida!"
+        ],
+        "victory": [
+          "Que este reino encontre a paz!"
+        ]
+      }
+    },
+    "liliti": {
+      "style": "Liliti ruiva, misteriosa, ligada aos segredos da guerra entre irmãos",
+      "voice": "pf_dora",
+      "clips": {
+        "attack": [
+          "liliti-attack-0.ogg",
+          "liliti-attack-1.ogg",
+          "liliti-attack-2.ogg"
+        ],
+        "hurt": [
+          "liliti-hurt-0.ogg"
+        ],
+        "victory": []
+      },
+      "dialogue": {
+        "attack": [
+          "A história esqueceu minha voz.",
+          "Nem toda guerra nasce do ódio.",
+          "O que foi selado ainda pulsa."
+        ],
+        "hurt": [
+          "Vocês não conhecem a verdade!"
+        ],
+        "victory": []
+      }
+    }
+  }
+}

@@ -1,0 +1,84 @@
+/* A arte inteira da carta é preservada; a inclinação e a luz dão profundidade sem duplicação de imagem. */
+.tile-img,.art-inner,.featured-card,.hand button{perspective:850px}
+.card-relief{position:relative;display:block;width:100%;height:100%;border-radius:inherit;transform-style:preserve-3d;isolation:isolate;transform:rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg));transition:transform .22s ease,box-shadow .22s ease;box-shadow:0 8px 15px #0005,inset 0 0 0 1px #d9b76e77;background:#122338}
+.card-relief>.card-back{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;max-height:none!important;min-height:0!important;aspect-ratio:auto!important;object-fit:cover!important;object-position:var(--crop-x,50%) var(--crop-y,42%)!important;border:0!important;border-radius:inherit!important;padding:0!important;margin:0!important;clip-path:inset(0 round 4px)}
+.card-relief>.card-back{filter:none;transform:translateZ(3px);backface-visibility:hidden}
+.card-inner-contour{position:absolute;inset:5px;border:1px solid #edd39c70;border-radius:3px;box-shadow:inset 0 0 0 1px #07121c88,0 0 0 1px #07121c88;transform:translateZ(24px);pointer-events:none}
+.card-glass-light{position:absolute;inset:0;border-radius:inherit;pointer-events:none;transform:translateZ(25px);background:radial-gradient(circle at var(--light-x,25%) var(--light-y,12%),#fff0c21f,transparent 42%),linear-gradient(135deg,#fff3ce21,transparent 24%,transparent 77%,#c99a5621);mix-blend-mode:screen}
+.card-light-sweep{position:absolute;inset:-1px;overflow:hidden;border-radius:inherit;transform:translateZ(28px);pointer-events:none}
+.card-light-sweep:after{content:'';position:absolute;inset:-50% -100%;background:linear-gradient(110deg,transparent 42%,#fff6d32b 46%,#fffdf6c9 49%,#ffeaa252 51%,transparent 57%);transform:translateX(-75%);opacity:0}
+.is-shining .card-light-sweep:after{animation:card-reflection .85s cubic-bezier(.22,.61,.36,1)}
+.is-shining{box-shadow:0 8px 19px #0008,0 0 13px #e8bc624d}
+@keyframes card-reflection{0%{transform:translateX(-75%);opacity:0}12%{opacity:.9}85%{opacity:.8}100%{transform:translateX(75%);opacity:0}}
+.art-inner .card-relief{aspect-ratio:2/3;height:auto;min-height:280px;max-height:570px;border-radius:5px}
+.art-inner #fullArt{cursor:grab}
+.tile-img .card-relief{height:100%;border-radius:3px}
+.featured-card .card-relief{aspect-ratio:2/3;height:auto;border-radius:6px}
+.hand .card-relief{height:clamp(62px,11dvh,103px);border-radius:6px 6px 3px 3px}
+.hand .card-inner-contour{inset:3px;opacity:.8}
+.card-relief[data-card="liliti"]{box-shadow:0 0 0 1px #f4d394,0 0 16px #edba552f,0 9px 22px #0007;background:#401d28}
+.card-relief[data-card="liliti"] .card-inner-contour{border-color:#ffda8e;box-shadow:inset 0 0 9px #efbd4633,0 0 6px #efd49733}
+.card-stardust{pointer-events:none;position:absolute;inset:-4px;transform:translateZ(30px);overflow:visible}
+.card-stardust[hidden]{display:none}
+.card-stardust i{position:absolute;left:var(--sx);top:var(--sy);width:var(--size);height:var(--size);border-radius:50%;background:#ffefbe;box-shadow:0 0 5px #ffcc64,0 0 9px #d99e4e;animation:card-dust 2.8s var(--delay) infinite ease-in-out}
+.card-stardust i:nth-child(4n){border-radius:0;clip-path:polygon(50% 0,62% 37%,100% 50%,62% 62%,50% 100%,37% 62%,0 50%,37% 37%);width:7px;height:7px}
+@keyframes card-dust{0%,100%{opacity:.18;transform:translateY(2px) scale(.55)}50%{opacity:1;transform:translateY(-3px) scale(1.1)}}
+.card-offer{width:100%;margin:15px 0 3px;min-height:44px;border:1px solid #e0ba6f;color:#ffedc5;background:linear-gradient(125deg,#6b3d31,#25374a 70%);border-radius:6px;font:700 12px system-ui;letter-spacing:.05em;cursor:pointer}
+.card-offer:disabled{color:#ddca9e;opacity:.8;cursor:default}
+.liliti-store-card{display:grid;grid-template-columns:110px minmax(0,1fr);gap:18px;padding:18px;margin:20px 0;border:1px solid #c59b55;border-radius:9px;background:linear-gradient(125deg,#39242b,#142840 75%)}
+.liliti-store-card .card-relief{aspect-ratio:2/3;height:auto;border-radius:5px}
+.liliti-store-card h3{font:500 26px Georgia;color:#ffdc9e;margin:7px 0}
+.liliti-store-card p{font-size:12px;line-height:1.7}
+.liliti-store-card .overline{font-size:9px;color:#f4ce86}
+.liliti-store-card .card-offer{font-size:11px;margin:8px 0 0}
+@media(max-height:690px){body.battle-mode .hand .card-relief{height:clamp(49px,10dvh,73px)}}
+@media(max-height:500px) and (orientation:landscape){body.battle-mode .hand .card-relief{height:clamp(42px,16vh,75px)}}
+@media(prefers-reduced-motion:reduce){.card-relief{transition:none;transform:none}.card-stardust i{animation:none;opacity:.6}.is-shining .card-light-sweep:after{animation:none;transform:none;opacity:.28}}
+
+
+.art-outer:has(.card-relief[data-card="liliti"]){background:linear-gradient(130deg,#ffe6ae,#927037 30%,#432735 45%,#e5be72 69%,#8f6939);box-shadow:0 12px 28px #0008,0 0 22px #e0ae4c26}
+.tile-img:has(.card-relief[data-card="liliti"]){border-color:#edcb85;box-shadow:0 0 0 1px #745936,0 0 15px #efbb4d44}
+
+
+
+/* O personagem e o cenário pertencem à MESMA ilustração. Nunca recortar,
+   esticar ou inserir um segundo rosto/corpo sobre as cartas. */
+.card-relief.has-figure-depth>.card-back{filter:none;object-fit:cover!important}
+.card-relief.has-figure-depth .card-inner-contour{transform:translateZ(14px)}
+.card-relief.has-figure-depth .card-glass-light{transform:translateZ(18px)}
+.card-relief.has-figure-depth .card-light-sweep{transform:translateZ(22px)}
+.card-relief.has-figure-depth .card-stardust{transform:translateZ(26px)}
+.card-relief.card-touch-3d,.card-relief.is-shining{
+  transform:rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)) scale(1.018);
+}
+/* Feitiços são cartas de magia, não criaturas. Arte própria em tela cheia
+   e reflexo sutil que acompanha o círculo arcano da ilustração. */
+.card-relief.has-spell-art>.card-back{
+  object-fit:cover!important;object-position:center center!important;
+  transform:translateZ(3px);
+}
+.card-relief.has-spell-art .card-inner-contour{transform:translateZ(14px)}
+.card-relief.has-spell-art .card-glass-light{transform:translateZ(18px)}
+.card-relief.has-spell-art .card-light-sweep{transform:translateZ(22px)}
+.card-relief[data-card="cura"] .card-glass-light{
+  background:radial-gradient(circle at var(--light-x,50%) var(--light-y,43%),#c4fff528,transparent 46%);
+}
+.card-relief[data-card="chama"] .card-glass-light{
+  background:radial-gradient(circle at var(--light-x,50%) var(--light-y,43%),#ffd6a028,transparent 46%);
+}
+.card-relief[data-card="armadilha"] .card-glass-light{
+  background:radial-gradient(circle at var(--light-x,50%) var(--light-y,43%),#ddd1ff20,transparent 46%);
+}
+/* Apenas a Liliti possui brilho mais intenso e sua porpurina original. */
+.card-relief[data-card="liliti"] .card-glass-light{
+  background:radial-gradient(circle at var(--light-x,25%) var(--light-y,12%),#fff4da36,transparent 45%),linear-gradient(135deg,#ffffff20,transparent 25%,transparent 76%,#c49a6728);
+}
+.card-relief[data-card="liliti"].is-shining{
+  box-shadow:0 0 0 1px #b89762,0 0 16px #c9a26955,0 10px 23px #0008;
+}
+.card-relief[data-card="liliti"] .card-stardust i{
+  box-shadow:0 0 7px #eddaad,0 0 12px #ae854b;
+}
+@media(prefers-reduced-motion:reduce){
+  .card-relief.card-touch-3d,.card-relief.is-shining{transform:none}
+}
