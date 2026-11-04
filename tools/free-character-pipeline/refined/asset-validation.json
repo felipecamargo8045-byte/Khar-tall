@@ -1,0 +1,68 @@
+{
+  "assets": [
+    {
+      "file": "soldado-refinado.glb",
+      "bytes": 2832492,
+      "sha256": "c80b4e4c103a01a2fcb319c4eda4c1b071c93bf8262929517fb8ec4c4cf9b861",
+      "triangles": 60932,
+      "primitives": 10,
+      "joints": 75,
+      "max_weight_sum_error": 1.1920928955078125e-07,
+      "clips": [
+        {
+          "name": "Idle",
+          "duration_seconds": 2.0333333015441895
+        },
+        {
+          "name": "Walk",
+          "duration_seconds": 1.600000023841858
+        },
+        {
+          "name": "Attack",
+          "duration_seconds": 0.4000000059604645
+        },
+        {
+          "name": "Hit",
+          "duration_seconds": 0.36666667461395264
+        },
+        {
+          "name": "Death",
+          "duration_seconds": 4.5
+        }
+      ],
+      "structural_checks": "passed"
+    },
+    {
+      "file": "soldado-refinado-campo.glb",
+      "bytes": 1316560,
+      "sha256": "b0d8770ce393dd94893d7445b523cc952f181c487387cc0946d97a310dc90a8e",
+      "triangles": 17059,
+      "primitives": 10,
+      "joints": 75,
+      "max_weight_sum_error": 1.1920928955078125e-07,
+      "clips": [
+        {
+          "name": "Idle",
+          "duration_seconds": 2.0333333015441895
+        },
+        {
+          "name": "Walk",
+          "duration_seconds": 1.600000023841858
+        },
+        {
+          "name": "Attack",
+          "duration_seconds": 0.4000000059604645
+        },
+        {
+          "name": "Hit",
+          "duration_seconds": 0.36666667461395264
+        },
+        {
+          "name": "Death",
+          "duration_seconds": 4.5
+        }
+      ],
+      "structural_checks": "passed"
+    }
+  ]
+}

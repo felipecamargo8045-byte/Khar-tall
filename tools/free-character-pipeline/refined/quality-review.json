@@ -1,0 +1,29 @@
+{
+  "status": "working revision; not final artwork approval",
+  "character": "Soldado",
+  "cost_new_charges_brl": 0,
+  "local_checks": [
+    "GLB structural/accessor validation, finite values, normalized weights, joint bounds",
+    "Three.js 0.169 GLTFLoader parses both variants",
+    "Two independent cloned skeletons; animating one leaves the other unchanged",
+    "Walk/Attack/Hit/Idle transitions; five embedded clips",
+    "Skin recolor preserves metal, gold, skin and enemy materials",
+    "Animated pose bounds for all five clips",
+    "Material registrations removed on troop deletion",
+    "Existing presentation tests and Liliti healing tests pass",
+    "Blender rendered front, walk and attack; video 480x624/24 fps",
+    "Blender rendered rear view; hood and continuous cape reviewed",
+    "Cloud browser: rendered-video fallback metadata 480x624, 2.458333 seconds, readyState 4, no media error; playback reached ended=true; controls for unavailable 3D hidden"
+  ],
+  "integration": "Soldier GLB selected by factory after local-asset preload; full model in shop, LOD in arena; compatible model on load failure",
+  "publication": "prepared in work branch; production not updated",
+  "browser_qa": "User approved Soldier preview in cloud browser on 2026-11-01. Page loaded; WebGL renderer unavailable (GL_VENDOR/GL_RENDERER Disabled). Rendered-video fallback loaded and played to completion with no media error. Interactive 3D/colors could not be visually validated in this environment. Full-game cloud test was separately denied by automatic approval review because approval covered only Soldier preview.",
+  "limits": [
+    "Other seven characters retain their existing models",
+    "No Mobile Legends quality equivalence claimed",
+    "Cape uses authored bone animation, not cloth collision simulation",
+    "Attack cape silhouette still requires artistic refinement",
+    "Actual Android GPU performance and complete browser flow not verified",
+    "Death clip exists in asset; current game removes defeated troops immediately"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "date_local": "2026-11-01",
+  "scope": "Soldado preview, expressly approved by user",
+  "preview_file": "soldado-modelo-3d.html",
+  "inline_bytes": 986842,
+  "webgl": {
+    "result": "unavailable in cloud browser",
+    "evidence": "THREE.WebGLRenderer: Error creating WebGL context; GL_VENDOR = Disabled, GL_RENDERER = Disabled",
+    "interactive_3d_verified": false,
+    "color_controls_visually_verified": false
+  },
+  "fallback": {
+    "result": "passed",
+    "kind": "actual Blender-rendered video of GLB animations",
+    "width": 480,
+    "height": 624,
+    "duration_seconds": 2.458333,
+    "ready_state": 4,
+    "media_error": null,
+    "playback_reached_end": true,
+    "native_video_controls": true,
+    "unavailable_3d_controls_hidden": true
+  },
+  "full_game_cloud_check": {
+    "result": "not performed",
+    "reason": "Automatic approval review rejected the additional full-game payload; explicit approval covered Soldier preview only"
+  },
+  "screenshot": "soldado-previa-navegador.jpg",
+  "production_updated": false,
+  "new_paid_services": false
+}

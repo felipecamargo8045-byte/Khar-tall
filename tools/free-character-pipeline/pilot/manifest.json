@@ -1,0 +1,51 @@
+{
+  "bytes": 12146588,
+  "sha256": "f634f3f137cb09d886e064608650c17fcbc651999cbcb26d2db70fefa142e610",
+  "art_approved": false,
+  "files": [
+    {
+      "name": "Soldado-Piloto/LEIA-ME.txt",
+      "bytes": 1351
+    },
+    {
+      "name": "Soldado-Piloto/soldado-base.glb",
+      "bytes": 3964360
+    },
+    {
+      "name": "Soldado-Piloto/soldado-animated.glb",
+      "bytes": 4476208
+    },
+    {
+      "name": "Soldado-Piloto/soldado-animated.blend",
+      "bytes": 4379018
+    },
+    {
+      "name": "Soldado-Piloto/preview-base.png",
+      "bytes": 599474
+    },
+    {
+      "name": "Soldado-Piloto/preview-animated.png",
+      "bytes": 532160
+    },
+    {
+      "name": "Soldado-Piloto/geometry-provenance.json",
+      "bytes": 534
+    },
+    {
+      "name": "Soldado-Piloto/animation-provenance.json",
+      "bytes": 899
+    },
+    {
+      "name": "Soldado-Piloto/quality-review.json",
+      "bytes": 519
+    },
+    {
+      "name": "Soldado-Piloto/TripoSR-LICENSE.txt",
+      "bytes": 1080
+    },
+    {
+      "name": "Soldado-Piloto/Mesh2Motion-CC0.txt",
+      "bytes": 294
+    }
+  ]
+}

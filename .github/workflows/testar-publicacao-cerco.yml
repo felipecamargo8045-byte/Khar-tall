@@ -42,6 +42,8 @@ jobs:
           node --check cerco-dos-reis/sw.js
           node --check cerco-dos-reis/arena3d.js
           node --check cerco-dos-reis/character-models.js
+          node --check cerco-dos-reis/native-characters.js
+          node cerco-dos-reis/tests/native-characters.mjs
           node --check cerco-dos-reis/arena-layout.js
           node --check cerco-dos-reis/arena-atmosphere.js
           node cerco-dos-reis/tests/presentation.mjs
@@ -65,8 +67,8 @@ jobs:
           assert 'src="./voices.js?v=5"' in html
           assert 'src="./realm-ui.js?v=8"' in html
           assert 'href="./interface.css?v=50"' in html
-          assert 'src="./arena3d.js?v=23"' in html
-          assert 'src="./skin-preview.js?v=2"' in html
+          assert 'src="./arena3d.js?v=24"' in html
+          assert 'src="./skin-preview.js?v=3"' in html
           assert 'href="./skin-preview.css?v=2"' in html
           for name in ['game-ui.css','interface.css','assets/interface-icons.svg','app.js','rewards.js','home.js','arena3d.js','arena-atmosphere.js','arena-layout.js','character-models.js','vendor/three.module.js','realm-ui.js','skin-preview.js','skin-preview.css','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
               assert Path('cerco-dos-reis',name).is_file(),name

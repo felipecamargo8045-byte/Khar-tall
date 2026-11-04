@@ -1,7 +1,8 @@
 /* Provador real de skins: usa os MESMOS modelos, cores de tecido e materiais
    de arena3d.js. Um único WebGL renderer evita oito contextos no Android. */
 import * as THREE from './vendor/three.module.js';
-import {createCharacter,characterProfiles,animateCharacterSurfaces} from './character-models.js?v=3';
+import {createCharacter,characterProfiles,animateCharacterSurfaces} from './character-models.js?v=4';
+import {prepareCharacterModels,animateNativeCharacter} from './native-characters.js?v=1';
 import {animateCloth} from './character-cloth.js?v=2';
 import {characterStudio} from './character-studio.js?v=1';
 
@@ -28,6 +29,7 @@ const skin=()=>skins.find(s=>s.id===chosenSkin)||skins[0];
 const active=()=>!!document.querySelector('.page[data-page="shop"].active')&&!document.hidden;
 function pose(model,clock){
  const data=model.userData;
+ if(animateNativeCharacter(model,{clock}))return;
  if(data.hasWolf){data.head.rotation.x=Math.sin(clock*.8)*.035;data.tail.rotation.y=Math.sin(clock*1.3)*.09;}
  else{
   data.legs.forEach((leg,i)=>{leg.rotation.x=i===0?-.025:.025});
@@ -43,7 +45,7 @@ function getActor(id){
  if(actors.has(id))return actors.get(id);
  const color=skin().color;
  const outfit=(team,base,metalness=.08)=>{const m=mat(team==='ally'?color:base??0x2c78a8,metalness);m.userData.defaultColor=base??0x2c78a8;outfitMaterials.add(m);return m};
- const model=createCharacter(id,'ally',{mat,outfit,outfitMaterials});
+ const model=createCharacter(id,'ally',{mat,outfit,outfitMaterials,modelQuality:'studio'});
  model.scale.setScalar(characterProfiles[id].scale);pose(model,0);
  model.traverse(mesh=>{if(mesh.isMesh){mesh.castShadow=true;mesh.receiveShadow=true}});
  scene.add(model);actors.set(id,model);return model;
@@ -122,8 +124,9 @@ function startLoop(){
  }
  frameRequest=requestAnimationFrame(tick);
 }
-function ensure3D(){
+async function ensure3D(){
  if(available){startLoop();return}if(starting||!active()||!host)return;starting=true;
+ await prepareCharacterModels('studio');
  try{
   renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true,powerPreference:'low-power'});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));renderer.setSize(350,390,false);
@@ -155,5 +158,5 @@ function setup(){
 }
 window.CercoSkinPreview={selectSkin,selectCharacter,status:()=>({skin:chosenSkin,character:chosenCharacter,available,rotating,comparing,
  thumbnails:cards?.querySelectorAll('img.skin-character-3d-shot').length||0,characters:roster.map(c=>c.id),buyId:buy?.dataset.cercoBuy,
- model:actor?{height:new THREE.Box3().setFromObject(actor).getSize(new THREE.Vector3()).y,drapes:actor.userData.drapes?.length||0,hair:actor.userData.hair?.length||0}:null})};
+ model:actor?{native:!!actor.userData.nativeAnimation,height:new THREE.Box3().setFromObject(actor).getSize(new THREE.Vector3()).y,drapes:actor.userData.drapes?.length||0,hair:actor.userData.hair?.length||0}:null})};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup,{once:true});else setup();

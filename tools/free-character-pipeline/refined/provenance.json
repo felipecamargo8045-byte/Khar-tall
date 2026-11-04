@@ -1,0 +1,23 @@
+{
+  "body_source": "Mesh2Motion base.glb, CC0",
+  "native_skinning": true,
+  "body_vertices_source": 7399,
+  "armor": "anatomically fitted modeled plate surfaces, gold trims and heraldic etching",
+  "hood": "tailored continuous cloth geometry with gold seams",
+  "head_source": "MakeHuman base body group only, CC0",
+  "cape": "continuous modeled cloth with nine additional bones",
+  "clips": [
+    "Idle",
+    "Walk",
+    "Attack",
+    "Hit",
+    "Death"
+  ],
+  "paid_api_calls": 0,
+  "quality_status": "local structural and animation checks passed; artistic review and mobile GPU validation pending",
+  "source_checksums": {
+    "base.glb": "05dd7e6b115c5e97259e600c27ef3763a45182b6b2853ddfc287511fd96d315a",
+    "makehuman-base.obj": "8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c",
+    "male-young.target": "70e228ba7164737dae664454394536fc5935fa48d333c1a97d77e2dc6eacc5f5"
+  }
+}
