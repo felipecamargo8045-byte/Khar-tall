@@ -276,7 +276,7 @@ for i,v in enumerate(np.array(points)):
 
 # Native skeleton and actions: no T/A-pose orientation approximation.
 motion={'soldado':('idle-sword','walk','sword-regular-a'),'arqueiro':('bow-pull-hold','walk-stealth','bow-release'),
- 'guardiao':('polearm-idle','walk','spear-thrust'),'colosso':('fighting-idle','walk-large','attack-ground-pound'),
+ 'guardiao':('polearm-idle','walk','spear-thrust'),'colosso':('idle-subtle','walk-large','attack-ground-pound'),
  'batedor':('spell-simple-idle','walk-stealth','spell-simple-shoot'),'rei':('idle-sword','walk','sword-regular-b'),
  'liliti':('spell-simple-idle','walk-female','spell-simple-shoot')}[args.character]
 clips=[('Idle',motion[0]),('Walk',motion[1]),('Attack',motion[2]),('Hit','hit-chest'),('Death','death-a')]

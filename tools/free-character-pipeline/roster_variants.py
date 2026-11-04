@@ -2,12 +2,13 @@
 import math
 import bpy
 from mathutils import Vector
+from mathutils.bvhtree import BVHTree
 
 def apply_variant(s):
  k=s['args'].character;rig=s['rig'];body=s['body'];parts=s['meshes'];make=s['mesh_obj'];trim=s['trim'];mat=s['material'];bind=s['bind']
  steel=s['steel'];gold=s['gold'];edge=s['edge'];wine=s['wine'];leather=s['leather'];skin=s.get('skin',s['face'])
  bronze=mat('Bronze escurecido',(.085,.052,.026),.78,.41);shadow=mat('Viseira e recessos',(.003,.006,.009),.05,.82)
- hair=mat('Cabelo ruivo' if k=='liliti' else 'Cabelo e barba castanhos',(.135,.026,.010) if k=='liliti' else (.038,.015,.008),.02,.58)
+ hair=mat('Cabelo ruivo' if k=='liliti' else 'Cabelo e barba castanhos',(.21,.055,.018) if k=='liliti' else (.038,.015,.008),.02,.58)
  def remove(predicate):
   for o in list(parts):
    if o!=body and predicate(o.name):parts.remove(o);bpy.data.objects.remove(o,do_unlink=True)
@@ -63,7 +64,7 @@ def apply_variant(s):
     s['shell']('Manopla pesada '+side,lambda c,sign=sign:.73<c.x*sign<.85 and 1.38<c.z<1.50,'hand_'+side,.027,steel)
     for row in range(3):trim('Friso da manopla',[(sign*.748,.024+row*.024,1.49),(sign*.79,.024+row*.024,1.505),(sign*.827,.024+row*.024,1.49)],'hand_'+side,.0035,gold)
    make('Tabardo do Colosso',[(-.10,-.16,1.05),(.10,-.16,1.05),(.12,-.18,.56),(0,-.19,.49),(-.12,-.18,.56)],[(0,1,2,3,4)],wine,'pelvis',.003)
-   rig.scale=(1.55,1.35,1.43)
+   rig.scale=(1.95,1.55,1.40)
   else:
    remove(lambda n:n.startswith('SoldadoShield'))
    x,y,z=palm('hand_l')+Vector((-.015,-.06,.10));outline=[(0,.54),(.27,.39),(.25,-.16),(0,-.55),(-.25,-.16),(-.27,.39)]
@@ -120,6 +121,10 @@ def apply_variant(s):
   keep=['Rosto anatomico','Olho ','Iris ','Sobrancelha','Capa continua'];remove(lambda n:not any(n.startswith(x) for x in keep))
   body.data.materials.clear();body.data.materials.append(skin)
   for f in body.data.polygons:f.material_index=0
+  skin.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value=(.61,.40,.34,1)
+  iris=s.get('iris')
+  if iris:
+   shader=iris.node_tree.nodes['Principled BSDF'];shader.inputs['Base Color'].default_value=(.025,.16,.055,1);shader.inputs['Emission Color'].default_value=(.025,.16,.055,1);shader.inputs['Emission Strength'].default_value=.04;iris['power_glow']=True
   loft('Pescoco anatomico',[(1.49,.056,.052,0,0),(1.59,.048,.047,0,0)],skin,'neck_01',28)
   s['shell']('Corpete de Liliti',lambda c:1.045<c.z<1.39 and abs(c.x)<.20,'spine_03',.007,wine,False)
   for sign in [-1,1]:
@@ -127,22 +132,40 @@ def apply_variant(s):
    trim('Alca do corpete',[(sign*.14,-.10,1.37),(sign*.14,-.045,1.48),(sign*.14,.07,1.42)],'spine_03',.006,gold)
    s['shell']('Bracelete de Liliti',lambda c,sign=sign:.48<c.x*sign<.58 and 1.40<c.z<1.49,'lowerarm_'+('l' if sign==1 else 'r'),.009,gold,False)
    s['shell']('Bota bordada de Liliti',lambda c,sign=sign:.03<c.z<.32 and c.x*sign>.02,'calf_'+('l' if sign==1 else 'r'),.005,leather,False)
-  for panel,(a0,a1,bone) in enumerate([(.18,math.pi,'thigh_l'),(math.pi,math.tau-.18,'thigh_r')]):
+  def dress_weights(obj,bone):
+   obj.vertex_groups.clear();hip=obj.vertex_groups.new(name='pelvis');leg=obj.vertex_groups.new(name=bone)
+   for v in obj.data.vertices:w=min(.38,max(0,(1.075-v.co.z)*.4));hip.add([v.index],1-w,'REPLACE');leg.add([v.index],w,'REPLACE')
+  def dress_point(a,t):
+   fold=1+.04*math.sin(a*11)*t;return ((.185+.24*t)*math.sin(a)*fold,-(.18+.15*t)*math.cos(a)*fold+.06*t,1.075-.99*t)
+  for panel,(a0,a1,bone) in enumerate([(.42,math.pi,'thigh_l'),(math.pi,math.tau-.17,'thigh_r')]):
    points=[];faces=[];cols=24;rows=20
    for j in range(rows+1):
     t=j/rows
     for i in range(cols+1):
-     a=a0+(a1-a0)*i/cols;fold=1+.04*math.sin(a*11)*t;points.append(((.166+.23*t)*math.sin(a)*fold,-(.13+.13*t)*math.cos(a)*fold+.10*t,1.075-.99*t))
+     a=a0+(a1-a0)*i/cols;points.append(dress_point(a,t))
    for j in range(rows):
     for i in range(cols):a=j*(cols+1)+i;faces.append((a,a+1,a+cols+2,a+cols+1))
-   gown=make('Saia longa fendida '+str(panel),points,faces,wine,bone,.002);gown.vertex_groups.clear();hip=gown.vertex_groups.new(name='pelvis');leg=gown.vertex_groups.new(name=bone)
-   for i,p in enumerate(points):w=min(.38,max(0,(1.075-p[2])*.4));hip.add([i],1-w,'REPLACE');leg.add([i],w,'REPLACE')
-   for column in [0,cols]:trim('Bordado da saia',[points[j*(cols+1)+column] for j in range(rows+1)],bone,.0025,gold)
-  for j in range(34):
-   a=.6+j*(math.tau-1.2)/33;centers=[];radii=[]
-   for n in range(9):t=n/8;r=.123+.05*t;centers.append((r*math.sin(a)+math.sin(t*math.tau*2+j*.7)*.018,-r*math.cos(a)+.035*t,1.79-.66*t));radii.append(.018*(1-.75*t)+.003)
-   strand('Cacho ruivo de Liliti',centers,radii,hair,'head',10)
-  loft('Cabelo no alto da cabeca',[(1.77,.125,.115,0,.005),(1.81,.115,.105,0,.005),(1.835,.065,.075,0,.005),(1.85,.002,.002,0,.005)],hair,'head',40)
+   gown=make('Saia longa fendida '+str(panel),points,faces,wine,bone,.002);dress_weights(gown,bone)
+   for column in [0,cols]:dress_weights(trim('Bordado da saia',[points[j*(cols+1)+column] for j in range(rows+1)],bone,.0025,gold),bone)
+   angle=.76 if panel==0 else math.tau-.76
+   for row in range(5):
+    motif=[dress_point(angle+.11*math.cos(i*math.tau/24),.14+row*.145+.035*math.sin(i*math.tau/24)) for i in range(25)]
+    dress_weights(trim('Filigrana dourada do vestido',motif,bone,.0014,gold),bone)
+  # Fit the scalp to the actual anatomical head; an approximate ellipsoid
+  # previously exposed the skin through the top of the hair.
+  head=next(o for o in parts if o.name.startswith('Rosto anatomico'))
+  selected=[f for f in head.data.polygons if f.center.z>1.77 or (f.center.z>1.69 and (f.center.y>0 or abs(f.center.x)>.105))]
+  used=sorted({i for f in selected for i in f.vertices});index={v:i for i,v in enumerate(used)}
+  make('Couro cabeludo ajustado',[head.data.vertices[i].co+head.data.vertices[i].normal*.009 for i in used],[tuple(index[i] for i in f.vertices) for f in selected],hair,'head',.002)
+  copper=mat('Luzes naturais do cabelo ruivo',(.32,.115,.04),.01,.62)
+  for j in range(74):
+   a=.62+j*(math.tau-1.24)/73;centers=[];radii=[];length=.64+.07*math.sin(j*.73)
+   for n in range(25):
+    t=n/24;r=.14+.055*t;curl=t*math.tau*(3.1+j%3*.27)+j*.93
+    radial=.012*math.cos(curl)*min(1,t*5);tangent=.014*math.sin(curl)*min(1,t*5)
+    centers.append(((r+radial)*math.sin(a)+tangent*math.cos(a),-(r+radial)*math.cos(a)+tangent*math.sin(a)+.04*t,1.795-length*t))
+    radii.append((.0075+(j%4)*.0008)*(1-.78*t)+.0012)
+   strand('Cacho ruivo natural de Liliti',centers,radii,copper if j%7==0 else hair,'head',7)
   trim('Diadema de Liliti',[(-.12,-.045,1.78),(-.09,-.11,1.77),(0,-.132,1.75),(.09,-.11,1.77),(.12,-.045,1.78)],'head',.0025,gold)
   ball('Joia do diadema',(0,-.135,1.75),(.009,.005,.012),gold,'head');rig.scale=(.94,.94,1.04)
  if k in ['batedor','liliti']:
