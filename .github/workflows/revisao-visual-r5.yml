@@ -1,0 +1,42 @@
+name: Conferir acesso aos modelos atuais para revisão R5
+on:
+  pull_request:
+    branches: [cerco-modelos-sem-custo-20261101]
+    paths:
+      - '.github/workflows/revisao-visual-r5.yml'
+      - 'tools/free-character-pipeline/revisao-r5/**'
+permissions:
+  contents: read
+jobs:
+  conferir-origem:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - name: Conferir os quatro GLBs da revisão publicada sem credenciais
+        env:
+          ORIGEM_MODELOS: https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/personagens/assets/models
+        shell: bash
+        run: |
+          set -euo pipefail
+          pasta_modelos="$(mktemp -d)"
+          export PASTA_MODELOS="$pasta_modelos"
+          for personagem in liliti lobo guardiao arqueiro; do
+            curl --fail --location --silent --show-error --max-redirs 3 --max-time 45 \
+              -H 'Accept: model/gltf-binary' \
+              "$ORIGEM_MODELOS/$personagem-refinado.glb?v=4" \
+              --output "$pasta_modelos/$personagem.glb"
+          done
+          python3 - <<'PY'
+          import hashlib,json,os,struct
+          from pathlib import Path
+          for arquivo in sorted(Path(os.environ['PASTA_MODELOS']).glob('*.glb')):
+              dados=arquivo.read_bytes()
+              if dados[:4]!=b'glTF':
+                  raise SystemExit('A origem não forneceu um GLB. É necessário retomar o ambiente autorizado; não usar outra versão como substituta.')
+              magic,version,length=struct.unpack_from('<III',dados)
+              assert version==2 and length==len(dados)
+              size=struct.unpack_from('<I',dados,12)[0]
+              doc=json.loads(dados[20:20+size])
+              assert [clip['name'] for clip in doc['animations']]==['Idle','Walk','Attack','Hit','Death']
+              print(json.dumps({'modelo':arquivo.stem,'bytes':len(dados),'sha256':hashlib.sha256(dados).hexdigest(),'clipes':5}))
+          PY
