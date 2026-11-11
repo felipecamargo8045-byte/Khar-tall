@@ -1,6 +1,6 @@
 'use strict';
-const CACHE='khar-tall-3.10.0-board3d-link';
-const CORE=['/jogar-3d','/jogo-tabuleiro.js','/pieces3d/visual.js','/pieces3d/presentation.js','/pieces3d/board.css','/skin-catalog.js','/skins.js','/skins.css','/portal','/portal.css','/portal.js','/portal-nav.js','/portal-nav.css','/jogar','/','/index.html','/style.css','/account.css','/online.css','/engine.js','/learning.js','/app.js','/audio.js','/game-ui.js','/account.js','/app-shell.js','/app-shell.css','/online','/online.js','/conta','/auth-client.js','/loja','/store.css','/store-client.js','/instalar','/install.js','/manifest.webmanifest','/icons/icon-192.png','/icons/icon-512.png','/privacidade.html'];
+const CACHE='khar-tall-3.10.0-wolf-audio';
+const CORE=['/jogar-3d','/jogo-tabuleiro.js','/pieces3d/visual.js','/pieces3d/presentation.js','/pieces3d/board.css','/skin-catalog.js','/skins.js','/skins.css','/portal','/portal.css','/portal.js','/portal-nav.js','/portal-nav.css','/jogar','/','/index.html','/style.css','/account.css','/online.css','/engine.js','/learning.js','/app.js','/audio.js','/assets/lobo_mordida_cerco.wav','/game-ui.js','/account.js','/app-shell.js','/app-shell.css','/online','/online.js','/conta','/auth-client.js','/loja','/store.css','/store-client.js','/instalar','/install.js','/manifest.webmanifest','/icons/icon-192.png','/icons/icon-512.png','/privacidade.html'];
 const PATHS=new Set(CORE);
 const isOriginalMedia=path=>/^\/assets\/[\w.-]+$/.test(path);
 const isGameMedia=path=>isOriginalMedia(path)||/^\/pieces3d\/(?:[\w-]+|(?:models|previews|vendor)\/[\w.-]+)\.(?:js|mjs|css|webp|glb)$/.test(path);

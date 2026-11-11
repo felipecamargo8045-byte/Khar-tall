@@ -23,5 +23,5 @@ const blueprint=fs.readFileSync(path.join(root,'render.yaml'),'utf8');
 const plans=[...blueprint.matchAll(/^\s*plan:\s*(\S+)/gm)].map(m=>m[1]);
 assert.ok(plans.length>0&&plans.every(p=>p==='free'),'Zero-cost policy: every provisioned plan must be free.');
 assert.doesNotMatch(blueprint,/^\s*(?:disk|diskSizeGB|scaling):/m,'Zero-cost policy: no paid disk or autoscaling.');
-console.log('Build OK: source syntax, required files, referenced assets and real wolf recording.');
+console.log('Build OK: source syntax, required files and referenced assets.');
 

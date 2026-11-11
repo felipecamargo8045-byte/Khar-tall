@@ -92,7 +92,7 @@ function noteBattleFx(before,action){
  }
  for(let [id,now] of next)if(!before.pieces.has(id)){battleFx.push({x:now.x,y:now.y,kind:'summon',label:'✦'});foundMajor=true;}
  if(newTrap){battleFx.push({x:game.s.flash.x,y:game.s.flash.y,kind:'trap',label:'⚑'});foundMajor=true;}
- // O uivo de queda toca somente na morte por combate, nunca por transformação
+ // O efeito de queda toca somente na morte por combate, nunca por transformação
  // ou sacrifício no Cristal. A vitória mantém prioridade sonora à fanfarra.
  if(action&&!(game.s.phase==='over'&&game.s.winner!==-1)){
   const attacker=before.pieces.get(action.p),wolves=[...before.pieces.values()].filter(p=>p.type==='wolf'&&!next.has(p.id));
@@ -123,7 +123,7 @@ function noteBattleFx(before,action){
    battleFx.push({kind:'guardianSpell',spell:['area','copyArea'].includes(kind)?'area':'line',fromX:attacker.x,fromY:attacker.y,toX:action.x,toY:action.y});
    foundMajor=true;forcedSound='guardian';
   }
-  // Lobo e cópia do Rei compartilham uma única gravação real de uivo.
+  // Lobo e cópia do Rei compartilham o efeito de mordida do Cerco dos Reis.
   // A armadilha que anula o ataque também cancela seu som.
   if(['wolfHit','copyWolfHit'].includes(kind)&&attacker&&!newTrap){
    battleFx.push({kind:'wolfAttack',fromX:attacker.x,fromY:attacker.y,toX:action.x,toY:action.y});
@@ -275,11 +275,11 @@ function showBattleFx(){
   if(fx.kind==='victory'){continue;}
   if(fx.kind==='wolfAttack'){
    playWolfAttackAudio();showCharacterHitFX(layer,'wolfBiteFx',fx.toX,fx.toY);
-   popBattle('🐺 LOBO • UIVO');continue;
+   popBattle('🐺 LOBO • MORDIDA');continue;
   }
   if(fx.kind==='wolfDeath'){
-   if(!fx.silent)playCharacterSfx('wolfHowl',fx.delay);
-   setTimeout(()=>popBattle('🐺 O UIVO DO LOBO CAÍDO'),fx.delay);
+   if(!fx.silent)playCharacterSfx('wolfBite',fx.delay);
+   setTimeout(()=>popBattle('🐺 LOBO CAÍDO'),fx.delay);
    continue;
   }
   if(fx.kind==='kingExplosion'){
@@ -676,8 +676,8 @@ function openCodexDetail(type){
   {label:'◇ Ouvir ataque mágico em linha',desc:'Uma ventania mágica forte, com ar em movimento e um eco discreto.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playCharacterSfx('guardianLine');}},
   {label:'♜ Ouvir queda do Guardião original',desc:'Uma trombeta de aviso anuncia a perda do Guardião original.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playRoyalMoment('guardian');}}
  ]:type==='wolf'?[
-  {label:'🐺 Ouvir ataque · uivo real',desc:'Um trecho curto de uma gravação real de lobos uivando.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playWolfAttackAudio();}},
-  {label:'☾ Ouvir morte · uivo real',desc:'O mesmo uivo natural quando o Lobo é eliminado em combate.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playCharacterSfx('wolfHowl');}}
+  {label:'🐺 Ouvir ataque',desc:'A mordida do Lobo do Cerco dos Reis.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playWolfAttackAudio();}},
+  {label:'☾ Ouvir queda',desc:'O efeito tocado quando o Lobo é eliminado em combate.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playCharacterSfx('wolfBite');}}
  ]:type==='colossus'?[
   {label:'◈ Ouvir Investida • 3 passos',desc:'Três pisadas rápidas, pesadas e estrondosas. Não toca na movimentação comum.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playColossusChargeAudio(3);}},
   {label:'⛰ Ouvir Esmagamento • solo quebrando',desc:'Um golpe brutal no chão seguido por fissuras, fragmentos e pedras se partindo.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playColossusSmashAudio(120);}}
@@ -689,7 +689,7 @@ function openCodexDetail(type){
   {label:'⚡ Testar 1º ataque · raios',desc:'Raio caindo com trovão; no alvo, chiado eletrostático.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playScoutAttackAudio('blue',520);}},
   {label:'🔥 Testar 2º ataque · fogo',desc:'Rajada de chamas seguida por explosão no alvo.',fn:()=>{if(!prefs.sound){prefs.sound=true;savePrefs();applyPrefs();}playScoutAttackAudio('red',520);}}
  ]:[];
- showModal({title:NAMES[type]+' • Compêndio',intro:type==='king'?'Ataque próprio explosivo, sons de habilidades copiadas e momentos decisivos.' :type==='guardian'?'Ataques de magia ancestral e trompeta de queda do Guardião original.':type==='scout'?'Arte original, regras e prévia dos efeitos sonoros do Batedor.':type==='archer'?'Arte, alcance de duas casas e teste de som da flecha.':type==='soldier'?'Arte do Aprendiz Soldado, ataque em cruz e som do corte de espada.':type==='colossus'?'Arte e prévias dos passos da Investida e do Esmagamento do Colosso.':type==='wolf'?'Uivo de uma gravação real, compartilhado por todos os Lobos e pela cópia do Rei.':'Arte original e regras de combate da unidade.',visual:'detail',unit:type,choices:samples,footer:[{label:'Voltar à galeria',fn:openCodex},{label:'Fechar',fn:dismissModal}]});
+ showModal({title:NAMES[type]+' • Compêndio',intro:type==='king'?'Ataque próprio explosivo, sons de habilidades copiadas e momentos decisivos.' :type==='guardian'?'Ataques de magia ancestral e trompeta de queda do Guardião original.':type==='scout'?'Arte original, regras e prévia dos efeitos sonoros do Batedor.':type==='archer'?'Arte, alcance de duas casas e teste de som da flecha.':type==='soldier'?'Arte do Aprendiz Soldado, ataque em cruz e som do corte de espada.':type==='colossus'?'Arte e prévias dos passos da Investida e do Esmagamento do Colosso.':type==='wolf'?'Som de mordida do Cerco dos Reis, usado também na cópia do Rei.':'Arte original e regras de combate da unidade.',visual:'detail',unit:type,choices:samples,footer:[{label:'Voltar à galeria',fn:openCodex},{label:'Fechar',fn:dismissModal}]});
 }
 function openScoutAudioDemo(){
  primeScoutWavs();

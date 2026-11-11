@@ -5,7 +5,7 @@ function request(route,headers={},method='GET'){
  return new Promise((resolve,reject)=>{const req=http.request(origin+route,{headers,method},res=>{const chunks=[];res.on('data',c=>chunks.push(c));res.on('end',()=>resolve({status:res.statusCode,headers:res.headers,body:Buffer.concat(chunks)}));});req.on('error',reject);req.end();});
 }
 (async()=>{
- for(const file of ['app.js','assets/lobo_uivo_real.wav','assets/guardiao_ventania_magica.wav']){
+ for(const file of ['app.js','assets/lobo_mordida_cerco.wav','assets/guardiao_ventania_magica.wav']){
   const expected=fs.readFileSync(path.join(__dirname,'..',file)),route='/'+file;
   const plain=await request(route,{'Accept-Encoding':'identity'});
   assert.equal(plain.status,200);assert.deepEqual(plain.body,expected);assert.ok(plain.headers.etag);

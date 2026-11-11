@@ -1,4 +1,12 @@
 {
+  "lobo_mordida_cerco.wav": {
+    "credit": "Victoryno — Cerco dos Reis",
+    "source": "game/battle-audio.mjs?v=34, BattleAudio.play('wolf')",
+    "sha256": "91ba0333f157f5307fa419fd19e7e6fcc569de931f4bbdc0127f89a89aa4d94a",
+    "source_sha256": "e677f8216971c3d5311085de933ca23402f6f1bfe3887cd45cf06623341bcd64",
+    "duration_seconds": 0.18003125,
+    "processing": "Original deterministic waveform and 90 ms fade, exported as mono PCM16 at 32000 Hz. The player applies the source cue gain of 0.68."
+  },
   "lobo_uivo_real.wav": {
     "sha256": "5eb820d6ab74a1746d48987c48be6bb80f65aee8e3339030e6a2842445af25bb",
     "credit": "U.S. Fish and Wildlife Service — Wolf howls",

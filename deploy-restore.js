@@ -25,7 +25,7 @@ while(offset+30<=archive.length&&archive.readUInt32LE(offset)===0x04034b50){
 if(count<35)throw Error('Incomplete asset bundle');
 console.log('Verified image/audio assets:',count);
 
-// New licensed recordings are versioned separately from the immutable bundle.
+// Additional battle sounds are versioned separately from the immutable bundle.
 const audioDir=path.join(__dirname,'audio-assets');
 const audioManifest=JSON.parse(fs.readFileSync(path.join(audioDir,'manifest.json'),'utf8'));
 for(const [name,meta] of Object.entries(audioManifest)){

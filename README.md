@@ -35,7 +35,7 @@ Cada turno e preparação dura 60 segundos. O relógio é validado pelo servidor
 
 Contas são opcionais. A recuperação exige o código apresentado no cadastro. Salas são retidas por 30 dias; a exclusão de conta encerra suas sessões e desvincula suas salas. O modo convidado conserva acesso por cookie durante 14 dias. A instância gratuita pode hibernar; a primeira abertura pode demorar enquanto ela desperta.
 
-O rito de início foi removido. Todos os Lobos usam a mesma gravação real de uivo. O motor de combate não foi modificado nesta revisão de publicação.
+O rito de início foi removido.
 
 ## Verificação
 
@@ -43,9 +43,9 @@ O rito de início foi removido. Todos os Lobos usam a mesma gravação real de u
 
 ## Áudio revisado
 
-Os 14 WAVs que não receberam substituição são preservados byte por byte. `audio.js` fornece o mesmo carregamento, volume relativo e agendamento nos modos local/IA e online. Todos os Lobos, dos dois lados, usam um único trecho de uivo real no ataque e na morte por combate; a cópia do Rei usa o mesmo arquivo. Rosnado, mordida e o antigo uivo sintetizado deixaram a lista de sons ativos. Uma ação que inclui ataque de Lobo e queda de outro Lobo toca apenas um uivo.
+`audio.js` usa o mesmo carregamento, volume relativo e agendamento nos modos local/IA e online. O som de mordida do Cerco dos Reis toca no ataque e na queda em combate dos Lobos dos dois lados. A cópia da habilidade pelo Rei usa o mesmo som. Um ataque de Lobo que elimina outro Lobo toca o efeito uma vez.
 
-O uivo vem de **Wolf howls**, do U.S. Fish and Wildlife Service, disponível no [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Wolf_howls.ogg) como domínio público (PD-USGov-FWS). O trecho de 20,05 a 23,65 segundos mantém o tom e a velocidade originais, com corte, filtro leve, volume e fades. `audio-assets/manifest.json` registra origem, tratamento e checksum; o WAV em Base64 é restaurado e verificado no build, sem depender do site externo em produção.
+O WAV da mordida foi exportado da rotina de áudio do Cerco dos Reis, com a mesma duração, forma de onda e fade. `audio-assets/manifest.json` registra a origem e o checksum. A compilação restaura e verifica o WAV, que fica disponível no cache da PWA.
 
 Na versão 3.4.3, o impacto da espada usa uma batida curta e nítida entre lâminas, o ataque em linha do Guardião usa ventania com eco discreto e a queda do Guardião original usa uma trombeta militar de aviso. Esses três sons são compartilhados entre jogo local/IA e online, incluindo habilidades copiadas.
 
