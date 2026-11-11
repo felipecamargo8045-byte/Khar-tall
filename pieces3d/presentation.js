@@ -29,6 +29,7 @@
       const preference = localStorage.getItem(preferenceKey);
       if (preference === '3d' || preference === 'classic') enabled = preference === '3d';
     } catch {}
+    if (window.location?.pathname === '/jogar-3d') enabled = true;
     let scene = null;
     let loading = false;
     let unavailable = false;

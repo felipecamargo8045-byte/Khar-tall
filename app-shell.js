@@ -1,4 +1,4 @@
-(()=>{'use strict';const native=/KharTallAndroid\//.test(navigator.userAgent),path=location.pathname;
+(()=>{'use strict';const native=/KharTallAndroid\//.test(navigator.userAgent),path=location.pathname==='/jogar-3d'?'/jogar':location.pathname;
 if(native){
  const css=document.createElement('link');css.rel='stylesheet';css.href='/app-shell.css';document.head.append(css);
  const installed=navigator.userAgent.match(/KharTallAndroid\/(\d+\.\d+\.\d+)/)?.[1];

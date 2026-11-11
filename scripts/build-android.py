@@ -43,7 +43,7 @@ with tempfile.TemporaryDirectory(prefix='kt-android-') as tmp:
  files=['skin-catalog.js','skins.js','skins.css','portal-nav.js','portal-nav.css','index.html','online.html','conta.html','privacidade.html','loja.html','painel-loja.html','instalar.html','style.css','online.css','account.css','store.css','app-shell.css','audio.js','game-ui.js','engine.js','learning.js','app.js','online.js','auth-client.js','account.js','app-shell.js','store-client.js','store-admin.js','install.js','manifest.webmanifest']
  routes={}
  for file in files:shutil.copyfile(root/file,web/file);routes['/'+file]=file
- for url,file in {'/jogar':'index.html','/':'index.html','/online':'online.html','/conta':'conta.html','/loja':'loja.html','/painel-loja':'painel-loja.html','/instalar':'instalar.html'}.items():routes[url]=file
+ for url,file in {'/jogar':'index.html','/jogar-3d':'index.html','/jogo-tabuleiro.js':'app.js','/pieces3d/visual.js':'pieces3d/presentation.js','/':'index.html','/online':'online.html','/conta':'conta.html','/loja':'loja.html','/painel-loja':'painel-loja.html','/instalar':'instalar.html'}.items():routes[url]=file
  for folder in ['assets','icons']:
   (web/folder).mkdir()
   for file in sorted((root/folder).iterdir()):
