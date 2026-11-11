@@ -8,7 +8,7 @@ const STORE='khar-tall-v2-save';
 const TOKEN_ART={king:'assets/token_king.webp',guardian:'assets/token_guardian.webp',colossus:'assets/token_colossus.webp',wolf:'assets/token_wolf.webp',scout:'assets/token_scout.webp',soldier:'assets/token_soldier.webp',archer:'assets/token_archer.webp'};
 const PREF_STORE='khar-tall-v21-pref';
 let prefs={sound:true,illustrated:true};try{prefs={...prefs,...JSON.parse(localStorage.getItem(PREF_STORE)||'{}')};}catch(e){}
-let battleFx=[],toastTimeout=null;
+let battleFx=[],toastTimeout=null,boardStrike=null;
 const audioPlayer=KharTallAudio.create({enabled:prefs.sound});
 const gameUI=KharTallUI.create({audio:audioPlayer,onConfirm:()=>{if(!isInputBlocked()&&game.s.phase==='setup')finishSetup();}});
 function primeScoutWavs(){return audioPlayer.preload();}
@@ -75,7 +75,12 @@ function realImpactDelay(action,attacker){
  return 210;
 }
 function captureBattle(){return {pieces:new Map(game.s.pieces.map(p=>[p.id,{...p,mark:p.mark?{...p.mark}:null,freeze:p.freeze?{...p.freeze}:null}])),flash:game.s.flash?{...game.s.flash}:null};}
-function noteBattleFx(before,action){let next=new Map(game.s.pieces.map(p=>[p.id,p]));let foundMajor=false,forcedSound='';
+function noteBattleFx(before,action){
+ const attacker=before.pieces.get(action?.p);
+ const blocked=attacker&&['wolfHit','copyWolfHit'].includes(action.kind)&&game.s.flash&&
+  game.s.flash.x===action.x&&game.s.flash.y===action.y&&game.piece(attacker.id)?.freeze;
+ boardStrike=blocked?null:window.KharTallBoardView?.attack(action?.p,action?.kind,action?.x,action?.y);
+ let next=new Map(game.s.pieces.map(p=>[p.id,p]));let foundMajor=false,forcedSound='';
  const royalMoment=detectRoyalMoment(before,next,action);
  const newTrap=!!game.s.flash&&(!before.flash||before.flash.x!==game.s.flash.x||before.flash.y!==game.s.flash.y);
  for(let [id,prev] of before.pieces){let curr=next.get(id);
@@ -330,7 +335,9 @@ function unitLocations(){let m=new Map();document.querySelectorAll('#board .unit
 function animateMovement(prev){if(!prev?.size||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
  requestAnimationFrame(()=>{const board=el('board'),layer=board?.querySelector('.fxLayer');if(!board||!layer)return;
   const box=board.getBoundingClientRect();
-  board.querySelectorAll('.sq .unit[data-pid]').forEach(node=>{let from=prev.get(node.dataset.pid);if(!from)return;
+  board.querySelectorAll('.sq .unit[data-pid]').forEach(node=>{
+   if(node.classList.contains('mini-live')){nextMoveSpeeds.delete(node.dataset.pid);return;}
+   let from=prev.get(node.dataset.pid);if(!from)return;
    let to=node.getBoundingClientRect(),dx=from.left-to.left,dy=from.top-to.top;
    if(Math.abs(dx)+Math.abs(dy)<3||Math.abs(dx)>1200||Math.abs(dy)>1200)return;
    let ghost=node.cloneNode(true);ghost.removeAttribute('data-pid');ghost.style.position='absolute';ghost.style.width=to.width+'px';ghost.style.height=to.height+'px';
@@ -349,6 +356,8 @@ const el=id=>document.getElementById(id);
 const htmlEscape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 let game=new KharTall(),selectedId=null,inspectedId=null,orientation='up',modal=null,picker=null,veil=false,secsLeft=60,clockEnd=0,aiTimer=null,flashUntil=0,areaChosen=[],viewSide=null,learning=null,learningBackup=null;
 const one=(tag,text,cls)=>{const x=document.createElement(tag);x.textContent=text;if(cls)x.className=cls;return x;};
+const boardView=window.KharTallBoardView?.create(el('board'),el('boardVisual'),renderBoard);
+let renderedGame=null;
 function save(){if(learning)return;try{localStorage.setItem(STORE,JSON.stringify(game.snapshot()));}catch(e){}}
 function clearSelection(){selectedId=null;orientation='up';picker=null;areaChosen=[];}
 function isUntimed(){return !!learning||game.s.untimed===true;}
@@ -829,7 +838,7 @@ function currentHighlights(){const hints=new Map(),chosen=[];
    add(o.x,o.y,k);
  }}return {hints,chosen};
 }
-function renderBoard(){const root=el('board'),s=game.s;const {hints,chosen}=currentHighlights(),fragment=document.createDocumentFragment(),reach=new Set(learning&&!learning.done&&!picker&&selectedId?KharTallLearning.range(game,learning.index,learning.step,orientation).map(c=>c.join(',')):[]);
+function renderBoard(){const root=el('board'),s=game.s,visiblePieces=[];const {hints,chosen}=currentHighlights(),fragment=document.createDocumentFragment(),reach=new Set(learning&&!learning.done&&!picker&&selectedId?KharTallLearning.range(game,learning.index,learning.step,orientation).map(c=>c.join(',')):[]);
  for(let y=0;y<10;y++)for(let x=0;x<10;x++){
   const p=game.pieceAt(x,y),f=game.field(x,y),myTrap=s.traps.find(t=>t.x===x&&t.y===y&&t.side===visibleTrapSide());
   const sq=one('button','',`sq ${(x+y)%2?'dark':'light'} ${f?.kind||''} ${f?(game.fieldReady(f)?'activeField':'coolingField'):''} ${hints.get(`${x},${y}`)||''} ${selectedId===p?.id?'selected':''} ${inspectedId===p?.id?'inspected':''} ${chosen.includes(`${x},${y}`)?'targetChosen':''}`);
@@ -843,16 +852,24 @@ function renderBoard(){const root=el('board'),s=game.s;const {hints,chosen}=curr
   if(s.phase==='setup'&&!p&&!f){sq.classList.add('setupSquare');}
   if(p){const item=one('div','',`unit ${p.side===RED?'red':'blue'} ${p.original?'original':''} ${p.mark?'marked':''} ${(p.stun||p.freeze||p.rest)?'disabled':''}`);
    item.dataset.pid=String(p.id);
-   let portrait=one('span','', 'tokenPortrait'),img=one('img','', 'tokenArt');img.src=TOKEN_ART[p.type];img.alt='';img.draggable=false;window.KharTallSkins?.paintPiece(img,p.type,window.KharTallAppearance?.forSide(p.side));window.KharTallSkins?.decorate(item,window.KharTallAppearance?.forSide(p.side));portrait.append(img);item.append(portrait);
+   const skin=window.KharTallAppearance?.forSide(p.side);
+   const portrait=one('span','', 'tokenPortrait'),img=one('img','', 'tokenArt');
+   img.src=TOKEN_ART[p.type];img.alt='';img.draggable=false;
+   window.KharTallSkins?.paintPiece(img,p.type,skin);window.KharTallSkins?.decorate(item,skin);
+   portrait.append(img);item.append(portrait);
    item.append(one('span',SYMBOL[p.type],'glyph'));item.append(one('span',SHORT[p.type],'unitName'));
    if(p.type==='king')item.append(one('span',`${p.hp}♥`,'life'));
    if(p.original)item.append(one('span','◆','originalBadge'));
    if(p.stun||p.freeze||p.rest)item.append(one('span',p.freeze?'⚑':p.stun?'❄':'⌛','effect'));
+   const figure=boardView?.piece(p,item,skin);
+   if(figure)visiblePieces.push(figure);
    sq.append(item);
   }
   sq.onclick=()=>boardClick(x,y);fragment.append(sq);
  }
  root.replaceChildren(fragment);let fxLayer=one('div','', 'fxLayer');fxLayer.setAttribute('aria-hidden','true');root.append(fxLayer);
+ boardView?.paint(visiblePieces,boardStrike,renderedGame!==game);
+ renderedGame=game;boardStrike=null;
 }
 function renderTeams(){const s=game.s;
  for(let side of [RED,BLUE]){let k=game.king(side),original=game.guardian(side),count=s.pieces.filter(p=>p.side===side).length;

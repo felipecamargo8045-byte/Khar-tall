@@ -1,7 +1,7 @@
 /* Khar Tall V3: cliente multiplayer sem dados sigilosos do adversário. */
 (()=>{'use strict';
 const $=id=>document.getElementById(id), TYPES=KharTall.CONSTANTS, colors=['Rubros','Azuis'];
-let room=null,game=null,selected=null,orientation='up',picker=null,lastRevision=-1,events=null,loading=false,connected=false,soundOn=localStorage.getItem('kt-online-sound')==='yes',deadline=0,clockOffset=0,toastHandle=0,lastEvent=null;
+let room=null,game=null,selected=null,orientation='up',picker=null,lastRevision=-1,events=null,loading=false,connected=false,soundOn=localStorage.getItem('kt-online-sound')==='yes',deadline=0,clockOffset=0,toastHandle=0,lastEvent=null,boardStrike=null;
 const aliases={king:'Rei',guardian:'Guardião',colossus:'Colosso',wolf:'Lobo',scout:'Batedor',soldier:'Aprendiz Soldado',archer:'Aprendiz Arqueiro'};
 const tokens={king:'token_king.webp',guardian:'token_guardian.webp',colossus:'token_colossus.webp',wolf:'token_wolf.webp',scout:'token_scout.webp',soldier:'token_soldier.webp',archer:'token_archer.webp'};
 const guides={
@@ -15,6 +15,7 @@ const guides={
 };
 const audioPlayer=KharTallAudio.create({enabled:soundOn});
 const gameUI=KharTallUI.create({audio:audioPlayer,onConfirm:()=>{if(actionAllowed()&&game.s.phase==='setup')submit('ready');}});
+const boardView=window.KharTallBoardView?.create($('onlineBoard'),$('boardVisual'),paint);
 if(soundOn)audioPlayer.preload();
 function setSound(){soundOn=!soundOn;localStorage.setItem('kt-online-sound',soundOn?'yes':'no');audioPlayer.setEnabled(soundOn);$('sound').textContent=soundOn?'♫ Som ligado':'♫ Som desligado';$('sound').setAttribute('aria-pressed',String(soundOn));if(soundOn){audioPlayer.preload();audioPlayer.ui('confirm');}}
 $('sound').onclick=setSound;$('sound').textContent=soundOn?'♫ Som ligado':'♫ Som desligado';$('sound').setAttribute('aria-pressed',String(soundOn));
@@ -37,7 +38,15 @@ async function submit(op,input={}){if(!room||loading)return;loading=true;renderP
 function renderPreparation(){gameUI.preparation({active:!!game&&game.s.phase==='setup'&&!!myTurn(),key:room?.code+':'+game?.s.setupSide,count:game?.s.traps.filter(t=>t.side===room.side).length||0,side:colors[room?.side]||'',busy:loading});}
 function soundEvent(e){if(!e||!room||!soundOn)return;const result=KharTallAudio.plan(e);audioPlayer.sequence(result.cues);if(result.utility)audioPlayer.utility(result.utility);}
 async function refresh(){if(!room)return;try{const r=await fetch('/api/online/rooms/'+room.code,{credentials:'same-origin',cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Sala inacessível.');if(d.revision<lastRevision)return;connected=true;
-  const old=lastEvent,priorRevision=lastRevision; if(d.revision!==lastRevision){lastRevision=d.revision;lastEvent=d.lastEvent; if(priorRevision>=0){soundEvent(d.lastEvent,old);}}clockOffset=d.serverMs-Date.now();deadline=d.deadlineMs||0;room=d;window.KharTallAppearance?.setPlayers(d.players);game=KharTall.restore(d.state);$('connection').textContent='Conectado · você controla os '+colors[d.side]+(d.hasOpponent?' · dois jogadores na sala':' · esperando adversário');$('roomTitle').textContent='Sala '+d.code;
+  if(d.revision!==lastRevision){
+   const first=lastRevision<0;
+   lastRevision=d.revision;lastEvent=d.lastEvent;
+   if(!first){
+    soundEvent(lastEvent);
+    if(!lastEvent?.attackBlocked)boardStrike=window.KharTallBoardView?.attack(lastEvent?.actorId,lastEvent?.actionKind,lastEvent?.target?.x,lastEvent?.target?.y);
+   }
+  }
+  clockOffset=d.serverMs-Date.now();deadline=d.deadlineMs||0;room=d;window.KharTallAppearance?.setPlayers(d.players);game=KharTall.restore(d.state);$('connection').textContent='Conectado · você controla os '+colors[d.side]+(d.hasOpponent?' · dois jogadores na sala':' · esperando adversário');$('roomTitle').textContent='Sala '+d.code;
   $('lobby').hidden=true;$('match').hidden=false;paint();
  }catch(e){connected=false;$('connection').textContent='Sem conexão — tentando reconectar';toast(errMsg(e));}}
 function listen(){if(!room)return;events?.close();events=new EventSource('/api/online/rooms/'+room.code+'/events');events.addEventListener('update',refresh);events.addEventListener('open',()=>{connected=true;refresh();});events.onerror=()=>{connected=false;$('connection').textContent='Conexão instável — reconectando automaticamente';};}
@@ -104,19 +113,26 @@ function paintActions(){const root=$('actionsPanel');root.replaceChildren();cons
   for(const [d,label] of [['up','V ↑'],['down','V ↓'],['left','V ←'],['right','V →']])dir.append(button(label,()=>{orientation=d;paint();},orientation===d));
  }
 }
-function paint(){if(!game||!room)return;let s=game.s,$board=$('onlineBoard');$board.replaceChildren();const hints=activeHints();
+function paint(){if(!game||!room)return;let s=game.s,$board=$('onlineBoard');const visiblePieces=[];$board.replaceChildren();const hints=activeHints();
  for(let y=0;y<10;y++)for(let x=0;x<10;x++){
   const cell=document.createElement('button');cell.type='button';cell.className='sq '+((x+y)%2?'dark':'light');cell.setAttribute('role','gridcell');cell.setAttribute('aria-label',`Casa ${'ABCDEFGHIJ'[x]}${10-y}`);
   const field=game.field(x,y);if(field){cell.classList.add(field.kind==='heal'?'heal':'crystal');let ico=document.createElement('span');ico.className='tileMark';ico.textContent=field.kind==='heal'?'✚':'◆';cell.append(ico);}
   if(s.traps.some(t=>t.side===room.side&&t.x===x&&t.y===y))cell.classList.add('ownTrap');
-  const p=pieceAt(x,y);if(p){const div=document.createElement('span');div.className='online-unit '+(p.side===0?'red':'blue')+(p.original?' original':'');const img=document.createElement('img');img.src='/assets/'+tokens[p.type];img.alt=aliases[p.type];window.KharTallSkins?.paintPiece(img,p.type,window.KharTallAppearance?.forSide(p.side));window.KharTallSkins?.decorate(div,window.KharTallAppearance?.forSide(p.side));div.append(img);
+  const p=pieceAt(x,y);if(p){const div=document.createElement('span');div.className='online-unit '+(p.side===0?'red':'blue')+(p.original?' original':'');const skin=window.KharTallAppearance?.forSide(p.side);
+   const img=document.createElement('img');img.src='/assets/'+tokens[p.type];img.alt=aliases[p.type];
+   window.KharTallSkins?.paintPiece(img,p.type,skin);window.KharTallSkins?.decorate(div,skin);div.append(img);
    if(p.original){const badge=document.createElement('span');badge.className='originalBadge';badge.textContent='◆';div.append(badge);}
    if(p.type==='king'){const h=document.createElement('span');h.className='mini';h.textContent='♥'+p.hp;div.append(h);}
    if(p.mark||p.stun||p.freeze){const st=document.createElement('span');st.className='mark';st.textContent=p.freeze?'⚑':p.stun?'❄':'✧';div.append(st);}
+   const figure=boardView?.piece(p,div,skin);
+   if(figure)visiblePieces.push(figure);
+   cell.setAttribute('aria-label',cell.getAttribute('aria-label')+' · '+aliases[p.type]+' · '+colors[p.side]);
    cell.append(div);
   }
   if(hints.has(x+','+y))cell.classList.add(hints.get(x+','+y));if(p?.id===selected)cell.classList.add('isSelected');cell.onclick=()=>boardClick(x,y);$board.append(cell);
  }
+ boardView?.paint(visiblePieces,boardStrike,false);
+ boardStrike=null;
  $('redStatus').textContent='RUBROS · '+s.pieces.filter(p=>p.side===0).length+' peças'+(s.side===0&&s.phase==='play'?' • TURNO':'');
  $('blueStatus').textContent='AZUIS · '+s.pieces.filter(p=>p.side===1).length+' peças'+(s.side===1&&s.phase==='play'?' • TURNO':'');
  for(const side of [0,1]){const root=$(side===0?'redStatus':'blueStatus');window.KharTallSkins?.decorate(root,window.KharTallAppearance?.forSide(side));const username=window.KharTallAppearance?.username(side);if(username){const label=document.createElement('span');label.className='kt-player-name';label.textContent=username;root.append(label);}}

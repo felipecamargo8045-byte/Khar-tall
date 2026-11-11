@@ -1,0 +1,87 @@
+.board-bottom .board-visual-toggle {
+  min-height: 34px;
+  padding: 4px 9px;
+  font-size: inherit;
+}
+
+.kt-board-3d .miniature-canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 4;
+  pointer-events: none;
+}
+.kt-board-3d .miniature-canvas[hidden] { display: none; }
+
+.kt-board-3d :is(.kt-miniature:not(.kt-skin-colors), .kt-miniature.mini-live) {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  outline: none;
+  box-shadow: none !important;
+  opacity: 1;
+}
+.kt-board-3d :is(.kt-miniature:not(.kt-skin-colors), .kt-miniature.mini-live)::before,
+.kt-board-3d :is(.kt-miniature:not(.kt-skin-colors), .kt-miniature.mini-live)::after,
+.kt-board-3d :is(.kt-miniature:not(.kt-skin-colors), .kt-miniature.mini-live) > :is(.tokenPortrait, .glyph, img) {
+  display: none;
+}
+.kt-board-3d .kt-miniature .unitName {
+  position: absolute;
+  bottom: 1px;
+  z-index: 3;
+  border-radius: 2px;
+  padding: 0 2px;
+  background: #151214c4;
+}
+.kt-board-3d .kt-miniature :is(.life, .mini) { top: 0; right: 1px; min-width: 0; }
+.kt-board-3d .kt-miniature :is(.effect, .mark) { bottom: 0; right: 1px; }
+.kt-board-3d .kt-miniature .originalBadge { top: 0; left: 1px; }
+
+.kt-board-3d .mini-figure {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+  --plinth-rim: #bc6a55;
+  --plinth-stone: #591e2b;
+}
+.kt-board-3d .blue .mini-figure { --plinth-rim: #70bde5; --plinth-stone: #203f6a; }
+.kt-board-3d .original .mini-figure { --plinth-rim: #f2ce7e; }
+.kt-board-3d .marked .mini-figure { --plinth-rim: #e4a7ec; }
+.kt-board-3d .kt-skin-colors .mini-figure { --plinth-stone: var(--skin-color); }
+.kt-board-3d .kt-skin-colors:not(.mini-live) .mini-figure { display: none; }
+.kt-board-3d .mini-figure::before {
+  content: '';
+  position: absolute;
+  left: 11%;
+  right: 11%;
+  bottom: 12%;
+  height: 24%;
+  border-radius: 50%;
+  border: 1px solid var(--plinth-rim);
+  background: radial-gradient(ellipse at 47% 20%, #ffffff34, transparent 68%), var(--plinth-stone);
+  box-shadow: 0 2px 0 #130d0d, 0 3px 5px #000a, inset 0 0 0 1px #180e0e;
+}
+.kt-board-3d .mini-figure img {
+  position: absolute;
+  left: 50%;
+  bottom: 20%;
+  width: auto;
+  height: 67%;
+  max-width: 85%;
+  transform: translateX(-50%);
+  object-fit: contain;
+  object-position: center bottom;
+  border-radius: 0;
+  filter: drop-shadow(1px 2px 2px #130b0cbb);
+}
+.kt-board-3d .mini-colossus img { height: 83%; max-width: 93%; bottom: 15%; }
+.kt-board-3d .mini-king img { height: 74%; }
+.kt-board-3d .mini-wolf img { width: 83%; height: 61%; bottom: 17%; }
+.kt-board-3d .disabled .mini-figure img { filter: saturate(.55) drop-shadow(1px 2px 2px #130b0cbb); }
+.kt-board-3d .mini-live .mini-figure img { visibility: hidden; }

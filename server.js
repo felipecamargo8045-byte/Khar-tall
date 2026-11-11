@@ -58,7 +58,7 @@ function snapshotAfter(game,before,action,side){const next=game.s;
  }
  const trapTriggered=before.traps.some(t=>!next.traps.some(q=>q.side===t.side&&q.x===t.x&&q.y===t.y));
  const attackBlocked=['wolfHit','copyWolfHit'].includes(kind)&&trapTriggered&&before.traps.some(t=>t.side!==side&&t.x===action.input.x&&t.y===action.input.y);
- return {kind:action.op,actionKind:kind,actorSide:side,pieceType:actor?.type||null,tech,target:{x:action.input?.x,y:action.input?.y},
+ return {kind:action.op,actionKind:kind,actorId:actor?.id??null,actorSide:side,pieceType:actor?.type||null,tech,target:{x:action.input?.x,y:action.input?.y},
   lost:lost.map(p=>({type:p.type,side:p.side,original:p.original})),wounded,winner:next.phase==='over'?next.winner:null,phase:next.phase,at:Date.now(),
   impactDelay,trapTriggered,attackBlocked,chargeSteps:actor&&after?Math.max(Math.abs(after.x-actor.x),Math.abs(after.y-actor.y)):0};
 }
@@ -79,7 +79,8 @@ for(const [route,file]of Object.entries({'/portal':'portal.html','/portal/':'por
 // Public APK distribution for the separate card game, using the existing server.
 STATIC.set('/baixar/cerco-dos-reis.apk','downloads/cerco-dos-reis-1.0.0.apk');
 STATIC.set('/baixar/cerco-dos-reis.json','downloads/cerco-dos-reis-1.0.0.json');
-const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.webp':'image/webp','.png':'image/png','.wav':'audio/wav','.ico':'image/x-icon','.json':'application/json; charset=utf-8','.webmanifest':'application/manifest+json; charset=utf-8','.apk':'application/vnd.android.package-archive'};
+for(const file of require('./pieces3d/files.json'))STATIC.set('/'+file,file);
+const TYPES={'.mjs':'text/javascript; charset=utf-8','.glb':'model/gltf-binary','.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.webp':'image/webp','.png':'image/png','.wav':'audio/wav','.ico':'image/x-icon','.json':'application/json; charset=utf-8','.webmanifest':'application/manifest+json; charset=utf-8','.apk':'application/vnd.android.package-archive'};
 function serve(req,res,pathname){let rel=STATIC.get(pathname);if(!rel&&/^\/assets\/[A-Za-z0-9_.-]+$/.test(pathname))rel=pathname.slice(1);if(!rel)fail(404,'Página não encontrada.');
  const file=path.join(ROOT,rel);if(!file.startsWith(ROOT+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile())fail(404,'Arquivo não encontrado.');
  const typ=TYPES[path.extname(file)]||'application/octet-stream';if(pathname==='/baixar/cerco-dos-reis.apk')res.setHeader('Content-Disposition','attachment; filename="cerco-dos-reis-1.0.0.apk"');head(res);sendStatic(req,res,file,rel,typ);}
