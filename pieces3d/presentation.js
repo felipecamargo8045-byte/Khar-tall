@@ -23,7 +23,8 @@
 
   function create(board, toggle, repaint) {
     if (!board || !toggle) return null;
-    let enabled = /KharTallAndroid\//.test(navigator.userAgent);
+    const installedWebApp = window.matchMedia?.('(display-mode: standalone)').matches;
+    let enabled = /KharTallAndroid\//.test(navigator.userAgent) || !!installedWebApp;
     try {
       const preference = localStorage.getItem(preferenceKey);
       if (preference === '3d' || preference === 'classic') enabled = preference === '3d';
