@@ -1,0 +1,59 @@
+name: Validar e empacotar Cerco dos Reis
+on:
+  push:
+    branches: [cerco-dos-reis-migracao-2026-10]
+    paths:
+      - '.github/workflows/validar-cerco.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  preparar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cerco-dos-reis-migracao-2026-10
+      - name: Verificar sintaxe e integridade
+        run: |
+          node --check cerco-dos-reis/app.js
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('cerco-dos-reis')
+          html=(p/'index.html').read_text()
+          js=(p/'app.js').read_text()
+          css=(p/'theme.css').read_text()
+          assert '<canvas id="arena"' in html
+          assert 'id="cardGrid"' in html
+          assert 'object-fit:contain' in css
+          assert 'portrait_lilith_ruiva.webp' in js
+          assert (p/'origem-apk/assets/portrait_lilith_ruiva.webp').exists()
+          assert (p/'origem-apk/assets/portrait_rei.webp').exists()
+          assert (p/'origem-apk/assets/emblem.svg').exists()
+          assert 'localStorage' in js
+          print('VALIDAÇÃO OK: arena, cartas, molduras, imagens, progresso local')
+          PY
+      - name: Criar ZIP independente do jogo de tabuleiro
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          p=Path('cerco-dos-reis')
+          dest=p/'cerco-dos-reis-migracao.zip'
+          with ZipFile(dest,'w',ZIP_DEFLATED,compresslevel=6) as arc:
+              for f in sorted(p.rglob('*')):
+                  if f.is_file() and f != dest and not f.name.startswith('.'):
+                      arc.write(f, str(f.relative_to(p)))
+          print('ZIP', dest, 'BYTES',dest.stat().st_size)
+          PY
+      - name: Versionar ZIP da migração
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cerco-dos-reis/cerco-dos-reis-migracao.zip
+          if ! git diff --cached --quiet; then
+            git commit -m "build(cerco): pacote completo com artes recuperadas e treino jogavel"
+            git push origin HEAD:cerco-dos-reis-migracao-2026-10
+          else
+            echo "Pacote ja atualizado"
+          fi

@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1424">
+<meta name="description" content="Cerco dos Reis, batalha de cartas do universo Khar Thal — Victoryno">
+<title>Cerco dos Reis · Khar Thal</title>
+<link rel="icon" href="./origem-apk/assets/emblem.svg">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="stylesheet" href="./game-ui.css?v=18">
+<link rel="stylesheet" href="./interface.css?v=50">
+<link rel="stylesheet" href="./card-art.css?v=6">
+<link rel="stylesheet" href="./skin-preview.css?v=2">
+</head>
+<body>
+<div class="aurora" aria-hidden="true"></div>
+<header class="game-header">
+  <div class="brand-mark"><img src="./origem-apk/assets/emblem.svg" alt=""><div><strong>CERCO DOS REIS</strong><small>KHAR THAL · ECOS DA CHAMA</small></div></div>
+  <div class="header-right"><div class="sound-controls" aria-label="Som do jogo"><button type="button" id="voiceToggle" class="sound-button voice-button" aria-label="Silenciar falas dos personagens" aria-pressed="true" title="Silenciar falas">🗣</button><button type="button" id="soundToggle" class="sound-button" aria-label="Silenciar sons do jogo" aria-pressed="true" title="Alternar sons"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#volume"></use></svg></button><label class="sr-only" for="soundVolume">Volume dos efeitos sonoros</label><input id="soundVolume" type="range" min="0" max="100" value="55" aria-label="Volume dos efeitos sonoros"></div><div class="mode-token"><span class="live-dot"></span> MODO TREINO</div><button type="button" id="installApp" class="install-btn" aria-label="Instalar aplicativo">⇩</button></div>
+</header>
+<nav id="navigation" class="game-nav" aria-label="Seções do jogo">
+ <button class="active" data-view="home"><span class="nav-ico"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#home"></use></svg></span><span>Início</span></button>
+ <button data-view="arena"><span class="nav-ico"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#swords"></use></svg></span><span>Arena</span></button>
+ <button data-view="cards"><span class="nav-ico"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#cards"></use></svg></span><span>Cartas</span></button>
+ <button data-view="shop"><span class="nav-ico"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#forge"></use></svg></span><span>Loja</span></button>
+ <button data-view="clans"><span class="nav-ico"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#shield"></use></svg></span><span>Clãs</span></button>
+ <button data-view="profile"><span class="nav-ico"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#crown"></use></svg></span><span>Perfil</span></button>
+</nav>
+<main class="game-body">
+
+<section class="page active home-page" data-page="home" aria-label="Lobby do comandante">
+ <div class="lobby-shell">
+  <div class="lobby-hud" role="group" aria-label="Seu comandante e recursos">
+   <button class="lobby-player" type="button" id="lobbyProfile" aria-label="Abrir perfil do comandante">
+    <span class="lobby-avatar"><img src="./origem-apk/assets/portrait_rei.webp" alt=""></span>
+    <span class="lobby-player-details">
+     <strong>VICTORYNO</strong>
+     <span class="lobby-level">NÍVEL <b id="homeLevel">1</b> <small id="homeXp">0 / 100 XP</small></span>
+     <span class="home-xp-track"><i id="homeXpFill"></i></span>
+    </span>
+   </button>
+   <div class="lobby-hud-right">
+    <div class="lobby-stat-currency" title="Vitórias em batalhas">
+     <svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#trophy"></use></svg><strong id="homeWins">0</strong><small class="lobby-stat-caption">VITÓRIAS</small>
+    </div>
+    <button id="lobbySound" type="button" class="lobby-hud-icon" aria-label="Alternar som do jogo"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#volume"></use></svg></button>
+    <button id="lobbyVoice" type="button" class="lobby-hud-icon" aria-label="Alternar vozes dos personagens">🗣</button>
+   </div>
+  </div>
+  <div class="lobby-world" aria-label="Salão de batalha dos dois reinos">
+   <div class="lobby-stars" aria-hidden="true"></div>
+   <div class="lobby-castle-silhouette lobby-castle-left" aria-hidden="true"></div>
+   <div class="lobby-castle-silhouette lobby-castle-right" aria-hidden="true"></div>
+   <img class="lobby-actor lobby-actor-left" src="./origem-apk/assets/portrait_rei.webp" alt="" aria-hidden="true">
+   <img class="lobby-actor lobby-actor-right" src="./origem-apk/assets/portrait_lilith_ruiva.webp" alt="" aria-hidden="true">
+   <div class="lobby-world-glow" aria-hidden="true"></div>
+   <div class="lobby-game-title">
+    <span class="lobby-crest"><img src="./origem-apk/assets/emblem.svg" alt=""></span>
+    <span class="lobby-eyebrow">DOIS REINOS · UM DESTINO</span>
+    <h1>CERCO <span>DOS REIS</span></h1>
+    <span class="lobby-subtitle">KHAR TALL</span>
+   </div>
+   <div class="lobby-play-wrap">
+    <span class="lobby-match-mode"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#swords"></use></svg> BATALHA CONTRA IA</span>
+    <button id="homePlay" class="lobby-play" type="button"><span class="lobby-play-icon"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#swords"></use></svg></span><strong>BATALHAR</strong><span class="lobby-play-arrow"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#arrow"></use></svg></span></button>
+    <span class="lobby-play-caption">1 Pergaminho de Liliti · +75 XP por vitória</span>
+   </div>
+  </div>
+  <div class="lobby-quick-actions" aria-label="Presentes e progressão">
+   <button type="button" class="lobby-quick-item lobby-quick-scroll" id="lobbyOpenScroll">
+    <span class="lobby-quick-art" aria-hidden="true"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#scroll"></use></svg></span><span class="lobby-quick-body"><strong>PERGAMINHOS</strong><small>Recompensas de vitória</small></span>
+    <span class="lobby-quick-counter" id="homeScrolls">0</span>
+   </button>
+   <button type="button" class="lobby-quick-item lobby-quick-forge" id="lobbyOpenInventory">
+    <span class="lobby-quick-art" aria-hidden="true"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#forge"></use></svg></span><span class="lobby-quick-body"><strong>FORJA</strong><small>Materiais e evolução</small></span>
+    <span class="lobby-quick-arrow" aria-hidden="true">›</span>
+   </button>
+  </div>
+  <div class="lobby-lowerbar">
+   <button id="lobbyProgress" type="button"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#crown"></use></svg> PROGRESSO <strong id="homeRecord">0 derrotas</strong></button>
+   <button id="lobbySkins" type="button"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#palette"></use></svg> SKINS <small>COMPRAR</small></button>
+   <button id="lobbyHistory" type="button"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#medal"></use></svg> CONQUISTAS <strong id="homeOpened">0</strong></button>
+  </div>
+  <p class="lobby-local-note">Treinamento local · conquistas salvas neste aparelho · sem cobranças</p>
+ </div>
+ <div class="lobby-drawer" id="lobbyDrawer" hidden role="dialog" aria-modal="true" aria-labelledby="lobbyDrawerTitle">
+  <div class="lobby-drawer-top">
+   <span id="lobbyDrawerTitle">PRESENTES DO REINO</span>
+   <button type="button" class="lobby-drawer-close" id="lobbyDrawerClose" aria-label="Voltar para o lobby">✕</button>
+  </div>
+  <div class="lobby-drawer-content" id="lobbyDrawerContent">
+   <section class="home-scroll-panel lobby-drawer-panel" id="lobbyScrollPanel" aria-labelledby="scrollsTitle">
+    <div class="home-panel-heading"><div><span class="overline">PRESENTES DA VITÓRIA</span><h2 id="scrollsTitle">Pergaminhos de Liliti</h2></div><span class="home-scroll-chip">☽ RECOMPENSAS</span></div>
+    <div class="home-scroll-stage">
+     <div class="scroll-art" aria-hidden="true"><span>☽</span><b>✦</b></div>
+     <div class="scroll-info"><strong id="homeScrollStock">0 pergaminhos disponíveis</strong><small>Abra um pergaminho para descobrir seu prêmio.</small>
+      <button id="homeOpenScroll" class="gold" type="button" disabled>✦ ABRIR PERGAMINHO</button>
+     </div>
+    </div>
+    <div id="homeRewardMessage" class="home-reward-message" role="status" aria-live="polite">Vença uma batalha para conquistar o primeiro pergaminho.</div>
+    <div id="lobbyRewardBurst" class="lobby-reward-burst" hidden aria-live="polite"><strong id="lobbyRewardPrize">Prêmio encontrado!</strong></div>
+    <details class="home-rates"><summary>Chances dos presentes</summary><div class="home-drop-list">
+      <div>⚒ Ferro Ancestral ×15 <b>50%</b></div>
+      <div>✦ Fragmentos de Eco ×8 <b>26%</b></div>
+      <div>◆ Cristais da Chama ×3 <b>17%</b></div>
+      <div>☽ Essência de Liliti ×1 <b>7%</b></div>
+    </div><p>Probabilidades do treinamento local sem assinatura. Com assinatura mensal verificada: 5% de chance de encontrar 2 fragmentos de uma skin (demais chances ajustadas proporcionalmente); sem assinatura, apenas materiais. Skins completas podem ser compradas separadamente por todos. A verificação de assinatura ainda não foi conectada ao Cerco.</p></details>
+   </section>
+   <section class="home-inventory lobby-drawer-panel" id="lobbyInventoryPanel" aria-labelledby="inventoryTitle">
+    <div class="home-panel-heading"><div><span class="overline">FORJA DOS DOIS REINOS</span><h2 id="inventoryTitle">Materiais</h2></div></div>
+    <div class="home-materials" id="homeMaterials" aria-label="Materiais acumulados"></div>
+    <p class="home-forge-note">Ganhe materiais em Pergaminhos de Liliti e use-os para aprimorar suas cartas.</p>
+    <button type="button" class="secondary-btn" id="homeToForge">EVOLUIR CARTAS ⚒</button>
+    <button type="button" class="secondary-btn" id="homeToCards">VER BARALHO ▣</button>
+   </section>
+   <section class="home-premium lobby-drawer-panel" id="lobbySkinsPanel" aria-labelledby="premiumTitle">
+    <div class="home-panel-heading"><div><span class="overline">COLEÇÃO DE APARÊNCIAS</span><h2 id="premiumTitle">Skins dos Reinos</h2></div><span class="home-premium-tag">R$ 2,50 CADA</span></div>
+    <div id="homePremiumSkins" class="home-skin-grid"></div>
+    <p class="home-premium-warning">Qualquer jogador pode comprar skins avulsas na loja exclusiva do Cerco dos Reis. Só assinantes mensais poderão encontrar <strong>fragmentos de skins nos Pergaminhos de Liliti</strong> (10 fragmentos para desbloquear). Compras avulsas são confirmadas no servidor. Fragmentos por assinatura dependem de verificação da assinatura.</p>
+   </section>
+   <section class="home-history lobby-drawer-panel" id="lobbyHistoryPanel" aria-labelledby="historyTitle">
+    <div class="home-panel-heading"><div><span class="overline">CRÔNICAS DO COMANDANTE</span><h2 id="historyTitle">Conquistas</h2></div></div>
+    <div id="homeHistory" class="home-history-list" aria-live="polite"></div>
+   </section>
+  </div>
+ </div>
+</section>
+
+<section class="page" data-page="arena">
+ <div class="arena-topline"><div><small class="overline">BATALHA DE CASTELOS <span id="sceneBadge" class="scene-badge">CARREGANDO 3D</span></small><h1>ARENA REAL</h1></div><div class="rank-seal">⚔<span> IA </span></div></div>
+ <div class="arena-layout">
+  <aside class="commander panel">
+   <img class="commander-art" src="./origem-apk/assets/portrait_rei.webp" alt="Rei">
+   <div class="commander-body"><div class="overline">COMANDANTE</div><h2>Victoryno</h2><small>Treinamento local</small><div class="statline"><span>Vitórias de treino</span><b id="wins">0</b></div><label class="difficulty-label" for="difficulty">Dificuldade</label><select id="difficulty"><option value="easy">Recruta · Fácil</option><option value="normal" selected>Comandante · Normal</option><option value="hard">Conquistador · Difícil</option></select></div>
+  </aside>
+  <div class="battle" id="battleStage" role="region" aria-label="Batalha em tela inteira">
+   <div class="scoreboard">
+    <button id="battleBack" class="battle-hud-button battle-back" type="button" aria-label="Voltar à tela inicial">‹</button>
+    <div class="side enemy-side"><span class="side-emblem">♜</span><div><small>RUBRO</small><strong id="enemyCastle">2.600 PV</strong></div></div>
+    <div class="clock"><small>O CERCO</small><b id="timer">03:00</b></div>
+    <div class="side ally-side"><div><small>AZUL</small><strong id="allyCastle">2.600 PV</strong></div><span class="side-emblem">♜</span></div>
+    <button id="battlePause" class="battle-hud-button battle-pause" type="button" aria-label="Pausar batalha">Ⅱ</button>
+    <button id="battleVoice" class="battle-hud-button battle-voice" type="button" aria-label="Silenciar falas dos personagens" aria-pressed="true" title="Silenciar falas">🗣</button>
+    <button id="battleSound" class="battle-hud-button battle-mute" type="button" aria-label="Silenciar efeitos sonoros"><svg class="ui-icon" aria-hidden="true"><use href="./assets/interface-icons.svg#volume"></use></svg></button>
+   </div>
+   <div class="canvas-box">
+    <div id="arena3d" hidden aria-label="Campo tridimensional com personagens e castelos modelados"></div>
+    <canvas id="arena" width="420" height="560" tabindex="0" aria-label="Arena de batalha: escolha uma carta e toque em qualquer ponto para invocar; os personagens definem o caminho conforme os inimigos"></canvas>
+    <div id="overlay" class="overlay">
+     <div class="overlay-glyph"><img src="./origem-apk/assets/emblem.svg" alt=""></div>
+     <span class="overline">DOIS REINOS · UM TRONO</span><h2>O cerco começa.</h2><p>Comande suas cartas, proteja as torres e conquiste o castelo inimigo.</p>
+     <button class="gold" id="start">⚔ ENTRAR NA BATALHA</button>
+     <small>Treinamento local • 3 minutos</small>
+    </div>
+   </div>
+   <div class="hand-box"><div class="hand-head"><b>SEU BARALHO <span>4 CARTAS</span></b><span id="energy">6 / 10 MANA</span></div><div class="energybar mana-blocks" id="manaBlocks" role="progressbar" aria-label="Mana disponível" aria-valuemin="0" aria-valuemax="10" aria-valuenow="6"></div>
+     <div id="hand" class="hand"></div>
+     <div class="battle-buttons"><button id="pause" disabled>Ⅱ Pausar</button><button id="reset">↻ Reiniciar</button><button data-view="cards">▣ Arsenal</button></div>
+   </div>
+  </div>
+  <aside class="info panel">
+   <div class="overline">CARTA SELECIONADA</div>
+   <img id="selectedPortrait" class="portrait" src="./origem-apk/assets/portrait_lobo.webp" alt="Carta selecionada">
+   <h2 id="selectedName">Lobo</h2><p id="selectedDesc"></p><div id="selectedStats" class="stats"></div>
+   <div class="ability"><strong id="selectedSkill"></strong><p id="selectedSkillDesc"></p></div>
+   <div class="battle-log-title">✦ ECOS DA BATALHA</div><div id="battleLog" class="battle-log" aria-live="polite">A chama está viva.</div>
+  </aside>
+ </div>
+</section>
+<section class="page" data-page="cards">
+ <div class="view-heading"><div class="overline">COLEÇÃO DO REINO</div><h1>ARSENAL DE CARTAS</h1><p>Arte completa, habilidades e evolução de cada personagem.</p></div>
+ <div class="catalog-layout"><aside class="panel card-list"><div class="overline">SUAS CARTAS</div><div id="cardGrid" class="card-grid"></div></aside>
+ <article class="panel detail"><div class="detail-row">
+  <div class="art-outer" id="artOuter"><div class="art-inner"><img id="fullArt" src="" alt="Personagem completo"></div></div>
+  <div class="facts"><div class="overline" id="cardType">TROPA</div><h2 id="cardName">Lobo</h2><p id="cardText"></p><div id="cardBadges" class="badges"></div><button id="cardOffer" class="card-offer" data-cerco-buy="card_liliti" type="button" hidden>OBTER LILITI · R$ 10,00</button><div id="cardStats" class="stats"></div>
+   <div class="ability"><b id="cardSkill"></b><span id="cardSkillText"></span></div>
+   <div class="exp-label"><span>PROGRESSO</span><b id="xpLabel">0 / 100 XP</b></div><div class="exp-bar"><div id="xpFill"></div></div>
+  </div>
+ </div><div class="tabs" id="cardTabs"><button class="active" data-tab="tech">Ficha técnica</button><button data-tab="evolution">Evolução</button><button data-tab="progress">Progresso</button></div><div id="tabContent" class="tab-content"></div></article></div>
+</section>
+<section class="page" data-page="shop">
+ <div class="view-heading"><div class="overline">FORJA DO REINO</div><h1>ARSENAL REAL</h1><p>Compre skins individualmente sem assinatura. Assinantes também podem ganhar fragmentos nos Pergaminhos de Liliti.</p></div>
+ <div class="shop-feature"><div class="shop-feature-art"><img src="./origem-apk/assets/khar_tall_guardiao.png" alt="Guardião de Khar Thal"></div><div><div class="overline">SUA FORJA</div><h2>O poder está no detalhe.</h2><p>Skins estão disponíveis para compra avulsa por qualquer jogador. Os fragmentos de skins dentro dos Pergaminhos de Liliti são exclusivos dos assinantes mensais.</p><div class="forge-note">Loja exclusiva do Cerco dos Reis. Skins compradas aqui pertencem à sua coleção do Cerco e são liberadas após a confirmação do pagamento.</div></div></div>
+ <div class="shop-title-row"><h3>SKINS À VENDA</h3><span id="shopStatus">COMPRA AVULSA · R$ 2,50</span></div>
+ <div id="shopGrid" class="shop-grid"></div>
+ <section class="skin-preview-panel" id="skinPreviewPanel" aria-labelledby="skinPreviewName">
+  <div class="skin-preview-heading"><div><span class="overline">PROVADOR DE SKINS</span><h3 id="skinPreviewName">Verde Claro</h3><p>Escolha a cor, gire o personagem e veja sua roupa antes de comprar.</p></div><div class="skin-preview-selected"><strong>SKIN DO EXÉRCITO</strong><small>Roupa, nome e cor do seu time</small></div></div>
+  <div class="skin-preview-layout"><div class="skin-preview-focus"><div class="skin-preview-stage"><div id="skinPreview3D" class="skin-preview-3d" aria-label="Modelo tridimensional do personagem com a skin selecionada"></div><img id="skinPreviewFallback" class="skin-preview-fallback" src="./origem-apk/assets/portrait_aprendiz_soldado.webp" alt="Arte original do Soldado" hidden></div><div class="skin-preview-controls"><button id="skinPreviewRotate" type="button" aria-pressed="false">Girar modelo</button><button id="skinPreviewCompare" type="button" aria-pressed="false">Comparar com a arte</button></div><div class="skin-preview-name"><b id="skinPreviewCharacter">Soldado</b><small id="skinPreviewStatus">Carregando prévias dos modelos 3D…</small></div></div><div id="skinCharacterGrid" class="skin-character-grid" role="group" aria-label="Ver skin em cada personagem"></div></div>
+  <div class="skin-preview-purchase"><div><strong class="skin-preview-price" id="skinPreviewPrice">R$ 2,50 · compra única</strong><p>Você pode testar gratuitamente a aparência. A compra só começa ao tocar no botão.</p></div><button id="skinPreviewBuy" class="skin-preview-buy" type="button" data-cerco-buy="skin_green_light">COMPRAR SKIN · R$ 2,50</button></div>
+ </section>
+ <div class="shop-title-row"><h3>CARTAS EM DESTAQUE</h3><span>TOQUE PARA EXAMINAR</span></div>
+ <div id="featuredCards" class="featured-grid"></div>
+</section>
+<section class="page" data-page="clans">
+ <div class="view-heading"><div class="overline">SALÃO DAS ALIANÇAS</div><h1>SEU CLÃ</h1><p>Erga um estandarte no seu reino.</p></div>
+ <div class="clan-interface">
+  <div class="clan-crest-panel panel"><div class="clan-crest"><img src="./origem-apk/assets/emblem.svg" alt="Brasão de Khar Thal"></div><span class="overline">INSÍGNIA DO COMANDANTE</span><h2 id="clanDisplayName">REINO SEM CLÃ</h2><p id="clanDisplayMotto">Todo reino nasce de uma decisão.</p><span class="clan-status-chip">♜ ESTANDARTE LOCAL</span></div>
+  <div class="clan-console panel"><div class="clan-console-header"><span class="overline">SALÃO DO CLÃ</span><span class="online-pill">◉ MODO LOCAL</span></div>
+   <div id="clanCreator" class="clan-creator"><p>Monte seu estandarte de treino, salvo somente neste dispositivo.</p><label for="clanName">NOME DO CLÃ</label><input type="text" id="clanName" maxlength="25" placeholder="Nome do clã" autocomplete="off"><label for="clanMotto">LEMA</label><input type="text" id="clanMotto" maxlength="55" placeholder="Nosso reino, nossa história" autocomplete="off"><button class="gold" id="foundClan" type="button">♜ FUNDAR CLÃ LOCAL</button></div>
+   <div id="clanView" class="clan-view" hidden><div class="clan-stats"><div><small>MEMBROS</small><strong>01 / 30</strong></div><div><small>INSÍGNIA</small><strong>REINO</strong></div><div><small>STATUS</small><strong>LOCAL</strong></div></div><div class="clan-member"><img src="./origem-apk/assets/portrait_rei.webp" alt="Rei"><div><strong>Victoryno</strong><small>♛ Fundador</small></div><span>ATIVO</span></div><div class="clan-actions"><button type="button" id="editClan" class="secondary-btn">Editar estandarte</button></div></div>
+   <div class="clan-chat-stub"><b>♜ MURAL DO CLÃ</b><p>Mensagens e outros jogadores aparecerão aqui quando o servidor multiplayer estiver conectado.</p><div class="clan-chat-disabled">✦ CHAT ONLINE NÃO CONECTADO</div></div>
+  </div>
+ </div>
+</section>
+<section class="page" data-page="profile">
+ <div class="view-heading"><div class="overline">SALA DO COMANDANTE</div><h1>SEU PERFIL</h1><p>Conquistas locais de treinamento, independentes da conta original.</p></div>
+ <div class="profile-layout">
+  <div class="profile-identity panel"><div class="profile-banner"><img src="./origem-apk/assets/portrait_rei.webp" alt="Rei de Khar Thal"></div><div class="profile-content"><div class="overline">COMANDANTE</div><h2>VICTORYNO</h2><span class="vip-flag">♛ 10 CARTAS DISPONÍVEIS</span></div></div>
+  <div class="profile-records"><div class="profile-kpis"><div class="profile-kpi"><small>VITÓRIAS NO TREINO</small><strong id="profileWins">0</strong><span>Contra IA</span></div><div class="profile-kpi"><small>ARSENAL</small><strong id="profileCardCount">10 / 11</strong><span>Cartas de treino</span></div><div class="profile-kpi"><small>CARTAS EVOLUÍDAS</small><strong id="profileEvolved">0</strong><span>Progresso local</span></div></div>
+   <div class="profile-inventory panel"><div class="overline">INVENTÁRIO DO COMANDANTE</div><h3>Cartas em destaque</h3><div id="profileCards" class="profile-cards"></div></div>
+   <div class="profile-actions"><span class="profile-safety">♛ Compras do Cerco ficam na sua coleção. O progresso de treinamento continua salvo neste aparelho.</span><button id="clearProgress" class="secondary-btn" type="button">Limpar progresso do treino</button></div>
+  </div>
+ </div>
+</section>
+</main>
+<script src="./khar-audio-original.js?v=2" defer></script>
+<script src="./sfx.js?v=8" defer></script>
+<script src="./voices.js?v=5" defer></script>
+<script src="./rewards.js?v=3" defer></script>
+<script src="./home.js?v=6" defer></script>
+<script src="./arena-layout.js?v=2" defer></script>
+<script src="./card-art.js?v=7" defer></script>
+<script src="./liliti-healing.js?v=1" defer></script>
+<script src="./app.js?v=30" defer></script>
+<script src="./realm-ui.js?v=8" defer></script>
+<script src="./store.js?v=3" defer></script>
+<script type="module" src="./arena3d.js?v=23"></script>
+<script type="module" src="./skin-preview.js?v=2"></script>
+</body>
+</html>

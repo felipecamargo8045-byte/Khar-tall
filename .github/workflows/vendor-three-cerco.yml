@@ -1,0 +1,31 @@
+name: Preparar biblioteca 3D local sem CDN
+on:
+  push:
+    branches: [cerco-dos-reis-migracao-2026-10]
+    paths: ['.github/workflows/vendor-three-cerco.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  vendor:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cerco-dos-reis-migracao-2026-10
+      - name: Obter engine 3D open-source com versão fixa
+        run: |
+          npm install --prefix /tmp/cerco-three --no-audit --no-fund --no-save three@0.169.0
+          mkdir -p cerco-dos-reis/vendor
+          cp /tmp/cerco-three/node_modules/three/build/three.module.js cerco-dos-reis/vendor/three.module.js
+          test -s cerco-dos-reis/vendor/three.module.js
+          echo "Biblioteca 3D local, sem dependencia de CDN"
+      - name: Versionar engine no mesmo repositório
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cerco-dos-reis/vendor/three.module.js
+          if ! git diff --cached --quiet; then
+             git commit -m "assets(cerco): incluir biblioteca Three.js local para WebGL 3D"
+             git push origin HEAD:cerco-dos-reis-migracao-2026-10
+          fi

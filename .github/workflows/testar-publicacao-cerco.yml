@@ -1,0 +1,860 @@
+name: Testar as seis telas do Cerco dos Reis
+on:
+  push:
+    branches: [cerco-dos-reis-migracao-2026-10, cerco-liliti-cartas-20261031, cerco-modelos-profissionais-20261101]
+    paths:
+      - 'cerco-dos-reis/**'
+      - 'cerco-commerce/**'
+      - '.github/workflows/testar-publicacao-cerco.yml'
+  workflow_dispatch:
+jobs:
+  testar-jogo:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cerco_test
+          POSTGRES_PASSWORD: cerco_test_local
+          POSTGRES_DB: cerco_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U cerco_test -d cerco_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Validar scripts e estrutura das telas
+        run: |
+          set -e
+          node --check cerco-dos-reis/app.js
+          node --check cerco-dos-reis/rewards.js
+          node --check cerco-dos-reis/home.js
+          node --check cerco-dos-reis/sfx.js
+          node --check cerco-dos-reis/voices.js
+          node --check cerco-dos-reis/khar-audio-original.js
+          node --check cerco-dos-reis/restore-original-audio.js
+          node --check cerco-dos-reis/realm-ui.js
+          node --check cerco-dos-reis/skin-preview.js
+          node --check cerco-dos-reis/character-surfaces.js
+          node --check cerco-dos-reis/character-studio.js
+          node --check cerco-dos-reis/sw.js
+          node --check cerco-dos-reis/arena3d.js
+          node --check cerco-dos-reis/character-models.js
+          node --check cerco-dos-reis/arena-layout.js
+          node --check cerco-dos-reis/arena-atmosphere.js
+          node cerco-dos-reis/tests/presentation.mjs
+          node --check cerco-dos-reis/character-cloth.js
+          node --check cerco-dos-reis/store.js
+          node --check cerco-dos-reis/card-art.js
+          node cerco-dos-reis/tests/liliti.mjs
+          node --check cerco-commerce/server.cjs
+          node --test cerco-commerce/tests/provider.cjs
+          python3 - <<'PY'
+          from pathlib import Path
+          html=Path('cerco-dos-reis/index.html').read_text()
+          for tab in ['home','arena','cards','shop','clans','profile']:
+              assert 'data-page="'+tab+'"' in html, tab
+          for name in ['#shopGrid','#featuredCards','#cardGrid','#arena']:
+              assert name[1:] in html, name
+          assert 'https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/' not in html
+          assert 'src="./app.js?v=30"' in html
+          assert 'src="./rewards.js?v=3"' in html
+          assert 'src="./home.js?v=6"' in html
+          assert 'src="./voices.js?v=5"' in html
+          assert 'src="./realm-ui.js?v=8"' in html
+          assert 'href="./interface.css?v=50"' in html
+          assert 'src="./arena3d.js?v=23"' in html
+          assert 'src="./skin-preview.js?v=2"' in html
+          assert 'href="./skin-preview.css?v=2"' in html
+          for name in ['game-ui.css','interface.css','assets/interface-icons.svg','app.js','rewards.js','home.js','arena3d.js','arena-atmosphere.js','arena-layout.js','character-models.js','vendor/three.module.js','realm-ui.js','skin-preview.js','skin-preview.css','sw.js','sfx.js','voices.js','khar-audio-original.js','original-audio/sha256.json']:
+              assert Path('cerco-dos-reis',name).is_file(),name
+          print('Seis ambientes, recompensas, arquivos, navegacao e scripts: OK')
+          PY
+      - name: Testar compra, entrega e reembolso da Liliti em banco isolado
+        env:
+          CERCO_TEST_DATABASE_URL: postgres://cerco_test:cerco_test_local@127.0.0.1:5432/cerco_test
+        run: |
+          npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+          node --test cerco-commerce/tests/integration.cjs
+      - name: Instalar navegador de teste
+        run: |
+          npm install --prefix /tmp/cerco-tests --no-audit --no-fund playwright@1.56.1
+          /tmp/cerco-tests/node_modules/.bin/playwright install chromium
+      - name: Verificar navegacao, cartas, loja, arena e perfil no Android
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8080 --bind 127.0.0.1 --directory cerco-dos-reis > /tmp/cerco-http.log 2>&1 &
+          node <<'JS'
+          const { chromium } = require('/tmp/cerco-tests/node_modules/playwright');
+          const assert = require('node:assert/strict');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox','--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+            const problems=[];
+            const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
+            // Motor TTS de teste: valida falas, perfis e controles independentemente
+            // das vozes instaladas no runner. No Android real o sistema usa as vozes pt-BR do aparelho.
+            await page.addInitScript(()=>{
+              const realFetch=window.fetch.bind(window);
+              window.fetch=(input,options)=>{
+                const url=typeof input==='string'?input:input?.url;
+                if(url==='https://cerco-dos-reis-loja.onrender.com/collection')return Promise.resolve(new Response(JSON.stringify({exists:true,owned:[],cards:window.__testOwnedCards||[],equipped:null,orders:[]}),{status:200,headers:{'Content-Type':'application/json'}}));
+                return realFetch(input,options);
+              };
+              const synth={
+                speaking:false,pending:false,cancel(){this.speaking=false},
+                getVoices(){return [{name:'Português Brasil 1',lang:'pt-BR',default:true},
+                  {name:'Português Brasil 2',lang:'pt-BR',default:false}]},
+                addEventListener(){},
+                speak(utt){(window.__cercoVoiceCalls??=[]).push({
+                  text:utt.text,pitch:utt.pitch,rate:utt.rate,lang:utt.lang,voice:utt.voice?.name||''
+                });}
+              };
+              try{Object.defineProperty(window,'speechSynthesis',{configurable:true,value:synth})}catch{window.speechSynthesis=synth}
+              window.SpeechSynthesisUtterance=class SpeechSynthesisUtterance{constructor(text){this.text=text}};
+            });
+            page.on('pageerror',e=>problems.push('js: '+String(e)));
+            page.on('console',message=>{
+              if(message.type()==='error'&&/THREE\.|WebGL|shader/i.test(message.text()))problems.push('3D: '+message.text());
+            });
+            await page.goto('http://127.0.0.1:8080/?test=1',{waitUntil:'networkidle'});
+            await page.waitForFunction(()=>window.Cerco3D?.ready===true,{timeout:20000});
+            const threeInfo=await page.evaluate(()=>window.Cerco3D.info());
+            assert.ok(threeInfo.ready && threeInfo.meshes>30,'3D real nao iniciado: '+JSON.stringify(threeInfo));
+            assert.ok(threeInfo.presentation.shadows&&threeInfo.presentation.environment,'Iluminação e sombras indisponíveis');
+            assert.ok(threeInfo.presentation.drawCalls<1500,'Orçamento de renderização excedido: '+JSON.stringify(threeInfo));
+            assert.equal(await page.locator('#sceneBadge').innerText(),'3D ATIVO');
+            // Tela de entrada deve ser uma página própria com economia local.
+            assert.equal(await page.locator('.page.active').getAttribute('data-page'),'home');
+            for(const id of ['homeLevel','homeWins','homeScrolls','homeOpened','homeMaterials',
+              'homeOpenScroll','homePremiumSkins','homeHistory','homePlay']){
+              assert.ok(await page.locator('#'+id).count(),'Campo da tela inicial ausente: '+id);
+            }
+            assert.equal(await page.locator('#homeScrolls').innerText(),'0');
+            const lobbyRect=await page.evaluate(()=>{
+              const shell=document.querySelector('.lobby-shell').getBoundingClientRect(),
+                    nav=document.querySelector('#navigation').getBoundingClientRect(),
+                    battle=document.querySelector('#homePlay').getBoundingClientRect(),
+                    header=getComputedStyle(document.querySelector('.game-header'));
+              return {shell:{w:shell.width,h:shell.height},nav:{top:nav.top,bottom:nav.bottom},
+                battle:{w:battle.width,h:battle.height,bottom:battle.bottom},
+                screen:{w:innerWidth,h:innerHeight},header:header.display};
+            });
+            assert.equal(lobbyRect.header,'none','Lobby ainda exibe cabeçalho de site');
+            assert.ok(lobbyRect.shell.w>=lobbyRect.screen.w-2,'Lobby não ocupa toda a largura');
+            assert.ok(lobbyRect.nav.top>lobbyRect.screen.h*.8,'Navegação não está na parte inferior');
+            assert.ok(lobbyRect.battle.w>190&&lobbyRect.battle.h>=50,'Botão Batalhar não é dominante');
+            await page.locator('#lobbyOpenScroll').click();
+            assert.ok(await page.locator('#lobbyDrawer').isVisible(),'Menu de pergaminhos não abriu');
+            assert.ok(await page.locator('#lobbyScrollPanel').isVisible(),'Pergaminhos ausentes do menu');
+            await page.locator('#lobbyDrawerClose').click();
+            await page.locator('#lobbySkins').click();
+            assert.ok(await page.locator('#lobbySkinsPanel').isVisible(),'Menu de skins não abriu');
+            assert.equal(await page.locator('.home-skin-buy').count(),8,'Catálogo de skins ausente no lobby');
+            assert.equal(await page.locator('.home-skin-buy').first().getAttribute('href'),
+              '#shop','Skin não comprável por todos');
+            await page.locator('#lobbyDrawerClose').click();
+
+            await page.screenshot({path:'/tmp/cerco-home-mobile.png',fullPage:true});
+            assert.ok(await page.locator('#homeOpenScroll').isDisabled(),'Pergaminho aberto sem vitória');
+            const rewardsInitial=await page.evaluate(()=>window.CercoRewards.snapshot());
+            assert.equal(rewardsInitial.level,1,'O novo comandante deveria começar no nível 1');
+            assert.equal(rewardsInitial.scrolls,0,'Há pergaminho inicial não conquistado');
+            const sounds=await page.evaluate(()=>window.CercoAudio?.getSettings());
+            assert.ok(sounds && typeof sounds.volume==='number','Audio local nao inicializou');
+            // Dublagem real: não depender da fala genérica do Android.
+            // Cada arquivo OGG foi gerado com Kokoro pt-BR e mixagem própria.
+            await page.waitForFunction(()=>window.CercoVoices?.status().loaded>=29,{timeout:45000});
+            const voiceAudit=await page.evaluate(async()=>{
+              const engine=window.CercoVoices;
+              const response=await fetch('/voice-pack/manifest.json');
+              const manifest=await response.json();
+              const voices=engine.status(),profiles=engine.profiles;
+              const clips=[];
+              for(const [id,cast] of Object.entries(manifest.characters)){
+                for(const [event,files] of Object.entries(cast.clips||{})){
+                  for(const file of files)clips.push({id,event,file});
+                }
+              }
+              return {voices,profiles,manifest,clips};
+            });
+            assert.ok(voiceAudit.voices.recorded,'Pacote pré-gravado não ativado');
+            assert.equal(voiceAudit.voices.fallbackSpeechSynthesis,false,'Voz genérica do Android ainda é usada');
+            assert.ok(voiceAudit.voices.loaded>=29,'29 novas gravações de personagens não foram carregadas');
+            assert.equal(voiceAudit.manifest.version,2,'Pacote antigo de áudio; nitidez não atualizada');
+            assert.equal(Object.keys(voiceAudit.profiles).length,8,'Todos os personagens precisam ter identidade vocal');
+            assert.equal(Object.keys(voiceAudit.manifest.characters).length,7,'Sete classes com voz humana devem ter gravações');
+            assert.ok(voiceAudit.profiles.lobo.lines.length===0,'Lobo não pode receber fala humana');
+            assert.equal(voiceAudit.clips.length,29,'Número incorreto de falas gravadas');
+            assert.ok(voiceAudit.manifest.characters.rei.dialogue.attack.some(t=>t.includes('irmãos')),'O Rei não menciona a guerra dos irmãos');
+            assert.ok(voiceAudit.manifest.characters.guardiao.dialogue.attack.some(t=>t.includes('juramento')),'Guardião sem referência ao juramento');
+            assert.ok(voiceAudit.manifest.characters.batedor.dialogue.attack.some(t=>t.includes('marca')),'Batedor sem referência à marca');
+            assert.ok(voiceAudit.manifest.characters.liliti.dialogue.attack.some(t=>t.includes('história')),'Liliti sem referência ao passado');
+            const unique=new Set(Object.entries(voiceAudit.manifest.characters).map(([id,c])=>c.style));
+            assert.equal(unique.size,7,'Personagens não têm direção vocal única');
+            assert.ok(voiceAudit.clips.every(c=>c.file.endsWith('.ogg')),'Formato da dublagem não é OGG');
+            // A ativação precisa partir de um clique real no navegador, como no jogo.
+            await page.locator('#lobbyVoice').click();
+            assert.equal(await page.evaluate(()=>window.CercoVoices.enabled()),false,'Falha ao silenciar dublagem');
+            await page.locator('#lobbyVoice').click();
+            assert.equal(await page.evaluate(()=>window.CercoVoices.enabled()),true,'Falha ao reativar dublagem');
+            await page.waitForTimeout(160);
+            const spoken=await page.evaluate(()=>{
+              const played=window.CercoVoices.speak('arqueiro','summon');
+              const latest=window.CercoVoices.history().at(-1);
+              return {played,latest};
+            });
+            assert.equal(spoken.played,true,'Arqueiro não reproduziu a gravação');
+            assert.equal(spoken.latest.id,'arqueiro','Personagem errado na reprodução');
+            assert.ok(spoken.latest.file.endsWith('.ogg'),'Fala não usou arquivo de áudio gravado');
+            await page.evaluate(()=>window.CercoVoices.stop());
+            await page.locator('#lobbyVoice').click();
+            assert.equal(await page.evaluate(()=>window.CercoVoices.speak('rei','summon')),false,
+              'Uma fala tocou com as vozes desligadas');
+            await page.locator('#lobbyVoice').click();
+
+            const originalAudio=await page.evaluate(()=>window.CercoAudio?.status());
+            assert.ok(originalAudio?.original===true,'Motor original Khar Tall não ativado');
+            assert.equal(originalAudio.recordings,19,'Sons Khar Tall de ataques e movimentos não foram carregados');
+            assert.deepEqual(originalAudio.allowedEvents,['attack','damage','victory'],'Política de sons do Cerco não corresponde à aprovada');
+            const originalFiles=await page.evaluate(async()=>{
+              const names=['arqueiro_disparo.wav','arqueiro_impacto.wav',
+                'soldado_espada_corte.wav','soldado_espadas_choque_nitido.wav',
+                'colosso_esmagamento_rachadura.wav','colosso_passo_estrondoso.wav','lobo_mordida_impacto.wav',
+                'guardiao_ventania_magica.wav','rei_ataque_explosao.wav'];
+              return await Promise.all(names.map(async name=>{
+                const response=await fetch('/original-audio/'+name);
+                const bytes=new Uint8Array(await response.arrayBuffer());
+                const signature=String.fromCharCode(...bytes.slice(0,4));
+                return {name,status:response.status,signature,bytes:bytes.length};
+              }));
+            });
+            assert.ok(originalFiles.every(f=>f.status===200&&f.signature==='RIFF'&&f.bytes>10000),
+              'Arquivos originais ausentes ou inválidos: '+JSON.stringify(originalFiles));
+
+            // Som permitido: ataque, passo, dano, destruições e vitória.
+            // Menu, invocação, interface, derrota e impactos duplicados silenciosos.
+            const soundAudit=await page.evaluate(async()=>{
+              const before=window.CercoAudio.played().length;
+              const quiet=['ui','place','magic','impact','towerHit','defeat','wolfHowl','summon','music','step','towerDestroyed','castleDestroyed'];
+              const results=quiet.map(kind=>window.CercoAudio.play(kind));
+              const wolf=window.CercoAudio.play('wolf',{card:'lobo'});
+              await new Promise(resolve=>setTimeout(resolve,120));
+              const tower=window.CercoAudio.play('tower',{side:'ally'});
+              const step=window.CercoAudio.play('step',{card:'colosso'});
+              const invalidStep=window.CercoAudio.play('step',{card:'lobo'});
+              const damage=window.CercoAudio.play('damage',{side:'ally'});
+              const towerDestroyed=window.CercoAudio.play('towerDestroyed',{side:'enemy',lane:0});
+              const castleDestroyed=window.CercoAudio.play('castleDestroyed',{side:'enemy'});
+              const victory=window.CercoAudio.play('victory');
+              return {before,results,wolf,tower,step,invalidStep,damage,towerDestroyed,castleDestroyed,victory,log:window.CercoAudio.played()};
+            });
+            assert.ok(soundAudit.results.every(x=>x===false),'Som de menu ou evento proibido não foi bloqueado');
+            assert.equal(soundAudit.step,false,'Passos foram mantidos no áudio');
+            assert.equal(soundAudit.invalidStep,false,'Passo do Colosso tocou em outra classe');
+            assert.ok(['wolf','tower','damage','victory'].every(kind=>soundAudit[kind]),
+              'Uma categoria de som permitida não funcionou');
+            assert.deepEqual(soundAudit.log.slice(soundAudit.before).map(x=>x.sample),
+              ['wolfBite','arrowLaunch','swordImpact','royalVictory'],
+              'Sons originais de mordida, flecha, passo, ferimento, destruição e vitória não foram vinculados');
+            assert.ok(soundAudit.log.every(x=>!x.sample.toLowerCase().includes('howl')),'Uivo permaneceu no jogo');
+
+            await page.locator('#lobbySound').click();
+            const muted=await page.evaluate(()=>window.CercoAudio.getSettings());
+            assert.equal(muted.on,false,'Botao nao silencia som');
+            await page.locator('#lobbySound').click();
+
+            assert.equal(await page.locator('.game-nav button').count(),6);
+            const tabs=['home','arena','cards','shop','clans','profile'];
+            for(const tab of tabs){
+              await page.locator('#navigation [data-view="'+tab+'"]').click();
+              assert.equal(await page.locator('.page.active').getAttribute('data-page'),tab);
+              const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+              assert.ok(overflow<=2,'overflow '+tab+': '+overflow);
+            }
+            await page.locator('#navigation [data-view="shop"]').click();
+            assert.equal(await page.locator('#shopGrid .shop-item').count(),8);
+            await page.evaluate(()=>window.CercoStore.sync());
+            assert.equal(await page.locator('#shopGrid .shop-item .swatch').count(),8,'A atualização da coleção apagou as skins');
+            assert.equal(await page.locator('#shopGrid .shop-item strong').count(),8,'Nomes das skins foram apagados');
+            assert.match(await page.locator('#shopStatus').innerText(),/VEJA NOS PERSONAGENS/i);
+            assert.equal(await page.locator('#shopGrid .shop-item[data-cerco-buy]').count(),0,
+              'A escolha de cor não pode cobrar sem mostrar os personagens');
+            await page.locator('#shopGrid [data-skin-preview="skin_purple_light"]').click();
+            await page.waitForFunction(()=>window.CercoSkinPreview?.status()?.skin==='skin_purple_light');
+            assert.equal(await page.locator('#skinPreviewBuy').getAttribute('data-cerco-buy'),'skin_purple_light');
+            assert.match(await page.locator('#skinPreviewBuy').innerText(),/(COMPRAR|EQUIPAR|EQUIPADA)/);
+            assert.equal(await page.locator('#skinCharacterGrid [data-skin-character]').count(),8,
+              'Faltou demonstração de personagens');
+            await page.locator('#skinCharacterGrid [data-skin-character="liliti"]').click();
+            assert.equal(await page.evaluate(()=>window.CercoSkinPreview.status().character),'liliti');
+            await page.locator('#skinCharacterGrid [data-skin-character="colosso"]').click();
+            assert.equal(await page.evaluate(()=>window.CercoSkinPreview.status().character),'colosso');
+            await page.locator('#skinPreviewRotate').click();
+            assert.equal(await page.evaluate(()=>window.CercoSkinPreview.status().rotating),true);
+            await page.locator('#skinPreviewRotate').click();
+            await page.locator('#skinPreviewCompare').click();
+            assert.equal(await page.evaluate(()=>window.CercoSkinPreview.status().comparing),true);
+            assert.equal(await page.locator('#skinPreviewFallback').isVisible(),true);
+            await page.locator('#skinPreviewCompare').click();
+            await page.locator('#shopGrid [data-skin-preview="skin_green_light"]').click();
+            await page.locator('#skinCharacterGrid [data-skin-character="liliti"]').click();
+            const dress=await page.evaluate(()=>window.CercoSkinPreview.status().model);
+            assert.ok(dress.drapes>=2&&dress.hair>=12,'Liliti sem vestido e cabelo modelados');
+            await page.locator('#skinPreviewPanel').screenshot({path:'/tmp/cerco-provador-liliti.png'});
+            for(const id of ['lobo','arqueiro','soldado','colosso','guardiao','batedor','rei','liliti']){
+              await page.locator('#skinCharacterGrid [data-skin-character="'+id+'"]').click();
+              await page.locator('.skin-preview-focus').screenshot({path:'/tmp/cerco-modelo-'+id+'.png'});
+            }
+            const skinDemo=await page.evaluate(()=>window.CercoSkinPreview.status());
+            assert.ok(skinDemo.characters.includes('lobo')&&skinDemo.characters.includes('soldado'));
+            assert.equal(skinDemo.buyId,'skin_green_light');
+            if(skinDemo.available){
+              assert.equal(skinDemo.thumbnails,8,'As oito prévias 3D não foram geradas');
+              assert.ok(await page.locator('#skinPreview3D canvas').count(),'Prévia WebGL não apareceu');
+            }
+            await page.screenshot({path:'/tmp/cerco-skins-preview-mobile.png',fullPage:true});
+            assert.equal(await page.locator('#featuredCards button').count(),8);
+            await page.locator('#featuredCards button').first().click();
+            assert.equal(await page.locator('.page.active').getAttribute('data-page'),'cards');
+            assert.match(await page.locator('#cardName').innerText(),/Liliti/i);
+            await page.waitForFunction(()=>{
+              const art=document.getElementById('fullArt');
+              return art?.complete&&art.naturalWidth>0&&art.src.includes('portrait_lilith_ruiva.webp');
+            },null,{timeout:15000});
+            const img=await page.locator('#fullArt').evaluate(e=>e.complete&&e.naturalWidth>0);
+            assert.ok(img,'Imagem Liliti nao carregou');
+            // O botão principal do lobby deve entrar diretamente na batalha,
+            // sem abrir uma segunda página ou exigir outro toque.
+            await page.locator('#navigation [data-view="home"]').click();
+            await page.locator('#homePlay').click();
+            await page.waitForFunction(()=>document.body.classList.contains('battle-mode'),{timeout:6000});
+            const fullscreenView=await page.evaluate(()=>{
+              const stage=document.querySelector('#battleStage').getBoundingClientRect(),
+                    arena=document.querySelector('.canvas-box').getBoundingClientRect(),
+                    hand=document.querySelector('.hand-box').getBoundingClientRect();
+              return {stage:{x:stage.x,y:stage.y,w:stage.width,h:stage.height},
+               arena:{w:arena.width,h:arena.height,top:arena.top,bottom:arena.bottom},
+               hand:{top:hand.top,bottom:hand.bottom},
+               viewport:{w:innerWidth,h:innerHeight},
+               hasNative:!!document.fullscreenElement};
+            });
+            assert.ok(fullscreenView.stage.w>=fullscreenView.viewport.w-3,'Batalha nao ocupa toda largura');
+            assert.ok(fullscreenView.stage.h>=fullscreenView.viewport.h-3,'Batalha nao ocupa toda altura');
+            assert.ok(fullscreenView.arena.h>=fullscreenView.viewport.h*.5,'Arena nao ocupa espaco principal');
+            assert.ok(fullscreenView.hand.bottom<=fullscreenView.viewport.h+4,'Cartas fora da tela');
+            assert.ok(!(await page.locator('.game-header').isVisible()),'Barra do site permaneceu na partida');
+            assert.ok(!(await page.locator('#navigation').isVisible()),'Menu do site nao deve aparecer na partida');
+            assert.ok(await page.locator('#battleBack').isVisible(),'Voltar nao aparece');
+            assert.ok(await page.locator('#battlePause').isVisible(),'Pausar nao aparece');
+            assert.ok(await page.locator('#battleVoice').isVisible(),'Controlador de falas nao aparece na partida');
+            // Mana em dez cristais separados, sem barra contínua e sem
+            // acender frações do próximo bloco durante a recarga.
+            const mana=await page.evaluate(()=>{
+              const before=window.__cercoTest.mana();
+              window.__cercoTest.setMana(6.95);
+              const partial=window.__cercoTest.mana();
+              const children=document.querySelectorAll('#manaBlocks .mana-block');
+              const styles=getComputedStyle(document.querySelector('#manaBlocks'));
+              window.__cercoTest.setMana(9.99);
+              const almost=window.__cercoTest.mana();
+              window.__cercoTest.setMana(10);
+              const full=window.__cercoTest.mana();
+              window.__cercoTest.setMana(6);
+              return {before,partial,almost,full,count:children.length,
+                layout:styles.display,columns:styles.gridTemplateColumns.split(' ').length,
+                text:document.querySelector('#energy').textContent};
+            });
+            assert.equal(mana.count,10,'Mana precisa ter exatamente 10 blocos individuais');
+            assert.equal(mana.layout,'grid','Mana precisa ser um grid de blocos');
+            assert.equal(mana.columns,10,'Mana não possui dez colunas');
+            assert.equal(mana.partial.ui,6,'A mana fracionada acendeu o próximo bloco');
+            assert.equal(mana.almost.ui,9,'Mana fracionada acendeu o décimo bloco');
+            assert.equal(mana.full.ui,10,'Mana máxima não acendeu os dez blocos');
+            assert.equal(mana.text,'6 / 10 MANA','Indicador numérico de mana inválido');
+
+            await page.locator('#battlePause').click();
+            assert.ok(await page.locator('#overlay').isVisible(),'Pausa nao mostrou painel');
+            await page.locator('#battlePause').click();
+            assert.equal(await page.locator('#overlay').isVisible(),false,'Pausa nao voltou ao jogo');
+            await page.waitForTimeout(1300);
+            // Invocar Lobo para verificar sprite humano/animal completo (nao token circular).
+            await page.locator('#arena').click({position:{x:100,y:330}});
+            await page.waitForTimeout(550);
+            const okSprite=await page.evaluate(()=>[...document.images].filter(x=>x.src.includes('/sprites/')).length);
+            const imagesReady=await page.evaluate(async()=>{const ids=['lobo','rei','liliti'];return await Promise.all(ids.map(id=>new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(img.naturalWidth>0);img.onerror=()=>resolve(false);img.src='/sprites/sprite_'+id+'.png'})))});
+            assert.ok(imagesReady.every(Boolean),'Sprite PNG nao carregou');
+            // O rio bloqueia o deslocamento: nenhuma trajetória atravessa fora das pontes.
+            for(const scenario of [
+              [35,445,376,95,0],
+              [376,405,40,115,1],
+              [205,460,205,65,0],
+              [44,93,350,467,1]
+            ]){
+              const path=await page.evaluate(v=>window.__cercoTest.traceRoute(...v),scenario);
+              const points=path.points,lo=path.riverTop,hi=path.riverBottom;
+              assert.ok(points.length>35,'Rota nao calculada');
+              const inWater=points.filter(p=>p.y>lo&&p.y<hi);
+              assert.ok(inWater.length>0,'Tropa nao chegou a atravessar a ponte');
+              assert.ok(inWater.every(p=>path.bridges.some(b=>Math.abs(p.x-b)<=path.bridgeHalfWidth)),
+               'Tropa atravessou o rio fora da ponte: '+JSON.stringify({scenario,invalid:inWater.filter(p=>path.bridges.every(b=>Math.abs(p.x-b)>path.bridgeHalfWidth)).slice(0,4)}));
+              assert.ok(Math.hypot(path.final.x-scenario[2],path.final.y-scenario[3])<2,
+               'Tropa nao chegou ao destino depois da ponte');
+            }
+            // Centro + carta com duas unidades: sem ameaça, divide esquerda/direita.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            const box=await page.locator('#arena').boundingBox();
+            assert.ok(box && box.width>200 && box.height>200,'Arena indisponivel');
+            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.66}});
+            let group=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
+            assert.equal(group.length,2,'Lobo precisa gerar duas unidades');
+            assert.deepEqual(group.map(u=>u.lane).sort(),[0,1],'Centro deve dividir entre duas rotas');
+            const meanX=group.reduce((v,u)=>v+u.x,0)/group.length;
+            assert.ok(Math.abs(meanX-210)<25,'Centro do grupo deslocado');
+            assert.ok(Math.abs(group[0].x-group[1].x)>42,'Dois personagens sobrepostos');
+            const clickPoint=await page.evaluate(()=>{
+              const rect=document.getElementById('arena').getBoundingClientRect();
+              return window.Cerco3D.screenToBattle(rect.left+rect.width*.5,rect.top+rect.height*.66,rect);
+            });
+            const riverClick=clickPoint.y>256&&clickPoint.y<304 && 
+                [110,310].every(bridgeX=>Math.abs(clickPoint.x-bridgeX)>39);
+            const expectedY=riverClick?319:clickPoint.y;
+            assert.ok(group.every(u=>Math.abs(u.y-expectedY)<24),'Invocacao ignorou a posicao em terreno caminhavel');
+            await page.waitForTimeout(140);
+            const modelInfo=await page.evaluate(()=>({actors:window.Cerco3D.info().actors,
+              wolfModels:window.Cerco3D.debugActors().filter(m=>m.kind==='lobo')}));
+            assert.equal(modelInfo.actors,2,'3D deve mostrar duas unidades separadas');
+            assert.equal(modelInfo.wolfModels.length,2,'Dupla de Lobos nao foi modelada em 3D');
+            assert.ok(modelInfo.wolfModels.every(m=>m.illustrated===false),'Retrato sobreposto ao modelo 3D');
+            assert.ok(modelInfo.wolfModels.every(m=>m.legs===4),'Lobos devem ter quatro patas articuladas');
+
+            // Dois arqueiros reais, cada qual com seu próprio corpo 3D e rota.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            await page.locator('#hand button').nth(1).click();
+            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.66}});
+            const archers=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'&&u.card==='arqueiro'));
+            assert.equal(archers.length,2,'Carta de Arqueiros deve invocar exatamente dois');
+            assert.ok(Math.abs(archers[0].x-archers[1].x)>=42,'Os dois arqueiros ficaram sobrepostos');
+            assert.deepEqual(archers.map(u=>u.lane).sort(),[0,1],'Arqueiros no centro devem escolher as duas rotas');
+            const archer3D=await page.evaluate(()=>window.Cerco3D.debugActors().filter(x=>x.kind==='arqueiro'));
+            assert.equal(archer3D.length,2,'Somente um arqueiro ficou visível no 3D');
+            assert.ok(archer3D.every(m=>!m.illustrated&&m.cloaks>0),'Arqueiros não são modelos com capas 3D');
+            const clothBefore=archer3D[0].clothSample;
+            await page.waitForFunction(previous=>window.Cerco3D.debugActors().some(m=>m.kind==='arqueiro'&&m.clothSample!==previous),clothBefore,{timeout:12000});
+            assert.equal(await page.evaluate(()=>window.CercoVoices.speak('arqueiro','attack')),false,'Fala durante ataque');
+            assert.equal(await page.evaluate(()=>window.CercoVoices.speak('arqueiro','hurt')),false,'Fala durante dano');
+
+            // Cada classe precisa disparar uma categoria de ação exclusiva.
+            const expected={lobo:'bite',arqueiro:'arrow',soldado:'slash',
+              colosso:'slam',guardiao:'shield',batedor:'mark',rei:'royal',liliti:'enchant'};
+            for(const [id,kind] of Object.entries(expected)){
+              await page.evaluate(()=>window.__cercoTest.reset());
+              const duel=await page.evaluate(id=>window.__cercoTest.duel(id),id);
+              assert.ok(duel?.history?.length,'Ataque da carta não iniciado: '+id);
+              assert.ok(duel.history.every(a=>a.kind===kind),'Movimento errado: '+id);
+              if(['arqueiro','batedor','guardiao','liliti'].includes(id)){
+                assert.ok(duel.shots.some(a=>a.kind===kind),'Sem projétil visual de '+id);
+                assert.ok(duel.animated>0,'Efeito 3D do projétil ausente para '+id);
+              }
+              if(id==='arqueiro'){
+                assert.equal(duel.ids.length,2,'O duelo não criou dois arqueiros');
+                assert.equal(duel.history.length,2,'Os arqueiros não atacaram independentemente');
+              }
+            }
+
+            // Soldados em dupla e Liliti só após confirmação da coleção.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            const noPurchase=await page.evaluate(()=>window.__cercoTest.cast('liliti'));
+            assert.equal(noPurchase.length,0,'Liliti foi liberada sem compra');
+            await page.evaluate(async()=>{window.__testOwnedCards=['liliti'];await window.CercoStore.sync()});
+            await page.evaluate(()=>window.__cercoTest.setProgress('liliti',99,99));
+            const paid=await page.evaluate(()=>window.__cercoTest.cast('liliti'));
+            assert.equal(await page.evaluate(()=>window.__cercoTest.progress('liliti').level),100,'Liliti não alcançou nível 100');
+            assert.equal(paid.filter(u=>u.card==='liliti').length,1);
+            await page.evaluate(()=>window.__cercoTest.setMana(10));
+            const duplicate=await page.evaluate(()=>window.__cercoTest.cast('liliti'));
+            assert.equal(duplicate.filter(u=>u.card==='liliti').length,1,'Invocou duas Lilitis vivas');
+            await page.evaluate(async()=>{window.__testOwnedCards=[];await window.CercoStore.sync();window.__cercoTest.setProgress('liliti',1,0)});
+            for(const level of [1,40,60,80,100]){
+              const healed=await page.evaluate(level=>window.__cercoTest.healImpact(level,10),level);
+              const soldiers=healed.allies.slice(1);
+              assert.ok(soldiers[0].hp>100,'Cura não saiu do impacto real');
+              assert.equal(soldiers[1].hp>100,level>=40,'Cura da outra rota no marco errado');
+              assert.ok(soldiers.reduce((sum,u)=>sum+u.hp-100,0)<=5.0001,'Usou dano excedente para gerar cura');
+              assert.equal(healed.towers[0]>1000,level>=60);
+              assert.equal(healed.towers[1]>1000,level>=80);
+              assert.equal(healed.castle>2000,level===100);
+            }
+
+            // Centro + inimigo a direita: tropas desviam juntas para defender/atacar.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            await page.evaluate(()=>window.__cercoTest.createEnemy('soldado',310,313));
+            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.66}});
+            await page.waitForFunction(()=>{
+              const ally=window.__cercoTest.units().filter(u=>u.side==='ally');
+              return ally.length===2&&ally.every(u=>u.lane===1)&&ally.some(u=>u.targetId);
+            },null,{timeout:5000});
+            group=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
+            assert.deepEqual(group.map(u=>u.lane),[1,1],'Inimigo proximo deve alterar a rota do grupo');
+            assert.ok(group.some(u=>u.targetId),'Grupo nao adquiriu alvo proximo');
+
+            // Unidade unica no centro identifica o inimigo em qualquer rota.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            await page.evaluate(()=>window.__cercoTest.createEnemy('soldado',310,315));
+            await page.locator('#hand button').nth(2).click();
+            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.66}});
+            await page.waitForFunction(()=>{
+              const ally=window.__cercoTest.units().filter(u=>u.side==='ally');
+              return ally.length===2&&ally.every(u=>u.lane===1&&u.targetId);
+            },null,{timeout:5000});
+            const solo=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
+            assert.equal(solo.length,2,'Soldados devem invocar duas unidades');
+            assert.ok(solo.every(u=>u.lane===1),'Soldados ignoraram inimigo próximo');
+            assert.ok(solo.every(u=>u.targetId),'Soldados não adquiriram alvo');
+
+            // Cada exército só pode nascer em seu próprio território.
+            const deployLimits=await page.evaluate(()=>({
+              own:window.__cercoTest.canDeploy('ally',210,410),
+              allyEnemy:window.__cercoTest.canDeploy('ally',210,100),
+              enemyOwn:window.__cercoTest.canDeploy('enemy',210,100),
+              enemyAlly:window.__cercoTest.canDeploy('enemy',210,410),
+              river:window.__cercoTest.canDeploy('ally',210,280)
+            }));
+            assert.deepEqual(deployLimits,{own:true,allyEnemy:false,enemyOwn:true,enemyAlly:false,river:false});
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            // Começar com mana cheia evita que a regeneração normal falseie este teste.
+            await page.evaluate(()=>window.__cercoTest.setMana(10));
+            const manaBefore=await page.evaluate(()=>window.__cercoTest.mana().actual);
+            const xpBefore=await page.evaluate(()=>window.__cercoTest.progress('lobo').xp);
+            await page.locator('#arena').click({position:{x:box.width*.76,y:box.height*.22}});
+            assert.equal(await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally').length),0,
+              'Jogador invocou tropas diretamente na área do adversário');
+            assert.equal(await page.evaluate(()=>window.__cercoTest.mana().actual),manaBefore,
+              'A invocação inválida consumiu mana');
+            assert.equal(await page.evaluate(()=>window.__cercoTest.progress('lobo').xp),xpBefore,
+              'Invocação inválida ganhou XP');
+            // Mesmo que a IA tente usar coordenadas do jogador, não deve nascer ali.
+            const enemyDeploy=await page.evaluate(()=>({
+              illegal:window.__cercoTest.aiSummon(210,420),
+              legal:window.__cercoTest.aiSummon(210,125),
+              enemyPositions:window.__cercoTest.units().filter(u=>u.side==='enemy').map(u=>u.y)
+            }));
+            assert.deepEqual(enemyDeploy.illegal,{allowed:false,created:0});
+            assert.equal(enemyDeploy.legal.allowed,true);
+            assert.ok(enemyDeploy.legal.created>0&&enemyDeploy.enemyPositions.every(y=>y<240),
+              'Adversário invocou tropas no campo do jogador');
+            // Invocar no próprio território continua permitido.
+            await page.locator('#arena').click({position:{x:box.width*.76,y:box.height*.78}});
+            assert.equal(await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally').length),2,
+              'Invocação válida no próprio campo deixou de funcionar');
+
+            // Caminhada real: quadros variam enquanto o personagem se desloca.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            await page.locator('#arena').click({position:{x:box.width*.24,y:box.height*.78}});
+            await page.waitForTimeout(120);
+            const walker=await page.evaluate(()=>{
+              const u=window.__cercoTest.units().find(x=>x.side==='ally');
+              return u&&window.__cercoTest.animation(u.id);
+            });
+            assert.ok(walker,'Nao foi possivel iniciar a caminhada');
+            assert.equal(walker.state,'walk');
+            const wolfReady=await page.evaluate(()=>window.__cercoTest.motionReady('lobo'));
+            assert.ok(wolfReady,'Sprite-sheet do Lobo nao carregou');
+            // WebGL via SwiftShader pode entregar quadros irregularmente no runner:
+            // aguardar o relogio simulado, sem depender de 240ms de tempo real.
+            await page.waitForFunction((prev)=>{
+              const u=window.__cercoTest.units().find(x=>x.side==='ally');
+              return u && window.__cercoTest.animation(u.id)?.clock>prev+.07;
+            },walker.clock,{timeout:12000});
+            const walkerLater=await page.evaluate(()=>{
+              const u=window.__cercoTest.units().find(x=>x.side==='ally');
+              return u&&window.__cercoTest.animation(u.id);
+            });
+            assert.ok(walkerLater && walkerLater.clock>walker.clock,'Relogio de animacao nao evoluiu');
+            assert.ok(Number.isInteger(walkerLater.frame)&&walkerLater.frame>=0,'Quadro de caminhada invalido');
+
+            // Ao alcançar um inimigo, o golpe reproduz a sequência de ataque.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            await page.evaluate(()=>window.__cercoTest.createEnemy('colosso',210,313));
+            await page.locator('#arena').click({position:{x:box.width/2,y:box.height*.65}});
+            await page.waitForFunction(()=>{
+              const u=window.__cercoTest.units().find(x=>x.side==='ally');
+              return u && window.__cercoTest.animation(u.id)?.attacks>0;
+            },{timeout:12000});
+            const fighter=await page.evaluate(()=>{
+              const u=window.__cercoTest.units().find(x=>x.side==='ally');
+              return u&&window.__cercoTest.animation(u.id);
+            });
+            assert.ok(fighter && fighter.attacks>=1,'Tropa nao realizou ataque');
+            await page.screenshot({path:'/tmp/cerco-combate-3d.png'});
+
+            // O alcance reduzido e a posição visível devem valer nas duas bases.
+            const defenses=await page.evaluate(()=>{
+              const layout=window.CercoArenaLayout;
+              return {ranges:layout.defenseRange,forts:window.Cerco3D.info().presentation.forts,
+                expected:layout.positions,probes:['ally','enemy'].flatMap(side=>[0,1,2].map(slot=>{
+                  const range=layout.defenseRange[slot===2?'castle':'tower'],sign=side==='ally'?-1:1;
+                  return {inside:window.__cercoTest.defenseProbe(side,slot,sign*(range-1)),
+                    outside:window.__cercoTest.defenseProbe(side,slot,sign*(range+1))};
+                }))};
+            });
+            assert.deepEqual(defenses.ranges,{tower:124,castle:100});
+            assert.ok(defenses.probes.every(p=>p.inside.fired&&!p.outside.fired),'Defesa atirou fora do alcance');
+            for(const f of defenses.forts)assert.deepEqual({x:f.x,y:f.y},defenses.expected[f.team][f.slot],
+              'A posição de ataque não coincide com a fortificação 3D');
+
+            // Torres devem detectar um inimigo da equipe oposta,
+            // emitir projéteis e descontar vida ao acertar.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            await page.evaluate(()=>window.__cercoTest.createEnemy('colosso',110,452));
+            await page.waitForFunction(()=>window.__cercoTest.towers().hits>0,{timeout:12000});
+            const towerState=await page.evaluate(()=>window.__cercoTest.towers());
+            assert.ok(towerState.shots.some(s=>s.side==='ally'&&s.slot===0),'Torre aliada nao disparou');
+            assert.ok(towerState.shots.every(shot=>shot.kind==='arrow'),'Castelo ainda dispara outro projétil que não flecha');
+            await page.evaluate(()=>window.__cercoTest.forceTowerTarget('ally',2));
+            await page.waitForFunction(()=>window.__cercoTest.towers().shots.some(s=>s.side==='ally'&&s.slot===2&&s.kind==='arrow'),
+              {timeout:12000});
+            assert.ok(await page.evaluate(()=>window.Cerco3D.info().ready),'Cena 3D indisponível para flechas das fortalezas');
+            assert.ok(towerState.hits>0,'Projetil nao causou dano');
+            const targetHealth=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='enemy').map(u=>u.hp));
+            assert.ok(targetHealth.some(hp=>hp>0),'Alvo desapareceu antes do teste de torre');
+            // Os sons de dano, destruição e vitória precisam nascer dos eventos reais
+            // do motor, não apenas estar disponíveis no painel de áudio.
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            // O mixer evita repetições consecutivas de dano, destruição e vitória;
+            // aguardar o fim desses intervalos antes de testar novamente.
+            await page.waitForTimeout(3200);
+            const eventAudio=await page.evaluate(()=>{
+              const before=window.CercoAudio.played().length;
+              const ids=window.__cercoTest.createEnemy('colosso',210,420);
+              const wounded=window.__cercoTest.injure(ids[0],60);
+              const towerLost=window.__cercoTest.breach('enemy',0,99999);
+              const castleLost=window.__cercoTest.breach('enemy',-1,99999);
+              const beforeRepeated=window.__cercoTest.audioEvents().destroyed.length;
+              const repeated=window.__cercoTest.breach('enemy',0,99999);
+              const afterRepeated=window.__cercoTest.audioEvents().destroyed.length;
+              window.__cercoTest.finish('ally');
+              return {wounded,towerLost,castleLost,repeated,beforeRepeated,afterRepeated,
+                events:window.__cercoTest.audioEvents().destroyed,
+                played:window.CercoAudio.played().slice(before)};
+            });
+            assert.equal(eventAudio.wounded,true,'Dano de personagem não aconteceu');
+            assert.equal(eventAudio.towerLost,true,'Torre não foi destruída');
+            assert.equal(eventAudio.castleLost,true,'Castelo não foi destruído');
+            assert.equal(eventAudio.repeated,false,'Torre destruída tomou dano novamente');
+            assert.equal(eventAudio.beforeRepeated,eventAudio.afterRepeated,'Destruição tocou duas vezes');
+            assert.deepEqual(eventAudio.events.map(x=>x.kind),['towerDestroyed','castleDestroyed'],
+              'Não foram registrados os dois tipos de destruição');
+            assert.ok(eventAudio.played.some(x=>x.kind==='damage'),'Ferimento não produziu som de dano');
+            assert.ok(!eventAudio.played.some(x=>x.kind==='towerDestroyed'),'Torre disparou uma camada de áudio extra');
+            assert.ok(!eventAudio.played.some(x=>x.kind==='castleDestroyed'),'Castelo disparou uma camada de áudio extra');
+            assert.ok(eventAudio.played.some(x=>x.kind==='victory'),'Vitória não produziu som');
+            const rewarded=await page.evaluate(()=>{
+              const before=window.CercoRewards.snapshot();
+              const id=window.Cerco3DGame.getState().matchId;
+              const replay=window.CercoRewards.awardVictory(id);
+              const opened=window.CercoRewards.openScroll();
+              const after=window.CercoRewards.snapshot();
+              return {before,replay,opened,after,skinUnlocked:window.CercoRewards.hasMonthlyMembership()};
+            });
+            assert.equal(rewarded.before.wins,1,'A vitória não concedeu XP e pergaminho');
+            assert.equal(rewarded.before.scrolls,1,'Uma vitória deveria render 1 pergaminho');
+            assert.equal(rewarded.before.xp,75,'A vitória deveria render 75 XP');
+            assert.equal(rewarded.replay,false,'A mesma vitória foi recompensada duas vezes');
+            assert.ok(rewarded.opened&&rewarded.opened.kind==='material','Prêmio deveria entregar material');
+            assert.equal(rewarded.after.scrolls,0,'Pergaminho não foi consumido');
+            assert.equal(rewarded.after.opened,1,'Pergaminho não foi registrado');
+            assert.ok(Object.values(rewarded.after.materials).some(n=>n>0),'Material não foi guardado');
+            assert.equal(rewarded.skinUnlocked,false,'Assinatura mensal sem verificação não pode conceder fragmentos');
+            const skinRules=await page.evaluate(()=>{
+              const api=window.CercoRewards;
+              const skin=api.skins[0],purchase=api.purchaseInfo(skin.id);
+              return {purchase,canShop:api.checkPremiumSkin(skin.id),fragment:api.fragmentProgress(skin.id)};
+            });
+            assert.ok(skinRules.canShop,'Compra avulsa não está liberada para não assinantes');
+            assert.equal(skinRules.purchase.priceCents,250,'Preço da skin diferente do catálogo oficial');
+            assert.ok(skinRules.purchase.availableToAll,'Compra exige assinatura indevidamente');
+            assert.equal(skinRules.fragment.verified,false,'Fragmentos habilitados sem assinatura verificada');
+            assert.equal(skinRules.fragment.count,0,'Fragmentos de assinante foram criados sem verificação');
+            await page.evaluate(()=>window.__cercoTest.reset());
+            await page.locator('#start').click();
+            // Tamanho variável dos celulares: HUD, arena e cartas não podem sair da tela.
+            for(const [width,height] of [[360,740],[430,932],[390,844]]){
+              await page.setViewportSize({width,height});
+              await page.waitForTimeout(180);
+              const layout=await page.evaluate(()=>{
+                const b=document.querySelector('.battle').getBoundingClientRect();
+                const a=document.querySelector('.canvas-box').getBoundingClientRect();
+                const h=document.querySelector('.hand-box').getBoundingClientRect();
+                return {w:innerWidth,h:innerHeight,bw:b.width,bh:b.height,aw:a.width,ah:a.height,bottom:h.bottom};
+              });
+              assert.ok(Math.abs(layout.bw-layout.w)<3 && Math.abs(layout.bh-layout.h)<3,
+                'Tela da partida nao acompanhou o dispositivo: '+JSON.stringify(layout));
+              assert.ok(layout.ah>layout.h*.48,'Arena ficou pequena: '+JSON.stringify(layout));
+              assert.ok(layout.bottom<=layout.h+4,'Baralho ficou fora da tela: '+JSON.stringify(layout));
+              const frame=await page.evaluate(()=>window.Cerco3D.info().presentation.framing);
+              assert.ok(frame.left>=-1&&frame.right<=1&&frame.top<=1&&frame.bottom>=-1,
+                'Coroas ou bases dos castelos cortadas: '+JSON.stringify(frame));
+            }
+            // As faixas que antes sobravam atrás das bases são jogáveis.
+            const rearRoutes=await page.evaluate(()=>[
+              window.__cercoTest.traceRoute(210,448,210,624,0),
+              window.__cercoTest.traceRoute(210,112,210,-64,0)
+            ]);
+            assert.ok(Math.abs(rearRoutes[0].final.y-624)<2&&Math.abs(rearRoutes[1].final.y+64)<2,
+              'Tropas não conseguem alcançar o castelo recuado');
+            for(const [fraction,upper] of [[.11,true],[.91,false]]){
+              await page.evaluate(()=>window.__cercoTest.reset());
+              await page.locator('#start').click();
+              const fieldBox=await page.locator('#arena').boundingBox();
+              await page.locator('#arena').click({position:{x:fieldBox.width*.5,y:fieldBox.height*fraction}});
+              const rearUnits=await page.evaluate(()=>window.__cercoTest.units().filter(u=>u.side==='ally'));
+              if(upper){
+                assert.equal(rearUnits.length,0,'Jogador invocou atrás do castelo inimigo');
+              }else{
+                assert.equal(rearUnits.length,2,'Invocação atrás do castelo aliado deixou de funcionar');
+                assert.ok(rearUnits.every(u=>u.y>560),'A retaguarda aliada deixou de ser utilizável');
+              }
+            }
+            const occupied=await page.evaluate(()=>window.Cerco3D.info().presentation.framing);
+            assert.ok(occupied.top>.89&&occupied.bottom<-.89,'Faixas atrás das bases continuam vazias');
+            await page.waitForTimeout(500);
+            await page.screenshot({path:'/tmp/cerco-arena-mobile.png'});
+            console.log('Apresentação 3D:',JSON.stringify(await page.evaluate(()=>window.Cerco3D.info().presentation)));
+            assert.equal(await page.locator('#overlay').isVisible(),false);
+            await page.waitForFunction(()=>document.querySelector('#timer')?.textContent!=='03:00',{timeout:12000});
+            // Saida da batalha devolve a interface do portal sem perder o progresso.
+            await page.locator('#battleBack').click();
+            if(await page.evaluate(()=>document.body.classList.contains('battle-mode'))){
+              await page.locator('#battleBack').click();
+            }
+            assert.ok(!(await page.evaluate(()=>document.body.classList.contains('battle-mode'))),'Batalha continuou fixa');
+            assert.ok(await page.locator('#navigation').isVisible(),'Navegacao nao retornou');
+            assert.equal(await page.locator('.page.active').getAttribute('data-page'),'home','Batalha não voltou à página inicial');
+            await page.locator('#navigation [data-view="home"]').click();
+            assert.equal(await page.locator('#homeOpened').innerText(),'1','Presente aberto não foi atualizado na home');
+            assert.equal(await page.locator('#homeWins').innerText(),'1','Vitória não foi atualizada na home');
+            await page.locator('#navigation [data-view="cards"]').click();
+            await page.getByRole('button',{name:/^Liliti, nível/}).click();
+            await page.waitForFunction(()=>document.querySelector('#fullArt')?.complete&&document.querySelector('#fullArt')?.naturalWidth>0);
+            const relief=await page.locator('#artOuter .card-relief').evaluate(node=>({kind:node.dataset.card,
+              layers:node.querySelectorAll('img').length,dust:node.querySelectorAll('.card-stardust i').length,
+              cover:getComputedStyle(node.querySelector('.card-back')).objectFit}));
+            assert.equal(relief.kind,'liliti');assert.equal(relief.layers,1);assert.ok(relief.dust>=20);assert.equal(relief.cover,'cover');
+            // Todas as oito cartas de personagens mantêm a arte e o fundo, sem contorno dourado.
+            const portraits=await page.evaluate(()=>{
+              const stages=[...document.querySelectorAll('#cardGrid .card-relief.has-figure-depth')];
+              return {
+                count:stages.length,
+                noOutline:document.querySelectorAll('.card-gold-outline,.gold-contour-metal,.gold-contour-shadow').length===0,
+                backgrounds:stages.every(s=>s.querySelector('.card-back')?.naturalWidth>0&&
+                  getComputedStyle(s.querySelector('.card-back')).objectFit==='cover'&&
+                  s.querySelectorAll('img').length===1),
+                lilitiDust:document.querySelector('#artOuter .card-stardust i')!==null
+              };
+            });
+            assert.equal(portraits.count,8,'Arte dos oito personagens ausente');
+            assert.ok(portraits.noOutline,'Contorno indesejado ainda aparece sobre os personagens');
+            assert.ok(portraits.backgrounds,'Fundo integral ou relevo das cartas foi alterado');
+            assert.ok(portraits.lilitiDust,'Brilho e partículas da Liliti foram removidos');
+            assert.ok((await page.locator('#cardBadges').innerText()).includes('Suprema'));
+            assert.ok((await page.locator('#cardOffer').innerText()).includes('10,00'));
+            // A animação solicitada deve ser testada com movimento habilitado; acessibilidade mantém fallback estático.
+            await page.emulateMedia({reducedMotion:'no-preference'});
+            await page.locator('#fullArt').click();
+            // A captura de estilo ocorre no mesmo evento de toque; o runner 3D pode atrasar a inspeção por >950ms.
+            const shining=await page.evaluate(()=>{
+              const art=document.getElementById('fullArt');
+              art.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch'}));
+              const stage=art.closest('.card-relief');
+              return {active:stage?.classList.contains('is-shining'),
+                animation:getComputedStyle(stage.querySelector('.card-light-sweep'),'::after').animationName};
+            });
+            assert.ok(shining.active,'Toque não ativou o brilho da carta');
+            assert.equal(shining.animation,'card-reflection','Reflexo não se iniciou no toque');
+            await page.locator('#artOuter').scrollIntoViewIfNeeded();
+            await page.screenshot({path:'/tmp/cerco-cartas-liliti.png'});
+            // Cartas de magia agora têm imagens próprias completas, sem corpos duplicados,
+            // com arte visível em todas as dimensões e sem alterar seus efeitos em batalha.
+            for(const [id,filename] of [['cura','spell_heal.svg'],['chama','spell_fire.svg'],['armadilha','spell_trap.svg']]){
+              await page.locator('#cardGrid button[data-card="'+id+'"]').click();
+              await page.waitForFunction(filename=>{
+                const im=document.getElementById('fullArt');
+                return im?.complete&&im.naturalWidth>=320&&im.getAttribute('src')?.includes(filename);
+              },filename,{timeout:12000});
+              const spell=await page.locator('#artOuter .card-relief').evaluate(node=>({
+                id:node.dataset.card,magic:node.classList.contains('has-spell-art'),
+                imageCount:node.querySelectorAll('img').length,
+                imageFit:getComputedStyle(node.querySelector('.card-back')).objectFit,
+                hasGlass:!!node.querySelector('.card-glass-light')
+              }));
+              assert.equal(spell.id,id);
+              assert.ok(spell.magic&&spell.hasGlass&&spell.imageCount===1&&spell.imageFit==='cover',
+                'Imagem de magia duplicada, deformada ou sem arte própria: '+id);
+            }
+            await page.locator('#cardGrid button[data-card="liliti"]').click();
+            await page.locator('#navigation [data-view="shop"]').click();
+            assert.equal(await page.locator('.liliti-store-card [data-cerco-buy="card_liliti"]').count(),1);
+            await page.screenshot({path:'/tmp/cerco-loja-mobile.png'});
+            assert.deepEqual(problems,[]);
+            const demoContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1,recordVideo:{dir:'/tmp/cerco-recording',size:{width:390,height:844}}});
+            const demo=await demoContext.newPage();
+            await demo.goto('http://127.0.0.1:8080/?test=1',{waitUntil:'networkidle'});
+            await demo.waitForFunction(()=>window.Cerco3D?.ready===true,{timeout:20000});
+            await demo.locator('#homePlay').click();
+            const lineup=await demo.evaluate(()=>window.__cercoTest.modelLineup());
+            assert.equal(lineup.length,8);
+            assert.ok(lineup.find(m=>m.kind==='colosso').height>lineup.find(m=>m.kind==='soldado').height*1.4);
+            assert.ok(lineup.find(m=>m.kind==='soldado').height>1);
+            await demo.screenshot({path:'/tmp/cerco-identidade-3d.png'});
+            await demo.evaluate(()=>{window.__cercoTest.reset()});
+            await demo.locator('#start').click();
+            await demo.evaluate(()=>{window.__cercoTest.duel('guardiao');window.__cercoTest.createEnemy('arqueiro',105,245)});
+            await demo.waitForTimeout(7500);
+            await demo.screenshot({path:'/tmp/cerco-personagens-3d.png'});
+            const video=demo.video();await demoContext.close();
+            require('node:fs').copyFileSync(await video.path(),'/tmp/cerco-batalha-3d.webm');
+            await browser.close();
+            console.log('PASSOU: lobby de jogo, skins à venda para todos, pergaminhos, combate 3D, controles Android e sem erros JS');
+          })().catch(e=>{console.error(e);process.exit(1)});
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cerco-dos-reis-mobile-preview
+          path: |
+            /tmp/cerco-home-mobile.png
+            /tmp/cerco-arena-mobile.png
+            /tmp/cerco-combate-3d.png
+            /tmp/cerco-personagens-3d.png
+            /tmp/cerco-identidade-3d.png
+            /tmp/cerco-cartas-liliti.png
+            /tmp/cerco-provador-liliti.png
+            /tmp/cerco-modelo-*.png
+            /tmp/cerco-batalha-3d.webm
+            /tmp/cerco-loja-mobile.png
+          if-no-files-found: ignore
+      - name: Confirmar arquivos no Render
+        run: |
+          set -e
+          base=https://cerco-dos-reis-teste.onrender.com
+          for file in / /game-ui.css /app.js /arena3d.js /arena-atmosphere.js /sfx.js /realm-ui.js /origem-apk/assets/khar_tall_guardiao.png; do
+            for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+              if curl -fsSL --max-time 15 "$base$file" >/tmp/cerco-publicado; then break; fi
+              if [ "$attempt" = 12 ]; then exit 1; fi
+              sleep 8
+            done
+            echo "publicado: $file"
+          done

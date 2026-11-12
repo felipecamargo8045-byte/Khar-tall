@@ -1,0 +1,30 @@
+name: Inspecionar sprites originais
+on:
+  push:
+    branches: [cerco-dos-reis-migracao-2026-10]
+    paths: ['.github/workflows/inspecionar-sprites-cerco.yml']
+  workflow_dispatch:
+jobs:
+  images:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -m pip install Pillow --quiet
+      - name: Medir fundo e transparencia das artes
+        run: |
+          python - <<'PY'
+          from PIL import Image, ImageStat
+          from pathlib import Path
+          root=Path('cerco-dos-reis/origem-apk/assets')
+          for file in sorted(root.glob('*')):
+            if file.suffix.lower()!='.png':continue
+            with Image.open(file) as im:
+              colors=im.convert('RGBA')
+              print(file.name, 'mode', im.mode, 'size', im.size, 'alpha_extr', colors.getchannel('A').getextrema(), 'transparent', sum(a<250 for a in colors.getchannel('A').resize((128,128)).getdata()), 'corner', colors.getpixel((0,0)), 'center', colors.getpixel((im.width//2,im.height//2)))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cerco-personagens-fontes
+          path: |
+            cerco-dos-reis/origem-apk/assets/khar_tall_*.png
+            cerco-dos-reis/origem-apk/assets/portrait_lilith_ruiva.webp

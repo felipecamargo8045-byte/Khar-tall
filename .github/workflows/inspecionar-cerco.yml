@@ -1,0 +1,65 @@
+name: Recuperar recursos do APK Cerco dos Reis
+on:
+  push:
+    branches: [cerco-dos-reis-migracao-2026-10]
+    paths: ['.github/workflows/inspecionar-cerco.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  recuperar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cerco-dos-reis-migracao-2026-10
+      - name: Extrair recursos do APK original sem tocar no jogo de tabuleiro
+        run: |
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          from pathlib import Path
+          import re
+          base=Path("cerco-dos-reis/origem-apk")
+          files=[]
+          with ZipFile("downloads/cerco-dos-reis-1.0.0.apk") as arc:
+              for name in arc.namelist():
+                  if not name.startswith("assets/web/game/"): continue
+                  rel=name.removeprefix("assets/web/game/")
+                  if not rel or rel.endswith("/") or ".." in Path(rel).parts: continue
+                  if not rel.lower().endswith((".html",".css",".svg",".webp",".png",".json",".js")): continue
+                  dest=base/rel
+                  dest.parent.mkdir(parents=True,exist_ok=True)
+                  dest.write_bytes(arc.read(name))
+                  files.append(rel)
+          print("RECUPERADOS",len(files))
+          print("CAMINHOS","\n".join(files))
+          p=base/"index.html"
+          if p.exists():
+              html=p.read_text(encoding="utf-8",errors="replace")
+              print("ORIGINAL INDEX SCRIPT REFERENCES:",re.findall(r'<script[^>]*src=["\']([^"\']+)',html,re.I))
+              print("ORIGINAL INDEX LINKS:",re.findall(r'<link[^>]*href=["\']([^"\']+)',html,re.I))
+          PY
+          cat > cerco-dos-reis/origem-apk/ORIGEM.md <<'EOF'
+          # Recursos recuperados do APK Cerco dos Reis 1.0.0
+          Esses arquivos foram extraídos de `downloads/cerco-dos-reis-1.0.0.apk` pertencente ao próprio repositório do usuário.
+          São arte, CSS e HTML empacotados no APK original, preservados sem alteração.
+          Isso NÃO representa um backup do banco de dados, autenticação, pagamentos, lógica do servidor ou do código JavaScript do site Work.
+          Esta pasta é parte de uma migração em preparação; não substitui o jogo original.
+          EOF
+      - name: Verificar recuperação pública do código do site
+        run: |
+          for u in "https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/" "https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/game/app.mjs?v=vip-android-1" "https://cerco-dos-reis-app.felipecamargo8045.chatgpt.site/game/"; do
+            echo "URL $u"
+            curl -L -sS --max-time 15 -o /dev/null -w "http=%{http_code} bytes=%{size_download} content_type=%{content_type}\n" "$u" || true
+          done
+      - name: Versionar recursos recuperados na ramificação de migração
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cerco-dos-reis/origem-apk
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(cerco): recuperar recursos originais do APK 1.0.0"
+            git push origin HEAD:cerco-dos-reis-migracao-2026-10
+          else
+            echo "Nenhuma alteração nos recursos"
+          fi

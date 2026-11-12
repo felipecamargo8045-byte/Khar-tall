@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="420" viewBox="0 0 320 420" role="img" aria-label="Armadilha: sigilo arcano violeta sobre pedra com espinhos ocultos">
+<defs>
+ <radialGradient id="back" cx=".52" cy=".50" r=".76"><stop stop-color="#403957"/><stop offset=".46" stop-color="#222839"/><stop offset="1" stop-color="#101825"/></radialGradient>
+ <radialGradient id="violet"><stop stop-color="#f0d5ff"/><stop offset=".28" stop-color="#b898ed"/><stop offset=".7" stop-color="#70529e"/><stop offset="1" stop-color="#362a5e" stop-opacity="0"/></radialGradient>
+ <linearGradient id="steel" x1=".15" y1="0" x2=".82" y2="1"><stop stop-color="#e1d9cb"/><stop offset=".4" stop-color="#836d7b"/><stop offset=".75" stop-color="#403746"/><stop offset="1" stop-color="#171927"/></linearGradient>
+ <linearGradient id="rune" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e1c6f2"/><stop offset=".5" stop-color="#9c85c8"/><stop offset="1" stop-color="#b5a17b"/></linearGradient>
+ <filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="9"/></filter>
+</defs>
+<rect width="320" height="420" fill="url(#back)"/>
+<path d="M0 337 60 326 91 341 165 319 218 334 280 321 320 338V420H0Z" fill="#151c29"/>
+<path d="M0 368 70 344 138 366 219 347 320 370M0 402 98 381 155 400 230 380 320 396" stroke="#736b78" stroke-opacity=".31" fill="none"/>
+<ellipse cx="161" cy="275" rx="116" ry="49" fill="#9975d1" opacity=".32" filter="url(#glow)"/>
+<g transform="translate(160 270) scale(1 .55)" fill="none" stroke="url(#rune)">
+ <circle r="118" stroke-width="4" opacity=".9"/><circle r="105" stroke-width="1.7"/><circle r="83" stroke-width="4"/><circle r="66" stroke-width="1.8"/>
+ <path d="M0-111 96 55-96 55ZM0 111 96-55-96-55Z" stroke-width="3"/>
+ <path d="M-120 0h240M0-120v240M-85-85 170 170M85-85-170 170" stroke-width="1.8" opacity=".85"/>
+ <path d="m0-57 57 57-57 57-57-57Z" stroke-width="3"/>
+</g>
+<g fill="url(#steel)" stroke="#b8a7ac" stroke-width="1.2">
+ <path d="M73 258 93 159 108 260Z"/><path d="M212 257 229 143 249 253Z"/>
+ <path d="M107 289 127 193 145 285Z"/><path d="M175 285 197 177 218 288Z"/>
+ <path d="M136 315 160 232 182 315Z"/>
+</g>
+<g fill="none" stroke="#b9a1e4" stroke-width="2" opacity=".82"><path d="M80 225Q118 182 158 233Q209 182 244 216"/><path d="M86 275Q118 307 162 263Q204 311 241 279"/></g>
+<circle cx="159" cy="250" r="52" fill="#a68dcf" opacity=".22" filter="url(#glow)"/>
+<path d="M160 211 193 246 160 284 127 246Z" fill="url(#violet)" stroke="#ded1f9" stroke-width="2.5"/>
+<path d="m160 211 0 73M127 246h66" stroke="#f9ecff" stroke-width="1.6" opacity=".75"/>
+<circle cx="160" cy="246" r="10" fill="#e9d7ff"/><circle cx="160" cy="246" r="4" fill="#ffffff"/>
+<g stroke="#bdadea" stroke-width="2" stroke-linecap="round"><path d="M62 127v24m-12-12h24M257 101v20m-10-10h20M280 309v20m-10-10h20M48 309v17m-8-8h16"/></g>
+<g fill="#c9b9fc" opacity=".75"><circle cx="67" cy="92" r="2"/><circle cx="235" cy="83" r="2.5"/><circle cx="44" cy="210" r="2"/><circle cx="276" cy="228" r="2"/></g>
+<path d="M63 362Q160 385 256 362" fill="none" stroke="#a89c9b" opacity=".45"/>
+</svg>
